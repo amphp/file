@@ -1,0 +1,45 @@
+{
+    "name": "amphp/fs",
+    "homepage": "https://github.com/amphp/fs",
+    "description": "Non-blocking filesystem tools for amp applications",
+    "keywords": [
+        "filesystem",
+        "static",
+        "async",
+        "non-blocking",
+        "amp",
+        "amphp"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Daniel Lowrey",
+            "email": "rdlowrey@php.net",
+            "role": "Creator / Lead Developer"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0-dev",
+        "amphp/amp": "dev-master"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.4.0",
+        "fabpot/php-cs-fixer": "~1.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "Amp\\Fs\\": "lib"
+        },
+        "files": ["lib/functions.php"]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Amp\\Fs\\Test\\": "test/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1.0-dev"
+        }
+    }
+}
