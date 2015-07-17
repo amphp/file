@@ -2,19 +2,22 @@
 
 namespace Amp\Fs;
 
-use Amp\{ Reactor, function reactor, Promise, Success, Failure };
+use Amp\Reactor;
+use Amp\Promise;
+use Amp\Success;
+use Amp\Failure;
 
 class BlockingFilesystem implements Filesystem {
     private $reactor;
 
     public function __construct(Reactor $reactor = null) {
-        $this->reactor = $reactor ?: reactor();
+        $this->reactor = $reactor ?: \Amp\reactor();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function open(string $path, int $mode = self::READ): Promise {
+    public function open($path, $mode = self::READ) {
         $openMode = 0;
 
         if ($mode & self::READ && $mode & self::WRITE) {
@@ -42,7 +45,7 @@ class BlockingFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function stat(string $path): Promise {
+    public function stat($path) {
         if ($stat = @stat($path)) {
             $stat["isfile"] = (bool) is_file($path);
             $stat["isdir"] = empty($stat["isfile"]);
@@ -57,7 +60,7 @@ class BlockingFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function lstat(string $path): Promise {
+    public function lstat($path) {
         if ($stat = @lstat($path)) {
             $stat["isfile"] = (bool) is_file($path);
             $stat["isdir"] = empty($stat["isfile"]);
@@ -72,42 +75,42 @@ class BlockingFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function symlink(string $target, string $link): Promise {
+    public function symlink($target, $link) {
         return new Success((bool) symlink($target, $link));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rename(string $from, string $to): Promise {
+    public function rename($from, $to) {
         return new Success((bool) rename($from, $to));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function unlink(string $path): Promise {
+    public function unlink($path) {
         return new Success((bool) unlink($path));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644): Promise {
+    public function mkdir($path, $mode = 0644) {
         return new Success((bool) mkdir($path, $mode));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rmdir(string $path): Promise {
+    public function rmdir($path) {
         return new Success((bool) rmdir($path));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function scandir(string $path): Promise {
+    public function scandir($path) {
         if ($arr = scandir($path)) {
             $arr = array_values(array_filter($arr, function($el) {
                 return !($el === "." || $el === "..");
@@ -124,14 +127,14 @@ class BlockingFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function chmod(string $path, int $mode): Promise {
+    public function chmod($path, $mode) {
         return new Success((bool) chmod($path, $mode));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Promise {
+    public function chown($path, $uid, $gid) {
         if (!@chown($path, $uid)) {
             return new Failure(new \RuntimeException(
                 error_get_last()["message"]
@@ -148,7 +151,7 @@ class BlockingFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function get(string $path): Promise {
+    public function get($path) {
         $result = @file_get_contents($path);
         return ($result === false)
             ? new Failure(new \RuntimeException(error_get_last()["message"]))
@@ -159,7 +162,7 @@ class BlockingFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function put(string $path, string $contents): Promise {
+    public function put($path, $contents) {
         $result = @file_put_contents($path, $contents);
         return ($result === false)
             ? new Failure(new \RuntimeException(error_get_last()["message"]))

@@ -2,7 +2,9 @@
 
 namespace Amp\Fs;
 
-use Amp\{ Promise, Deferred, UvReactor };
+use Amp\Promise;
+use Amp\Deferred;
+use Amp\UvReactor;
 
 class UvDescriptor implements Descriptor {
     private $reactor;
@@ -29,7 +31,7 @@ class UvDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function read(int $offset, int $len): Promise {
+    public function read($offset, $len) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         uv_fs_read($this->loop, $this->fh, $offset, $len, function($fh, $result, $buf) use ($promisor) {
@@ -49,7 +51,7 @@ class UvDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function write(int $offset, string $data): Promise {
+    public function write($offset, $data) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         uv_fs_write($this->loop, $this->fh, $data, $offset, function($fh, $result) use ($promisor) {
@@ -69,7 +71,7 @@ class UvDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function truncate(int $length = 0): Promise {
+    public function truncate($length = 0) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         uv_fs_ftruncate($this->loop, $this->fh, $length, function($fh) use ($promisor) {
@@ -89,7 +91,7 @@ class UvDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function stat(): Promise {
+    public function stat() {
         // @TODO Pull result from stat cache if it exists
         $this->reactor->addRef();
         $promisor = new Deferred;
@@ -110,7 +112,7 @@ class UvDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function close(): Promise {
+    public function close() {
         $this->isCloseInitialized = true;
         $this->reactor->addRef();
         $promisor = new Deferred;

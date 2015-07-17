@@ -2,8 +2,6 @@
 
 namespace Amp\Fs;
 
-use Amp\Promise;
-
 interface Descriptor {
     /**
      * Read $len bytes from the open file handle starting at $offset
@@ -12,7 +10,7 @@ interface Descriptor {
      * @param int $len
      * @return \Amp\Promise
      */
-    public function read(int $offset, int $len): Promise;
+    public function read($offset, $len);
 
     /**
      * Write $data to the open file handle starting at $offset
@@ -21,7 +19,7 @@ interface Descriptor {
      * @param string $data
      * @return \Amp\Promise
      */
-    public function write(int $offset, string $data): Promise;
+    public function write($offset, $data);
 
     /**
      * Truncate the file to the specified $length
@@ -31,19 +29,19 @@ interface Descriptor {
      * @param int $length
      * @return \Amp\Promise
      */
-    public function truncate(int $length = 0): Promise;
+    public function truncate($length = 0);
 
     /**
      * Retrieve the filesystem stat array for the current descriptor
      *
      * @return \Amp\Promise
      */
-    public function stat(): Promise;
+    public function stat();
 
     /**
      * Close the file handle
      *
      * @return \Amp\Promise
      */
-    public function close(): Promise;
+    public function close();
 }

@@ -2,7 +2,9 @@
 
 namespace Amp\Fs;
 
-use Amp\{ Promise, Success, Failure };
+use Amp\Promise;
+use Amp\Success;
+use Amp\Failure;
 
 class BlockingDescriptor implements Descriptor {
     private $fh;
@@ -10,7 +12,7 @@ class BlockingDescriptor implements Descriptor {
     /**
      * @param resource $fh An open uv filesystem descriptor
      */
-    public function __construct($fh, string $path) {
+    public function __construct($fh, $path) {
         $this->fh = $fh;
         $this->path = $path;
     }
@@ -18,7 +20,7 @@ class BlockingDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function read(int $offset, int $len): Promise {
+    public function read($offset, $len) {
         \fseek($this->fh, $offset);
         $data = \fread($this->fh, $len);
 
@@ -34,7 +36,7 @@ class BlockingDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function write(int $offset, string $data): Promise {
+    public function write($offset, $data) {
         \fseek($this->fh, $offset);
         $len = \fwrite($this->fh, $data);
 
@@ -50,7 +52,7 @@ class BlockingDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function truncate(int $length = 0): Promise {
+    public function truncate($length = 0) {
         if (ftruncate($this->fh, $length)) {
             return new Success;
         } else {
@@ -63,7 +65,7 @@ class BlockingDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function stat(): Promise {
+    public function stat() {
         if ($stat = fstat($this->fh)) {
             $stat["isfile"] = (bool) is_file($this->path);
             $stat["isdir"] = empty($stat["isfile"]);
@@ -78,7 +80,7 @@ class BlockingDescriptor implements Descriptor {
     /**
      * {@inheritdoc}
      */
-    public function close(): Promise {
+    public function close() {
         if (\fclose($this->fh)) {
             return new Success;
         } else {

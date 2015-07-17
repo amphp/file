@@ -6,28 +6,28 @@ use Amp\Reactor;
 use Amp\Fs\Filesystem;
 
 abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
-    abstract protected function getReactor(): Reactor;
-    abstract protected function getFilesystem(Reactor $reactor): Filesystem;
+    abstract protected function getReactor();
+    abstract protected function getFilesystem(Reactor $reactor);
 
     public function testOpen() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
-            $descriptor = yield $fs->open(__DIR__ . "/fixture/small.txt", Filesystem::READ);
+            $descriptor = (yield $fs->open(__DIR__ . "/fixture/small.txt", Filesystem::READ));
             $this->assertInstanceOf("Amp\Fs\Descriptor", $descriptor);
         });
     }
 
     public function testScandir() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
-            $actual = yield $fs->scandir(__DIR__ . "/fixture");
+            $actual = (yield $fs->scandir(__DIR__ . "/fixture"));
             $expected = ["dir", "small.txt"];
             $this->assertSame($expected, $actual);
         });
     }
 
     public function testSymlink() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
 
             $target = __DIR__ . "/fixture/small.txt";
@@ -39,7 +39,7 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testLstat() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
 
             $target = __DIR__ . "/fixture/small.txt";
@@ -54,35 +54,35 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
      * @expectedException RuntimeException
      */
     public function testOpenFailsOnNonexistentFile() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
-            $descriptor = yield $fs->open(__DIR__ . "/fixture/nonexistent", Filesystem::READ);
+            $descriptor = (yield $fs->open(__DIR__ . "/fixture/nonexistent", Filesystem::READ));
             $this->assertInstanceOf("Amp\Fs\Descriptor", $descriptor);
         });
     }
 
     public function testStat() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
 
             // file
-            $stat = yield $fs->stat(__DIR__ . "/fixture/small.txt");
+            $stat = (yield $fs->stat(__DIR__ . "/fixture/small.txt"));
             $this->assertTrue($stat["isfile"]);
             $this->assertFalse($stat["isdir"]);
 
             // directory
-            $stat = yield $fs->stat(__DIR__ . "/fixture/dir");
+            $stat = (yield $fs->stat(__DIR__ . "/fixture/dir"));
             $this->assertFalse($stat["isfile"]);
             $this->assertTrue($stat["isdir"]);
 
             // nonexistent
-            $stat = yield $fs->stat(__DIR__ . "/fixture/nonexistent");
+            $stat = (yield $fs->stat(__DIR__ . "/fixture/nonexistent"));
             $this->assertNull($stat);
         });
     }
 
     public function testRename() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
 
             $contents1 = "rename test";
@@ -91,7 +91,7 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
 
             yield $fs->put($old, $contents1);
             yield $fs->rename($old, $new);
-            $contents2 = yield $fs->get($new);
+            $contents2 = (yield $fs->get($new));
             yield $fs->unlink($new);
 
             $this->assertSame($contents1, $contents2);
@@ -99,26 +99,26 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testUnlink() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
 
             $toUnlink = __DIR__ . "/fixture/unlink";
 
             yield $fs->put($toUnlink, "");
-            $this->assertTrue((bool) yield $fs->stat($toUnlink));
+            $this->assertTrue((bool) (yield $fs->stat($toUnlink)));
             yield $fs->unlink($toUnlink);
             $this->assertNull(yield $fs->stat($toUnlink));
         });
     }
 
     public function testMkdirRmdir() {
-        ($this->getReactor())->run(function($reactor) {
+        $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
 
             $dir = __DIR__ . "/fixture/newdir";
 
             yield $fs->mkdir($dir);
-            $stat = yield $fs->stat($dir);
+            $stat = (yield $fs->stat($dir));
             $this->assertTrue($stat["isdir"]);
             $this->assertFalse($stat["isfile"]);
             yield $fs->rmdir($dir);

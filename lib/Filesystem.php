@@ -2,8 +2,6 @@
 
 namespace Amp\Fs;
 
-use Amp\Promise;
-
 interface Filesystem {
     const READ   = 0b001;
     const WRITE  = 0b010;
@@ -35,7 +33,7 @@ interface Filesystem {
      * @param int $mode A flag bitmask: [Filesystem::READ | Filesystem::WRITE | Filesystem::CREATE]
      * @return \Amp\Promise
      */
-    public function open(string $path, int $mode = self::READ): Promise;
+    public function open($path, $mode = self::READ);
 
     /**
      * Execute a file stat operation
@@ -45,7 +43,7 @@ interface Filesystem {
      * @param string $path The file system path to stat
      * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
      */
-    public function stat(string $path): Promise;
+    public function stat($path);
 
     /**
      * Same as stat() except if the path is a link then the link's data is returned
@@ -53,7 +51,7 @@ interface Filesystem {
      * @param string $path The file system path to stat
      * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
      */
-    public function lstat(string $path): Promise;
+    public function lstat($path);
 
     /**
      * Create a symlink $link pointing to the file/directory located at $target
@@ -62,7 +60,7 @@ interface Filesystem {
      * @param string $link
      * @return \Amp\Promise
      */
-    public function symlink(string $target, string $link): Promise;
+    public function symlink($target, $link);
 
     /**
      * Rename a file or directory
@@ -71,7 +69,7 @@ interface Filesystem {
      * @param string $to
      * @return \Amp\Promise
      */
-    public function rename(string $from, string $to): Promise;
+    public function rename($from, $to);
 
     /**
      * Delete a file
@@ -79,7 +77,7 @@ interface Filesystem {
      * @param string $path
      * @return \Amp\Promise
      */
-    public function unlink(string $path): Promise;
+    public function unlink($path);
 
     /**
      * Create a director
@@ -88,7 +86,7 @@ interface Filesystem {
      * @param int $mode
      * @return \Amp\Promise
      */
-    public function mkdir(string $path, int $mode = 0644): Promise;
+    public function mkdir($path, $mode = 0644);
 
     /**
      * Delete a directory
@@ -96,7 +94,7 @@ interface Filesystem {
      * @param string $path
      * @return \Amp\Promise
      */
-    public function rmdir(string $path): Promise;
+    public function rmdir($path);
 
     /**
      * Retrieve an array of files and directories inside the specified path
@@ -106,7 +104,7 @@ interface Filesystem {
      * @param string $path
      * @return \Amp\Promise
      */
-    public function scandir(string $path): Promise;
+    public function scandir($path);
 
     /**
      * chmod a file or directory
@@ -115,7 +113,7 @@ interface Filesystem {
      * @param int $mode
      * @return \Amp\Promise
      */
-    public function chmod(string $path, int $mode): Promise;
+    public function chmod($path, $mode);
 
     /**
      * chown a file or directory
@@ -125,7 +123,7 @@ interface Filesystem {
      * @param int $gid
      * @return \Amp\Promise
      */
-    public function chown(string $path, int $uid, int $gid): Promise;
+    public function chown($path, $uid, $gid);
 
     /**
      * Buffer the specified file's contents
@@ -133,7 +131,7 @@ interface Filesystem {
      * @param string $path The file path from which to buffer contents
      * @return \Amp\Promise A promise resolving to a string upon successful resolution
      */
-    public function get(string $path): Promise;
+    public function get($path);
 
     /**
      * Write the contents string to the specified path.
@@ -142,5 +140,5 @@ interface Filesystem {
      * @param string $contents The data to write to the specified $path
      * @return \Amp\Promise A promise resolving to the integer length written upon success
      */
-    public function put(string $path, string $contents): Promise;
+    public function put($path, $contents);
 }

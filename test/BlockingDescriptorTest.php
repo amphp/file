@@ -2,14 +2,15 @@
 
 namespace Amp\Fs\Test;
 
-use Amp\{ Reactor, NativeReactor };
-use Amp\Fs\{ Filesystem, BlockingFilesystem };
+use Amp\Reactor;
+use Amp\NativeReactor;
+use Amp\Fs\BlockingFilesystem;
 
 class BlockingDescriptorTest extends DescriptorTest {
-    protected function getReactor(): Reactor {
+    protected function getReactor() {
         return new NativeReactor;
     }
-    protected function getFilesystem(Reactor $reactor): Filesystem {
+    protected function getFilesystem(Reactor $reactor) {
         return new BlockingFilesystem($reactor);
     }
 }

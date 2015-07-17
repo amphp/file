@@ -19,8 +19,8 @@
         }
     ],
     "require": {
-        "php": ">=7.0.0-dev",
-        "amphp/amp": "dev-master"
+        "php": ">=5.5",
+        "amphp/amp": "1.0.x-dev"
     },
     "require-dev": {
         "phpunit/phpunit": "~4.4.0",

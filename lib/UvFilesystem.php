@@ -2,8 +2,10 @@
 
 namespace Amp\Fs;
 
-use Amp\{ UvReactor, Promise, Failure, Deferred };
-use function Amp\{ resolve, reactor };
+use Amp\UvReactor;
+use Amp\Promise;
+use Amp\Failure;
+use Amp\Deferred;
 
 class UvFilesystem implements Filesystem {
     private $reactor;
@@ -20,7 +22,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function open(string $path, int $mode = self::READ): Promise {
+    public function open($path, $mode = self::READ) {
         $openFlags = 0;
         $fileChmod = 0;
 
@@ -63,7 +65,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function stat(string $path): Promise {
+    public function stat($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_stat($this->loop, $path, function($fh, $stat) use ($promisor) {
@@ -83,7 +85,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function lstat(string $path): Promise {
+    public function lstat($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_lstat($this->loop, $path, function($fh, $stat) use ($promisor) {
@@ -103,7 +105,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function symlink(string $target, string $link): Promise {
+    public function symlink($target, $link) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function($fh) use ($promisor) {
@@ -117,7 +119,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function rename(string $from, string $to): Promise {
+    public function rename($from, $to) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_rename($this->loop, $from, $to, function($fh) use ($promisor) {
@@ -131,7 +133,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function unlink(string $path): Promise {
+    public function unlink($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_unlink($this->loop, $path, function($fh) use ($promisor) {
@@ -145,7 +147,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644): Promise {
+    public function mkdir($path, $mode = 0644) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_mkdir($this->loop, $path, $mode, function($fh) use ($promisor) {
@@ -159,7 +161,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function rmdir(string $path): Promise {
+    public function rmdir($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_rmdir($this->loop, $path, function($fh) use ($promisor) {
@@ -173,7 +175,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function scandir(string $path): Promise {
+    public function scandir($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         uv_fs_readdir($this->loop, $path, 0, function($fh, $data) use ($promisor, $path) {
@@ -193,7 +195,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function chmod(string $path, int $mode): Promise {
+    public function chmod($path, $mode) {
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_chmod($this->loop, $path, $mode, function($fh) use ($promisor) {
@@ -207,7 +209,7 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Promise {
+    public function chown($path, $uid, $gid) {
         // @TODO Return a failure in windows environments
         $this->reactor->addRef();
         $promisor = new Deferred;
@@ -222,11 +224,11 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function get(string $path): Promise {
-        return resolve($this->doGet($path), $this->reactor);
+    public function get($path) {
+        return \Amp\resolve($this->doGet($path), $this->reactor);
     }
 
-    private function doGet(string $path): \Generator {
+    private function doGet($path): \Generator {
         $this->reactor->addRef();
         if (!$fh = yield $this->doFsOpen($path, $flags = \UV::O_RDONLY, $mode = 0)) {
             $this->reactor->delRef();
@@ -269,7 +271,7 @@ class UvFilesystem implements Filesystem {
         return yield $promisor->promise();
     }
 
-    private function doFsOpen(string $path, int $flags, int $mode): Promise {
+    private function doFsOpen($path, $flags, $mode) {
         $promisor = new Deferred;
         \uv_fs_open($this->loop, $path, $flags, $mode, function($fh) use ($promisor, $path) {
             $promisor->succeed($fh);
@@ -278,7 +280,7 @@ class UvFilesystem implements Filesystem {
         return $promisor->promise();
     }
 
-    private function doFsStat($fh): Promise {
+    private function doFsStat($fh) {
         $promisor = new Deferred;
         \uv_fs_fstat($this->loop, $fh, function($fh, $stat) use ($promisor) {
             if ($fh) {
@@ -293,7 +295,7 @@ class UvFilesystem implements Filesystem {
         return $promisor->promise();
     }
 
-    private function doFsRead($fh, int $offset, int $len): Promise {
+    private function doFsRead($fh, $offset, $len) {
         $promisor = new Deferred;
         \uv_fs_read($this->loop, $fh, $offset, $len, function($fh, $nread, $buffer) use ($promisor) {
             $promisor->succeed(($nread < 0) ? false : $buffer);
@@ -305,11 +307,11 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
-    public function put(string $path, string $contents): Promise {
-        return resolve($this->doPut($path, $contents), $this->reactor);
+    public function put($path, $contents) {
+        return \Amp\resolve($this->doPut($path, $contents), $this->reactor);
     }
 
-    private function doPut(string $path, string $contents): \Generator {
+    private function doPut($path, $contents): \Generator {
         $flags = \UV::O_WRONLY | \UV::O_CREAT;
         $mode = \UV::S_IRWXU | \UV::S_IRUSR;
         $this->reactor->addRef();

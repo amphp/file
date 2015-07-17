@@ -2,22 +2,20 @@
 
 namespace Amp\Fs;
 
-use function Amp\reactor;
-
 /**
  * Get the global default filesystem instance
  *
  * @param \Amp\Fs\Filesystem $assign Optionally specify a new default filesystem instance
  * @return \Amp\Fs\Filesystem Returns the default filesystem instance
  */
-function fs(Filesystem $assign = null): Filesystem {
+function fs(Filesystem $assign = null) {
     static $filesystem;
     if ($assign) {
         return ($filesystem = $assign);
     } elseif ($filesystem) {
         return $filesystem;
-    } elseif (\extension_loaded('uv')) {
-        return ($filesystem = new UvFilesystem(reactor()));
+    } elseif (\extension_loaded("uv")) {
+        return ($filesystem = new UvFilesystem(\Amp\reactor()));
     /*
     // @TODO
     } elseif (\extension_loaded("eio") {
@@ -25,6 +23,6 @@ function fs(Filesystem $assign = null): Filesystem {
     }
     */
     } else {
-        return ($filesystem = new BlockingFilesystem(reactor()));
+        return ($filesystem = new BlockingFilesystem(\Amp\reactor()));
     }
 }
