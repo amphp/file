@@ -230,7 +230,8 @@ class UvFilesystem implements Filesystem {
 
     private function doGet($path): \Generator {
         $this->reactor->addRef();
-        if (!$fh = yield $this->doFsOpen($path, $flags = \UV::O_RDONLY, $mode = 0)) {
+        $promise = $this->doFsOpen($path, $flags = \UV::O_RDONLY, $mode = 0);
+        if (!$fh = (yield $promise)) {
             $this->reactor->delRef();
             throw new \RuntimeException(
                 "Failed opening file handle: {$path}"
@@ -238,7 +239,7 @@ class UvFilesystem implements Filesystem {
         }
 
         $promisor = new Deferred;
-        $stat = yield $this->doFsStat($fh);
+        $stat = (yield $this->doFsStat($fh));
         if (empty($stat)) {
             $this->reactor->delRef();
             $promisor->fail(new \RuntimeException(
@@ -252,7 +253,7 @@ class UvFilesystem implements Filesystem {
                 ));
             });
         } else {
-            $buffer = yield $this->doFsRead($fh, $offset = 0, $stat["size"]);
+            $buffer = (yield $this->doFsRead($fh, $offset = 0, $stat["size"]));
             if ($buffer === false ) {
                 \uv_fs_close($this->loop, $fh, function() use ($promisor) {
                     $this->reactor->delRef();
@@ -268,7 +269,7 @@ class UvFilesystem implements Filesystem {
             }
         }
 
-        return yield $promisor->promise();
+        yield "return" => yield $promisor->promise();
     }
 
     private function doFsOpen($path, $flags, $mode) {
@@ -315,7 +316,8 @@ class UvFilesystem implements Filesystem {
         $flags = \UV::O_WRONLY | \UV::O_CREAT;
         $mode = \UV::S_IRWXU | \UV::S_IRUSR;
         $this->reactor->addRef();
-        if (!$fh = yield $this->doFsOpen($path, $flags, $mode)) {
+        $promise = $this->doFsOpen($path, $flags, $mode);
+        if (!$fh = (yield $promise)) {
             $this->reactor->delRef();
             throw new \RuntimeException(
                 "Failed opening write file handle"
@@ -337,6 +339,6 @@ class UvFilesystem implements Filesystem {
             });
         });
 
-        return yield $promisor->promise();
+        yield "return" => yield $promisor->promise();
     }
 }
