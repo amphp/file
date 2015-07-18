@@ -16,12 +16,8 @@ function fs(Filesystem $assign = null) {
         return $filesystem;
     } elseif (\extension_loaded("uv")) {
         return ($filesystem = new UvFilesystem(\Amp\reactor()));
-    /*
-    // @TODO
-    } elseif (\extension_loaded("eio") {
-        return ($filesystem = new EioFilesystem);
-    }
-    */
+    } elseif (\extension_loaded("eio")) {
+        return ($filesystem = new EioFilesystem(\Amp\reactor()));
     } else {
         return ($filesystem = new BlockingFilesystem(\Amp\reactor()));
     }

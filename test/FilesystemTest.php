@@ -104,7 +104,7 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
 
             $toUnlink = __DIR__ . "/fixture/unlink";
 
-            yield $fs->put($toUnlink, "");
+            yield $fs->put($toUnlink, "unlink me");
             $this->assertTrue((bool) (yield $fs->stat($toUnlink)));
             yield $fs->unlink($toUnlink);
             $this->assertNull(yield $fs->stat($toUnlink));
@@ -125,5 +125,4 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
             $this->assertNull(yield $fs->stat($dir));
         });
     }
-
 }
