@@ -9,9 +9,6 @@ use Amp\Failure;
 use Amp\Deferred;
 
 class EioFilesystem implements Filesystem {
-    const S_IFDIR = 0x4000;
-    const S_IFREG = 0x8000;
-
     private $reactor;
     private $stream;
     private $watcher;
@@ -114,8 +111,8 @@ class EioFilesystem implements Filesystem {
             $stat = null;
         } else {
             $stat = $result;
-            $stat["isdir"] = (bool) ($stat["mode"] & self::S_IFDIR);
-            $stat["isfile"] = (bool) ($stat["mode"] & self::S_IFREG);
+            $stat["isfile"] = (bool) ($stat["mode"] & \EIO_S_IFREG);
+            $stat["isdir"] = empty($stat["isfile"]);
         }
         $this->decrementPending();
         $promisor->succeed($stat);

@@ -121,8 +121,8 @@ class EioDescriptor implements Descriptor {
                 \eio_get_last_error($req)
             ));
         } else {
-            $stat["isdir"] = (bool) ($stat["mode"] & Filesystem::S_IFDIR);
-            $stat["isfile"] = (bool) ($stat["mode"] & Filesystem::S_IFREG);
+            $stat["isfile"] = (bool) ($stat["mode"] & \EIO_S_IFREG);
+            $stat["isdir"] = empty($stat["isfile"]);
         }
         \call_user_func($this->decrement);
         $promisor->succeed($result);
