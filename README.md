@@ -17,7 +17,7 @@ in a blocking manner. This capability only exists to simplify development across
 environments where extensions may not be present.
 
 > **NOTE**
-> Using this library in production without either the eio or php-uv extensions is **NOT** recommended.
+> Using this library in production without pecl/eio or php-uv is **NOT** recommended.
 
 **Current Version**
 
