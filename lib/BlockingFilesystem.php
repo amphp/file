@@ -151,6 +151,13 @@ class BlockingFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
+    public function touch($path) {
+        return new Success((bool) touch($path));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function get($path) {
         $result = @file_get_contents($path);
         return ($result === false)

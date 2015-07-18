@@ -125,4 +125,25 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
             $this->assertNull(yield $fs->stat($dir));
         });
     }
+
+    /**
+     * @group slow
+     */
+    public function testTouch() {
+        $this->getReactor()->run(function($reactor) {
+            $fs = $this->getFilesystem($reactor);
+
+            $touch = __DIR__ . "/fixture/touch";
+            yield $fs->put($touch, "touch me");
+
+            $oldStat = (yield $fs->stat($touch));
+            sleep(1);
+            yield $fs->touch($touch);
+            $newStat = (yield $fs->stat($touch));
+            yield $fs->unlink($touch);
+
+            $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
+            $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
+        });
+    }
 }

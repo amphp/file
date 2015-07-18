@@ -224,6 +224,22 @@ class UvFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
+    public function touch($path) {
+        $this->reactor->addRef();
+        $atime = $mtime = time();
+        $promisor = new Deferred;
+        \uv_fs_utime($this->loop, $path, $mtime, $atime, function() use ($promisor) {
+            // The uv_fs_utime() callback does not receive any args at this time
+            $this->reactor->delRef();
+            $promisor->succeed(true);
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function get($path) {
         return \Amp\resolve($this->doGet($path), $this->reactor);
     }

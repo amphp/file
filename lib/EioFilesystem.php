@@ -255,6 +255,18 @@ class EioFilesystem implements Filesystem {
     /**
      * {@inheritdoc}
      */
+    public function touch($path) {
+        $atime = $mtime = time();
+        $promisor = new Deferred;
+        $priority = \EIO_PRI_DEFAULT;
+        \eio_utime($path, $atime, $mtime, $priority, [$this, "onGenericResult"], $promisor);
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function get($path) {
         $flags = $flags = \EIO_O_RDONLY;
         $mode = 0;

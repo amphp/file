@@ -126,6 +126,16 @@ interface Filesystem {
     public function chown($path, $uid, $gid);
 
     /**
+     * Update the access and modification time of the specified path
+     *
+     * If the file does not exist it will be created automatically.
+     *
+     * @param string $path
+     * @return \Amp\Promise
+     */
+    public function touch($path);
+
+    /**
      * Buffer the specified file's contents
      *
      * @param string $path The file path from which to buffer contents
