@@ -9,10 +9,61 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     abstract protected function getReactor();
     abstract protected function getFilesystem(Reactor $reactor);
 
+    private static $fixtureId;
+
+    private static function getFixturePath() {
+        if (empty(self::$fixtureId)) {
+            self::$fixtureId = uniqid();
+        }
+
+        return \sys_get_temp_dir() . "/amp_fs_fixture/" . __CLASS__ . self::$fixtureId;
+    }
+
+    private static function clearFixtureDir() {
+        $fixtureDir = self::getFixturePath();
+        if (!file_exists($fixtureDir)) {
+            return;
+        }
+
+        if (stripos(\PHP_OS, "win") === 0) {
+            system('rd /Q /S "' . $fixtureDir . '"');
+        } else {
+            system('/bin/rm -rf ' . escapeshellarg($fixtureDir));
+        }
+    }
+
+    public static function setUpBeforeClass() {
+        $fixtureDir = self::getFixturePath();
+
+        self::clearFixtureDir();
+
+        if (!mkdir($fixtureDir, $mode = 0777, $recursive = true)) {
+            throw new \RuntimeException(
+                "Failed creating temporary test fixture directory: {$fixtureDir}"
+            );
+        }
+        if (!mkdir($fixtureDir . "/dir", $mode = 0777, $recursive = true)) {
+            throw new \RuntimeException(
+                "Failed creating temporary test fixture directory"
+            );
+        }
+        if (!file_put_contents($fixtureDir . "/small.txt", "small")) {
+            throw new \RuntimeException(
+                "Failed creating temporary test fixture file"
+            );
+        }
+    }
+
+    public static function tearDownAfterClass() {
+        self::clearFixtureDir();
+    }
+
     public function testOpen() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
-            $descriptor = (yield $fs->open(__DIR__ . "/fixture/small.txt", Filesystem::READ));
+            $fixtureDir = self::getFixturePath();
+
+            $descriptor = (yield $fs->open("{$fixtureDir}/small.txt", Filesystem::READ));
             $this->assertInstanceOf("Amp\Fs\Descriptor", $descriptor);
         });
     }
@@ -20,7 +71,8 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testScandir() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
-            $actual = (yield $fs->scandir(__DIR__ . "/fixture"));
+            $fixtureDir = self::getFixturePath();
+            $actual = (yield $fs->scandir($fixtureDir));
             $expected = ["dir", "small.txt"];
             $this->assertSame($expected, $actual);
         });
@@ -29,9 +81,10 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testSymlink() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
-            $target = __DIR__ . "/fixture/small.txt";
-            $link = __DIR__ . "/fixture/symlink.txt";
+            $target = "{$fixtureDir}/small.txt";
+            $link = "{$fixtureDir}/symlink.txt";
             $this->assertTrue(yield $fs->symlink($target, $link));
             $this->assertTrue(is_link($link));
             yield $fs->unlink($link);
@@ -41,9 +94,10 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testLstat() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
-            $target = __DIR__ . "/fixture/small.txt";
-            $link = __DIR__ . "/fixture/symlink.txt";
+            $target = "{$fixtureDir}/small.txt";
+            $link = "{$fixtureDir}/symlink.txt";
             $this->assertTrue(yield $fs->symlink($target, $link));
             $this->assertTrue(is_array(yield $fs->lstat($link)));
             yield $fs->unlink($link);
@@ -56,7 +110,9 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testOpenFailsOnNonexistentFile() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
-            $descriptor = (yield $fs->open(__DIR__ . "/fixture/nonexistent", Filesystem::READ));
+            $fixtureDir = self::getFixturePath();
+
+            $descriptor = (yield $fs->open("{$fixtureDir}/nonexistent", Filesystem::READ));
             $this->assertInstanceOf("Amp\Fs\Descriptor", $descriptor);
         });
     }
@@ -64,26 +120,33 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testStatForFile() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
-            $stat = (yield $fs->stat(__DIR__ . "/fixture/small.txt"));
+            $stat = (yield $fs->stat("{$fixtureDir}/small.txt"));
             $this->assertInternalType("array", $stat);
+            $this->assertTrue($stat["isfile"]);
+            $this->assertFalse($stat["isdir"]);
         });
     }
 
     public function testStatForDirectory() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
-            $stat = (yield $fs->stat(__DIR__ . "/fixture/dir"));
+            $stat = (yield $fs->stat("{$fixtureDir}/dir"));
             $this->assertInternalType("array", $stat);
+            $this->assertTrue($stat["isdir"]);
+            $this->assertFalse($stat["isfile"]);
         });
     }
 
     public function testStatForNonexistentPath() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
-            $stat = (yield $fs->stat(__DIR__ . "/fixture/nonexistent"));
+            $stat = (yield $fs->stat("{$fixtureDir}/nonexistent"));
             $this->assertNull($stat);
         });
     }
@@ -91,10 +154,11 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testRename() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
             $contents1 = "rename test";
-            $old = __DIR__ . "/fixture/rename1.txt";
-            $new = __DIR__ . "/fixture/rename2.txt";
+            $old = "{$fixtureDir}/rename1.txt";
+            $new = "{$fixtureDir}/rename2.txt";
 
             yield $fs->put($old, $contents1);
             yield $fs->rename($old, $new);
@@ -108,8 +172,9 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testUnlink() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
-            $toUnlink = __DIR__ . "/fixture/unlink";
+            $toUnlink = "{$fixtureDir}/unlink";
 
             yield $fs->put($toUnlink, "unlink me");
             $this->assertTrue((bool) (yield $fs->stat($toUnlink)));
@@ -121,8 +186,9 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testMkdirRmdir() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
-            $dir = __DIR__ . "/fixture/newdir";
+            $dir = "{$fixtureDir}/newdir";
 
             yield $fs->mkdir($dir);
             $stat = (yield $fs->stat($dir));
@@ -139,8 +205,9 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testTouch() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
+            $fixtureDir = self::getFixturePath();
 
-            $touch = __DIR__ . "/fixture/touch";
+            $touch = "{$fixtureDir}/touch";
             yield $fs->put($touch, "touch me");
 
             $oldStat = (yield $fs->stat($touch));
