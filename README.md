@@ -1,6 +1,7 @@
 # amp/fs
 
-[![Unstable](https://travis-ci.org/amphp/fs.svg?branch=master)](https://travis-ci.org/amphp/fs)
+[![Build Status](https://travis-ci.org/amphp/fs.svg?branch=master)](https://travis-ci.org/amphp/fs)
+[![Coverage Status](https://coveralls.io/repos/amphp/fs/badge.svg?branch=master&service=github)](https://coveralls.io/github/amphp/fs?branch=master)
 ![Unstable](https://img.shields.io/badge/pre_alpha-unstable-orange.svg)
 
 `amp/fs` is a non-blocking filesystem manipulation library for use with the
