@@ -23,32 +23,6 @@ abstract class DescriptorTest extends \PHPUnit_Framework_TestCase {
         });
     }
 
-    /**
-     * @expectedException RuntimeException
-     */
-    public function testWriteFailsOnDirectory() {
-        $this->getReactor()->run(function($reactor) {
-            $path = __DIR__ . "/fixture/dir";
-            $fs = $this->getFilesystem($reactor);
-            $flags = Filesystem::READ | Filesystem::WRITE | Filesystem::CREATE;
-            $fh = (yield $fs->open($path, $flags));
-            yield $fh->write(0, "should fail because this is a directory");
-        });
-    }
-
-    /**
-     * @expectedException RuntimeException
-     */
-    public function testReadFailsOnDirectory() {
-        $this->getReactor()->run(function($reactor) {
-            $path = __DIR__ . "/fixture/dir";
-            $fs = $this->getFilesystem($reactor);
-            $flags = Filesystem::READ | Filesystem::WRITE | Filesystem::CREATE;
-            $fh = (yield $fs->open($path, $flags));
-            yield $fh->read(0, 8192);
-        });
-    }
-
     public function testTruncate() {
         $this->getReactor()->run(function($reactor) {
             $path = __DIR__ . "/fixture/truncate.txt";
@@ -71,17 +45,9 @@ abstract class DescriptorTest extends \PHPUnit_Framework_TestCase {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
 
-            // file
             $fh = (yield $fs->open(__DIR__ . "/fixture/small.txt"));
             $stat = (yield $fh->stat());
-            $this->assertTrue($stat["isfile"]);
-            $this->assertFalse($stat["isdir"]);
-
-            // directory
-            $fh = (yield $fs->open(__DIR__ . "/fixture/dir"));
-            $stat = (yield $fh->stat());
-            $this->assertFalse($stat["isfile"]);
-            $this->assertTrue($stat["isdir"]);
+            $this->assertInternalType("array", $stat);
         });
     }
 }

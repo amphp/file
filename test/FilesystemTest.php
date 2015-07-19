@@ -61,21 +61,28 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
         });
     }
 
-    public function testStat() {
+    public function testStatForFile() {
         $this->getReactor()->run(function($reactor) {
             $fs = $this->getFilesystem($reactor);
 
-            // file
             $stat = (yield $fs->stat(__DIR__ . "/fixture/small.txt"));
-            $this->assertTrue($stat["isfile"]);
-            $this->assertFalse($stat["isdir"]);
+            $this->assertInternalType("array", $stat);
+        });
+    }
 
-            // directory
+    public function testStatForDirectory() {
+        $this->getReactor()->run(function($reactor) {
+            $fs = $this->getFilesystem($reactor);
+
             $stat = (yield $fs->stat(__DIR__ . "/fixture/dir"));
-            $this->assertFalse($stat["isfile"]);
-            $this->assertTrue($stat["isdir"]);
+            $this->assertInternalType("array", $stat);
+        });
+    }
 
-            // nonexistent
+    public function testStatForNonexistentPath() {
+        $this->getReactor()->run(function($reactor) {
+            $fs = $this->getFilesystem($reactor);
+
             $stat = (yield $fs->stat(__DIR__ . "/fixture/nonexistent"));
             $this->assertNull($stat);
         });

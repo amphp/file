@@ -37,7 +37,7 @@ class BlockingFilesystem implements Filesystem {
             return new Success($descriptor);
         } else {
             return new Failure(new \RuntimeException(
-                "Failed opening file handle"
+                "Failed opening file handle; " . error_get_last()["message"]
             ));
         }
     }
