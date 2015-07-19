@@ -5,7 +5,7 @@
 ![Unstable](https://img.shields.io/badge/pre_alpha-unstable-orange.svg)
 
 `amp/fs` is a non-blocking filesystem manipulation library for use with the
-[amp concurrency framework](https://github.com/amphp/amp).
+[amp](https://github.com/amphp/amp) concurrency framework.
 
 **Dependencies**
 
@@ -13,12 +13,10 @@
 - [eio](https://pecl.php.net/package/eio)
 - [php-uv](https://github.com/bwoebi/php-uv) (experimental, requires PHP7)
 
-`amp/fs` works out of the box without any PHP extensions. However, it does so
-in a blocking manner. This capability only exists to simplify development across
-environments where extensions may not be present.
-
-> **NOTE**
-> Using this library in production without pecl/eio or php-uv is **NOT** recommended.
+`amp/fs` works out of the box without any PHP extensions but it does so using
+blocking functions. This capability only exists to simplify development across
+environments where extensions may not be present. Using `amp/fs` in production
+without pecl/eio or php-uv is **NOT** recommended.
 
 **Current Version**
 
