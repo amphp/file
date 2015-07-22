@@ -3,10 +3,7 @@
 Please search existing issues first to make sure this is not a duplicate.
 Every issue report has a cost for the developers required to field it; be
 respectful of others' time and ensure your report isn't spurious prior to
-submission. Additionally, please do us all a favor by adhering to the
-principles of sound bug reporting laid out by Simon Tatham here:
-
-http://www.chiark.greenend.org.uk/~sgtatham/bugs.html
+submission. Please adhere to [sound bug reporting principles](http://www.chiark.greenend.org.uk/~sgtatham/bugs.html).
 
 ## Development ideology
 
