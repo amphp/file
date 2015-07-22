@@ -6,6 +6,9 @@ use Amp\Promise;
 use Amp\Deferred;
 use Amp\UvReactor;
 
+/**
+ * @codeCoverageIgnore
+ */
 class UvDescriptor implements Descriptor {
     private $reactor;
     private $fh;

@@ -7,6 +7,9 @@ use Amp\Promise;
 use Amp\Failure;
 use Amp\Deferred;
 
+/**
+ * @codeCoverageIgnore
+ */
 class UvFilesystem implements Filesystem {
     private $reactor;
     private $loop;
