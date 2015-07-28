@@ -20,12 +20,10 @@
     ],
     "require": {
         "php": ">=5.5",
-        "amphp/amp": "1.0.x-dev"
+        "amphp/amp": "^1"
     },
     "require-dev": {
-        "phpunit/phpunit": "~4.4.0",
-        "fabpot/php-cs-fixer": "~1.9",
-        "satooshi/php-coveralls": "dev-master"
+        "phpunit/phpunit": "~4.4.0"
     },
     "autoload": {
         "psr-4": {
