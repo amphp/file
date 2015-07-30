@@ -2,14 +2,13 @@
 
 namespace Amp\Fs;
 
-use Amp\Reactor;
 use Amp\Promise;
 use Amp\Success;
 use Amp\Failure;
 use Amp\Deferred;
 
 class EioFilesystem implements Filesystem {
-    private $reactor;
+    private static $isEioInitialized = false;
     private $stream;
     private $watcher;
     private $callableDelReq;
@@ -17,9 +16,11 @@ class EioFilesystem implements Filesystem {
     private $internalDecrement;
     private $pending = 0;
 
-    public function __construct(Reactor $reactor = null) {
-        \eio_init();
-        $this->reactor = $reactor ?: \Amp\reactor();
+    public function __construct() {
+        if (empty(self::$isEioInitialized)) {
+            \eio_init();
+            self::$isEioInitialized = true;
+        }
         $this->stream = \eio_get_event_stream();
         $this->callableDelReq = function() {
             $this->decrementPending();
@@ -30,7 +31,7 @@ class EioFilesystem implements Filesystem {
         $this->internalDecrement = function() {
             $this->decrementPending();
         };
-        $this->watcher = $this->reactor->onReadable($this->stream, function() {
+        $this->watcher = \Amp\onReadable($this->stream, function() {
             while (\eio_npending()) {
                 \eio_poll();
             }
@@ -39,58 +40,13 @@ class EioFilesystem implements Filesystem {
 
     private function incrementPending() {
         if ($this->pending++ === 0) {
-            $this->reactor->enable($this->watcher);
+            \Amp\enable($this->watcher);
         }
     }
 
     private function decrementPending() {
         if ($this->pending-- === 1) {
-            $this->reactor->disable($this->watcher);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function open($path, $mode = self::READ) {
-        $flags = 0;
-
-        if (($mode & self::READ) && ($mode & self::WRITE)) {
-            $flags = \EIO_O_RDWR | \EIO_O_CREAT;
-        } elseif ($mode & self::READ) {
-            $flags = \EIO_O_RDONLY;
-        } elseif ($mode & self::WRITE) {
-            $flags = \EIO_O_WRONLY | \EIO_O_CREAT;
-        } else {
-            return new Failure(new \InvalidArgumentException(
-                "Invalid file open mode: Filesystem::READ or Filesystem::WRITE or both required"
-            ));
-        }
-
-        $mode = \EIO_S_IRUSR | \EIO_S_IWUSR | \EIO_S_IXUSR;
-        $priority = \EIO_PRI_DEFAULT;
-
-        $this->incrementPending();
-        $promisor = new Deferred;
-        \eio_open($path, $flags, $mode, $priority, [$this, "onOpen"], $promisor);
-
-        return $promisor->promise();
-    }
-
-    private function onOpen($promisor, $result, $req) {
-        $this->decrementPending();
-        if ($result === -1) {
-            $promisor->fail(new \RuntimeException(
-                \eio_get_last_error($req)
-            ));
-        } else {
-            $descriptor = new EioDescriptor(
-                $this->reactor,
-                $result,
-                $this->internalIncrement,
-                $this->internalDecrement
-            );
-            $promisor->succeed($descriptor);
+            \Amp\disable($this->watcher);
         }
     }
 
@@ -363,7 +319,7 @@ class EioFilesystem implements Filesystem {
 
     public function __destruct() {
         $this->stream = null;
-        $this->reactor->cancel($this->watcher);
+        \Amp\cancel($this->watcher);
 
         /**
          * pecl/eio has a race condition issue when freeing threaded

@@ -19,50 +19,7 @@ class UvFilesystem implements Filesystem {
      */
     public function __construct(UvReactor $reactor) {
         $this->reactor = $reactor;
-        $this->loop = $this->reactor->getUnderlyingLoop();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function open($path, $mode = self::READ) {
-        $openFlags = 0;
-        $fileChmod = 0;
-
-        if ($mode & self::READ && $mode & self::WRITE) {
-            $openFlags = \UV::O_RDWR;
-            $mode |= self::CREATE;
-        } elseif ($mode & self::READ) {
-            $openFlags = \UV::O_RDONLY;
-        } elseif ($mode & self::WRITE) {
-            $openFlags = \UV::O_WRONLY;
-            $mode |= self::CREATE;
-        } else {
-            return new Failure(new \InvalidArgumentException(
-                "Invalid file open mode: Filesystem::READ or Filesystem::WRITE or both required"
-            ));
-        }
-
-        if ($mode & self::CREATE) {
-            $openFlags |= \UV::O_CREAT;
-            $fileChmod = 0644;
-        }
-
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_open($this->loop, $path, $openFlags, $fileChmod, function($fh) use ($promisor) {
-            $this->reactor->delRef();
-            if ($fh) {
-                $descriptor = new UvDescriptor($this->reactor, $fh);
-                $promisor->succeed($descriptor);
-            } else {
-                $promisor->fail(new \RuntimeException(
-                    "Failed opening file handle"
-                ));
-            }
-        });
-
-        return $promisor->promise();
+        $this->loop = $this->reactor->getLoop();
     }
 
     /**
@@ -288,7 +245,7 @@ class UvFilesystem implements Filesystem {
             }
         }
 
-        yield "return" => yield $promisor->promise();
+        yield new \Amp\CoroutineResult(yield $promisor->promise());
     }
 
     private function doFsOpen($path, $flags, $mode) {
@@ -358,6 +315,6 @@ class UvFilesystem implements Filesystem {
             });
         });
 
-        yield "return" => yield $promisor->promise();
+        yield new \Amp\CoroutineResult(yield $promisor->promise());
     }
 }

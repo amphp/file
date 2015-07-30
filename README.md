@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
 
-`amphp/fs` is a non-blocking caching library for use with the [`amp`](https://github.com/amphp/amp)
+`amphp/fs` is a non-blocking filesystem library for use with the [`amp`](https://github.com/amphp/amp)
 concurrency framework.
 
 **Dependencies**
@@ -29,3 +29,7 @@ without pecl/eio or php-uv is **NOT** recommended.
 ```bash
 $ composer require amphp/fs:dev-master
 ```
+
+**TODO**
+
+- seek/read/write to/from specific offsets on open file handles

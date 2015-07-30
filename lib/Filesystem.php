@@ -3,38 +3,6 @@
 namespace Amp\Fs;
 
 interface Filesystem {
-    const READ   = 0b001;
-    const WRITE  = 0b010;
-    const CREATE = 0b100;
-
-    /**
-     * Open a file handle for reading and/or writing
-     *
-     * At least READ or WRITE is required in the mode bitmask. If the file does not exist the
-     * CREATE flag is necessary in READ mode or the operation will fail. When WRITE mode is
-     * specified in the bitmask the file will always be created if it does not already exist.
-     *
-     * Example:
-     *
-     *     <?php
-     *     use function Amp\Fs\fs();
-     *     use Amp\Fs\{ Filesystem, Descriptor };
-     *
-     *     function() {
-     *         $fs = fs();
-     *         $mode = Filesystem::READ | Filesystem::WRITE;
-     *         $fh = yield $fs->open("/path/to/file", $mode);
-     *         assert($fh instanceof Descriptor);
-     *
-     *
-     * NOTE: This operation is only valid for files (not directories).
-     *
-     * @param string $path The filesystem path to open
-     * @param int $mode A flag bitmask: [Filesystem::READ | Filesystem::WRITE | Filesystem::CREATE]
-     * @return \Amp\Promise
-     */
-    public function open($path, $mode = self::READ);
-
     /**
      * Execute a file stat operation
      *

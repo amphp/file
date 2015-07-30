@@ -2,15 +2,9 @@
 
 namespace Amp\Fs\Test;
 
-use Amp\Reactor;
-use Amp\NativeReactor;
-use Amp\Fs\BlockingFilesystem;
-
 class BlockingFilesystemTest extends FilesystemTest {
-    protected function getReactor() {
-        return new NativeReactor;
-    }
-    protected function getFilesystem(Reactor $reactor) {
-        return new BlockingFilesystem($reactor);
+    protected function setUp() {
+        \Amp\reactor(\Amp\init());
+        \Amp\Fs\filesystem(new \Amp\Fs\BlockingFilesystem);
     }
 }

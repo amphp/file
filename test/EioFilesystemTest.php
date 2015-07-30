@@ -2,22 +2,15 @@
 
 namespace Amp\Fs\Test;
 
-use Amp\Reactor;
-use Amp\NativeReactor;
-use Amp\Fs\EioFilesystem;
-
 class EioFilesystemTest extends FilesystemTest {
-    protected function getReactor() {
+    protected function setUp() {
         if (extension_loaded("eio")) {
-            return new NativeReactor;
+            \Amp\reactor(\Amp\init());
+            \Amp\Fs\filesystem(new \Amp\Fs\EioFilesystem);
         } else {
             $this->markTestSkipped(
-                "php-uv extension not loaded"
+                "eio extension not loaded"
             );
         }
-    }
-
-    protected function getFilesystem(Reactor $reactor) {
-        return new EioFilesystem($reactor);
     }
 }
