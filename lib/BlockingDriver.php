@@ -1,12 +1,12 @@
 <?php
 
-namespace Amp\Fs;
+namespace Amp\Filesystem;
 
 use Amp\Promise;
 use Amp\Success;
 use Amp\Failure;
 
-class BlockingFilesystem implements Filesystem {
+class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */

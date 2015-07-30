@@ -1,12 +1,12 @@
 <?php
 
-namespace Amp\Fs\Test;
+namespace Amp\Filesystem\Test;
 
-class EioFilesystemTest extends FilesystemTest {
+class EioDriverTest extends DriverTest {
     protected function setUp() {
         if (extension_loaded("eio")) {
             \Amp\reactor(\Amp\init());
-            \Amp\Fs\filesystem(new \Amp\Fs\EioFilesystem);
+            \Amp\Filesystem\filesystem(new \Amp\Filesystem\EioDriver);
         } else {
             $this->markTestSkipped(
                 "eio extension not loaded"

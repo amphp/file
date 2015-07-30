@@ -1,13 +1,14 @@
 <?php
 
-namespace Amp\Fs\Test;
+namespace Amp\Filesystem\Test;
 
-class UvFilesystemTest extends FilesystemTest {
+class UvDriverTest extends DriverTest {
     protected function setUp() {
         if (\extension_loaded("uv")) {
             $reactor = new \Amp\UvReactor;
             \Amp\reactor($reactor);
-            \Amp\Fs\filesystem(new \Amp\Fs\UvFilesystem($reactor));
+            $driver = new \Amp\Filesystem\UvDriver($reactor);
+            \Amp\Filesystem\filesystem($driver);
         } else {
             $this->markTestSkipped(
                 "php-uv extension not loaded"

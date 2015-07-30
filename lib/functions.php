@@ -1,36 +1,37 @@
 <?php
 
-namespace Amp\Fs;
+namespace Amp\Filesystem;
 
 /**
  * Retrieve the application-wide filesystem instance
  *
- * @param \Amp\Fs\Filesystem $assign Use the specified object as the application-wide filesystem instance
- * @return \Amp\Fs\Filesystem
+ * @param \Amp\Fs\Driver $assign Use the specified object as the application-wide filesystem instance
+ * @return \Amp\Fs\Driver
  */
-function filesystem(Filesystem $assign = null) {
-    static $filesystem;
+function filesystem(Driver $assign = null) {
+    static $driver;
     if ($assign) {
-        return ($filesystem = $assign);
-    } elseif ($filesystem) {
-        return $filesystem;
+        return ($driver = $assign);
+    } elseif ($driver) {
+        return $driver;
     } else {
-        return ($filesystem = init());
+        return ($driver = driver());
     }
 }
 
 /**
- * Create a new filesystem instance best-suited for the current environment
+ * Create a new filesystem driver best-suited for the current environment
  *
  * @return \Amp\Fs\Filesystem
  */
-function init() {
-    if (\extension_loaded("uv")) {
-        return new UvFilesystem(\Amp\reactor());
+function driver() {
+    $reactor = \Amp\reactor();
+    if ($reactor instanceof \Amp\UvReactor) {
+        return new UvDriver($reactor);
     } elseif (\extension_loaded("eio")) {
-        return new EioFilesystem;
+        return new EioDriver;
     } else {
-        return BlockingFilesystem;
+        return BlockingDriver;
     }
 }
 

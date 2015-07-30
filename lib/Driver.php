@@ -1,8 +1,8 @@
 <?php
 
-namespace Amp\Fs;
+namespace Amp\Filesystem;
 
-interface Filesystem {
+interface Driver {
     /**
      * Execute a file stat operation
      *

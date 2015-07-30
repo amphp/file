@@ -1,10 +1,10 @@
 <?php
 
-namespace Amp\Fs\Test;
+namespace Amp\Filesystem\Test;
 
-use Amp\Fs\Filesystem;
+use Amp\Filesystem\Driver;
 
-abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
+abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     private static $fixtureId;
 
     private static function getFixturePath() {
@@ -21,10 +21,10 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
             return;
         }
 
-        if (stripos(\PHP_OS, "win") === 0) {
-            system('rd /Q /S "' . $fixtureDir . '"');
+        if (\stripos(\PHP_OS, "win") === 0) {
+            \system('rd /Q /S "' . $fixtureDir . '"');
         } else {
-            system('/bin/rm -rf ' . escapeshellarg($fixtureDir));
+            \system('/bin/rm -rf ' . escapeshellarg($fixtureDir));
         }
     }
 
@@ -33,17 +33,17 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
 
         self::clearFixtureDir();
 
-        if (!mkdir($fixtureDir, $mode = 0777, $recursive = true)) {
+        if (!\mkdir($fixtureDir, $mode = 0777, $recursive = true)) {
             throw new \RuntimeException(
                 "Failed creating temporary test fixture directory: {$fixtureDir}"
             );
         }
-        if (!mkdir($fixtureDir . "/dir", $mode = 0777, $recursive = true)) {
+        if (!\mkdir($fixtureDir . "/dir", $mode = 0777, $recursive = true)) {
             throw new \RuntimeException(
                 "Failed creating temporary test fixture directory"
             );
         }
-        if (!file_put_contents($fixtureDir . "/small.txt", "small")) {
+        if (!\file_put_contents($fixtureDir . "/small.txt", "small")) {
             throw new \RuntimeException(
                 "Failed creating temporary test fixture file"
             );
@@ -57,7 +57,7 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
     public function testScandir() {
         \Amp\run(function () {
             $fixtureDir = self::getFixturePath();
-            $actual = (yield \Amp\Fs\scandir($fixtureDir));
+            $actual = (yield \Amp\Filesystem\scandir($fixtureDir));
             $expected = ["dir", "small.txt"];
             $this->assertSame($expected, $actual);
         });
@@ -69,9 +69,9 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
 
             $target = "{$fixtureDir}/small.txt";
             $link = "{$fixtureDir}/symlink.txt";
-            $this->assertTrue(yield \Amp\Fs\symlink($target, $link));
+            $this->assertTrue(yield \Amp\Filesystem\symlink($target, $link));
             $this->assertTrue(\is_link($link));
-            yield \Amp\Fs\unlink($link);
+            yield \Amp\Filesystem\unlink($link);
         });
     }
 
@@ -81,9 +81,9 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
 
             $target = "{$fixtureDir}/small.txt";
             $link = "{$fixtureDir}/symlink.txt";
-            $this->assertTrue(yield \Amp\Fs\symlink($target, $link));
-            $this->assertTrue(is_array(yield \Amp\Fs\lstat($link)));
-            yield \Amp\Fs\unlink($link);
+            $this->assertTrue(yield \Amp\Filesystem\symlink($target, $link));
+            $this->assertTrue(is_array(yield \Amp\Filesystem\lstat($link)));
+            yield \Amp\Filesystem\unlink($link);
         });
     }
 
@@ -91,7 +91,7 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
         \Amp\run(function () {
             $fixtureDir = self::getFixturePath();
 
-            $stat = (yield \Amp\Fs\stat("{$fixtureDir}/small.txt"));
+            $stat = (yield \Amp\Filesystem\stat("{$fixtureDir}/small.txt"));
             $this->assertInternalType("array", $stat);
             $this->assertTrue($stat["isfile"]);
             $this->assertFalse($stat["isdir"]);
@@ -102,7 +102,7 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
         \Amp\run(function () {
             $fixtureDir = self::getFixturePath();
 
-            $stat = (yield \Amp\Fs\stat("{$fixtureDir}/dir"));
+            $stat = (yield \Amp\Filesystem\stat("{$fixtureDir}/dir"));
             $this->assertInternalType("array", $stat);
             $this->assertTrue($stat["isdir"]);
             $this->assertFalse($stat["isfile"]);
@@ -113,7 +113,7 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
         \Amp\run(function () {
             $fixtureDir = self::getFixturePath();
 
-            $stat = (yield \Amp\Fs\stat("{$fixtureDir}/nonexistent"));
+            $stat = (yield \Amp\Filesystem\stat("{$fixtureDir}/nonexistent"));
             $this->assertNull($stat);
         });
     }
@@ -126,10 +126,10 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
             $old = "{$fixtureDir}/rename1.txt";
             $new = "{$fixtureDir}/rename2.txt";
 
-            yield \Amp\Fs\put($old, $contents1);
-            yield \Amp\Fs\rename($old, $new);
-            $contents2 = (yield \Amp\Fs\get($new));
-            yield \Amp\Fs\unlink($new);
+            yield \Amp\Filesystem\put($old, $contents1);
+            yield \Amp\Filesystem\rename($old, $new);
+            $contents2 = (yield \Amp\Filesystem\get($new));
+            yield \Amp\Filesystem\unlink($new);
 
             $this->assertSame($contents1, $contents2);
         });
@@ -141,10 +141,10 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
 
             $toUnlink = "{$fixtureDir}/unlink";
 
-            yield \Amp\Fs\put($toUnlink, "unlink me");
-            $this->assertTrue((bool) (yield \Amp\Fs\stat($toUnlink)));
-            yield \Amp\Fs\unlink($toUnlink);
-            $this->assertNull(yield \Amp\Fs\stat($toUnlink));
+            yield \Amp\Filesystem\put($toUnlink, "unlink me");
+            $this->assertTrue((bool) (yield \Amp\Filesystem\stat($toUnlink)));
+            yield \Amp\Filesystem\unlink($toUnlink);
+            $this->assertNull(yield \Amp\Filesystem\stat($toUnlink));
         });
     }
 
@@ -154,12 +154,12 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
 
             $dir = "{$fixtureDir}/newdir";
 
-            yield \Amp\Fs\mkdir($dir);
-            $stat = (yield \Amp\Fs\stat($dir));
+            yield \Amp\Filesystem\mkdir($dir);
+            $stat = (yield \Amp\Filesystem\stat($dir));
             $this->assertTrue($stat["isdir"]);
             $this->assertFalse($stat["isfile"]);
-            yield \Amp\Fs\rmdir($dir);
-            $this->assertNull(yield \Amp\Fs\stat($dir));
+            yield \Amp\Filesystem\rmdir($dir);
+            $this->assertNull(yield \Amp\Filesystem\stat($dir));
         });
     }
 
@@ -171,13 +171,13 @@ abstract class FilesystemTest extends \PHPUnit_Framework_TestCase {
             $fixtureDir = self::getFixturePath();
 
             $touch = "{$fixtureDir}/touch";
-            yield \Amp\Fs\put($touch, "touch me");
+            yield \Amp\Filesystem\put($touch, "touch me");
 
-            $oldStat = (yield \Amp\Fs\stat($touch));
+            $oldStat = (yield \Amp\Filesystem\stat($touch));
             sleep(1);
-            yield \Amp\Fs\touch($touch);
-            $newStat = (yield \Amp\Fs\stat($touch));
-            yield \Amp\Fs\unlink($touch);
+            yield \Amp\Filesystem\touch($touch);
+            $newStat = (yield \Amp\Filesystem\stat($touch));
+            yield \Amp\Filesystem\unlink($touch);
 
             $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
             $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);

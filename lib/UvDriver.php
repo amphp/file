@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Fs;
+namespace Amp\Filesystem;
 
 use Amp\UvReactor;
 use Amp\Promise;
@@ -10,7 +10,7 @@ use Amp\Deferred;
 /**
  * @codeCoverageIgnore
  */
-class UvFilesystem implements Filesystem {
+class UvDriver implements Driver {
     private $reactor;
     private $loop;
 

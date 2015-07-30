@@ -1,6 +1,6 @@
 {
-    "name": "amphp/fs",
-    "homepage": "https://github.com/amphp/fs",
+    "name": "amphp/filesystem",
+    "homepage": "https://github.com/amphp/filesystem",
     "description": "Non-blocking filesystem tools for amp applications",
     "keywords": [
         "filesystem",
@@ -14,8 +14,7 @@
     "authors": [
         {
             "name": "Daniel Lowrey",
-            "email": "rdlowrey@php.net",
-            "role": "Creator / Lead Developer"
+            "email": "rdlowrey@php.net"
         }
     ],
     "require": {
@@ -29,13 +28,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Amp\\Fs\\": "lib"
+            "Amp\\Filesystem\\": "lib"
         },
         "files": ["lib/functions.php"]
     },
     "autoload-dev": {
         "psr-4": {
-            "Amp\\Fs\\Test\\": "test/"
+            "Amp\\Filesystem\\Test\\": "test/"
         }
     },
     "extra": {

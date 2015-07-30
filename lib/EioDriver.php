@@ -1,13 +1,13 @@
 <?php
 
-namespace Amp\Fs;
+namespace Amp\Filesystem;
 
 use Amp\Promise;
 use Amp\Success;
 use Amp\Failure;
 use Amp\Deferred;
 
-class EioFilesystem implements Filesystem {
+class EioDriver implements Driver {
     private static $isEioInitialized = false;
     private $stream;
     private $watcher;
