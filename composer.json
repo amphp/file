@@ -1,7 +1,10 @@
 {
     "name": "amphp/filesystem",
     "homepage": "https://github.com/amphp/filesystem",
-    "description": "Non-blocking filesystem tools for amp applications",
+    "description": "An async filesystem library built on the amp concurrency framework",
+    "support": {
+        "issues": "https://github.com/amphp/filesystem/issues"
+    },
     "keywords": [
         "filesystem",
         "static",
