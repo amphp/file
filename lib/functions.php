@@ -31,7 +31,7 @@ function driver() {
     } elseif (\extension_loaded("eio")) {
         return new EioDriver;
     } else {
-        return BlockingDriver;
+        return new BlockingDriver;
     }
 }
 
