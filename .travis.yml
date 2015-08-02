@@ -14,6 +14,7 @@ matrix:
 before_script:
   - yes "" | pecl install eio
   - composer self-update
+  - composer require satooshi/php-coveralls:dev-master
   - composer install
 
 script:
