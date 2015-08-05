@@ -1,8 +1,8 @@
 <?php
 
-namespace Amp\Filesystem\Test;
+namespace Amp\File\Test;
 
-use Amp\Filesystem\Driver;
+use Amp\File\Driver;
 
 abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     private static $fixtureId;
@@ -57,7 +57,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     public function testScandir() {
         \Amp\run(function () {
             $fixtureDir = self::getFixturePath();
-            $actual = (yield \Amp\Filesystem\scandir($fixtureDir));
+            $actual = (yield \Amp\File\scandir($fixtureDir));
             $expected = ["dir", "small.txt"];
             $this->assertSame($expected, $actual);
         });
@@ -69,9 +69,9 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
 
             $target = "{$fixtureDir}/small.txt";
             $link = "{$fixtureDir}/symlink.txt";
-            $this->assertTrue(yield \Amp\Filesystem\symlink($target, $link));
+            $this->assertTrue(yield \Amp\File\symlink($target, $link));
             $this->assertTrue(\is_link($link));
-            yield \Amp\Filesystem\unlink($link);
+            yield \Amp\File\unlink($link);
         });
     }
 
@@ -81,9 +81,9 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
 
             $target = "{$fixtureDir}/small.txt";
             $link = "{$fixtureDir}/symlink.txt";
-            $this->assertTrue(yield \Amp\Filesystem\symlink($target, $link));
-            $this->assertTrue(is_array(yield \Amp\Filesystem\lstat($link)));
-            yield \Amp\Filesystem\unlink($link);
+            $this->assertTrue(yield \Amp\File\symlink($target, $link));
+            $this->assertTrue(is_array(yield \Amp\File\lstat($link)));
+            yield \Amp\File\unlink($link);
         });
     }
 
@@ -91,7 +91,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
         \Amp\run(function () {
             $fixtureDir = self::getFixturePath();
 
-            $stat = (yield \Amp\Filesystem\stat("{$fixtureDir}/small.txt"));
+            $stat = (yield \Amp\File\stat("{$fixtureDir}/small.txt"));
             $this->assertInternalType("array", $stat);
             $this->assertTrue($stat["isfile"]);
             $this->assertFalse($stat["isdir"]);
@@ -102,7 +102,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
         \Amp\run(function () {
             $fixtureDir = self::getFixturePath();
 
-            $stat = (yield \Amp\Filesystem\stat("{$fixtureDir}/dir"));
+            $stat = (yield \Amp\File\stat("{$fixtureDir}/dir"));
             $this->assertInternalType("array", $stat);
             $this->assertTrue($stat["isdir"]);
             $this->assertFalse($stat["isfile"]);
@@ -113,7 +113,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
         \Amp\run(function () {
             $fixtureDir = self::getFixturePath();
 
-            $stat = (yield \Amp\Filesystem\stat("{$fixtureDir}/nonexistent"));
+            $stat = (yield \Amp\File\stat("{$fixtureDir}/nonexistent"));
             $this->assertNull($stat);
         });
     }
@@ -126,10 +126,10 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $old = "{$fixtureDir}/rename1.txt";
             $new = "{$fixtureDir}/rename2.txt";
 
-            yield \Amp\Filesystem\put($old, $contents1);
-            yield \Amp\Filesystem\rename($old, $new);
-            $contents2 = (yield \Amp\Filesystem\get($new));
-            yield \Amp\Filesystem\unlink($new);
+            yield \Amp\File\put($old, $contents1);
+            yield \Amp\File\rename($old, $new);
+            $contents2 = (yield \Amp\File\get($new));
+            yield \Amp\File\unlink($new);
 
             $this->assertSame($contents1, $contents2);
         });
@@ -141,10 +141,10 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
 
             $toUnlink = "{$fixtureDir}/unlink";
 
-            yield \Amp\Filesystem\put($toUnlink, "unlink me");
-            $this->assertTrue((bool) (yield \Amp\Filesystem\stat($toUnlink)));
-            yield \Amp\Filesystem\unlink($toUnlink);
-            $this->assertNull(yield \Amp\Filesystem\stat($toUnlink));
+            yield \Amp\File\put($toUnlink, "unlink me");
+            $this->assertTrue((bool) (yield \Amp\File\stat($toUnlink)));
+            yield \Amp\File\unlink($toUnlink);
+            $this->assertNull(yield \Amp\File\stat($toUnlink));
         });
     }
 
@@ -154,12 +154,12 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
 
             $dir = "{$fixtureDir}/newdir";
 
-            yield \Amp\Filesystem\mkdir($dir);
-            $stat = (yield \Amp\Filesystem\stat($dir));
+            yield \Amp\File\mkdir($dir);
+            $stat = (yield \Amp\File\stat($dir));
             $this->assertTrue($stat["isdir"]);
             $this->assertFalse($stat["isfile"]);
-            yield \Amp\Filesystem\rmdir($dir);
-            $this->assertNull(yield \Amp\Filesystem\stat($dir));
+            yield \Amp\File\rmdir($dir);
+            $this->assertNull(yield \Amp\File\stat($dir));
         });
     }
 
@@ -171,13 +171,13 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $fixtureDir = self::getFixturePath();
 
             $touch = "{$fixtureDir}/touch";
-            yield \Amp\Filesystem\put($touch, "touch me");
+            yield \Amp\File\put($touch, "touch me");
 
-            $oldStat = (yield \Amp\Filesystem\stat($touch));
+            $oldStat = (yield \Amp\File\stat($touch));
             sleep(1);
-            yield \Amp\Filesystem\touch($touch);
-            $newStat = (yield \Amp\Filesystem\stat($touch));
-            yield \Amp\Filesystem\unlink($touch);
+            yield \Amp\File\touch($touch);
+            $newStat = (yield \Amp\File\stat($touch));
+            yield \Amp\File\unlink($touch);
 
             $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
             $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);

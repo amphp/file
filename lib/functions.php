@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Filesystem;
+namespace Amp\File;
 
 /**
  * Retrieve the application-wide filesystem instance
@@ -22,7 +22,7 @@ function filesystem(Driver $assign = null) {
 /**
  * Create a new filesystem driver best-suited for the current environment
  *
- * @return \Amp\Fs\Filesystem
+ * @return \Amp\Fs\File
  */
 function driver() {
     $reactor = \Amp\reactor();

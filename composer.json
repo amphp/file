@@ -1,12 +1,13 @@
 {
-    "name": "amphp/filesystem",
-    "homepage": "https://github.com/amphp/filesystem",
+    "name": "amphp/file",
+    "homepage": "https://github.com/amphp/file",
     "description": "An async filesystem library built on the amp concurrency framework",
     "support": {
-        "issues": "https://github.com/amphp/filesystem/issues"
+        "issues": "https://github.com/amphp/file/issues"
     },
     "keywords": [
-        "filesystem",
+        "file",
+        "disk",
         "static",
         "async",
         "non-blocking",
@@ -30,13 +31,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Amp\\Filesystem\\": "lib"
+            "Amp\\File\\": "lib"
         },
         "files": ["lib/functions.php"]
     },
     "autoload-dev": {
         "psr-4": {
-            "Amp\\Filesystem\\Test\\": "test/"
+            "Amp\\File\\Test\\": "test/"
         }
     },
     "extra": {

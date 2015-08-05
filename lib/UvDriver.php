@@ -1,6 +1,6 @@
 <?php
 
-namespace Amp\Filesystem;
+namespace Amp\File;
 
 use Amp\UvReactor;
 use Amp\Promise;
