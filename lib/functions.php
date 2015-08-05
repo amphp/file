@@ -22,7 +22,7 @@ function filesystem(Driver $assign = null) {
 /**
  * Create a new filesystem driver best-suited for the current environment
  *
- * @return \Amp\Fs\File
+ * @return \Amp\Fs\Driver
  */
 function driver() {
     $reactor = \Amp\reactor();
