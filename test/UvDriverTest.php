@@ -15,8 +15,4 @@ class UvDriverTest extends DriverTest {
             );
         }
     }
-
-    public function testScandir() {
-        $this->markTestSkipped("currently crashes php");
-    }
 }
