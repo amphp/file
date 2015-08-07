@@ -7,9 +7,6 @@ use Amp\Promise;
 use Amp\Failure;
 use Amp\Deferred;
 
-/**
- * @codeCoverageIgnore
- */
 class UvDriver implements Driver {
     private $reactor;
     private $loop;

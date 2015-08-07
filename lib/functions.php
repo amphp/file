@@ -5,8 +5,8 @@ namespace Amp\File;
 /**
  * Retrieve the application-wide filesystem instance
  *
- * @param \Amp\Fs\Driver $assign Use the specified object as the application-wide filesystem instance
- * @return \Amp\Fs\Driver
+ * @param \Amp\File\Driver $assign Use the specified object as the application-wide filesystem instance
+ * @return \Amp\File\Driver
  */
 function filesystem(Driver $assign = null) {
     static $driver;
@@ -22,7 +22,7 @@ function filesystem(Driver $assign = null) {
 /**
  * Create a new filesystem driver best-suited for the current environment
  *
- * @return \Amp\Fs\Driver
+ * @return \Amp\File\Driver
  */
 function driver() {
     $reactor = \Amp\reactor();
