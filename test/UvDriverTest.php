@@ -15,13 +15,4 @@ class UvDriverTest extends DriverTest {
             );
         }
     }
-
-    public function testScandirThrowsIfPathNotADirectory() {
-        $this->markTestSkipped("currently crashes php");
-    }
-
-    public function testScandirThrowsIfPathDoesntExist() {
-        $this->markTestSkipped("currently crashes php");
-    }
-
 }

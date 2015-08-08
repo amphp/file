@@ -254,7 +254,7 @@ class UvDriver implements Driver {
         uv_fs_readdir($this->loop, $path, 0, function($fh, $data) use ($promisor, $path) {
             $this->reactor->delRef();
             if (empty($fh)) {
-                $promisor->fail(new \RuntimeException(
+                $promisor->fail(new FilesystemException(
                     "Failed reading contents from {$path}"
                 ));
             } else {
