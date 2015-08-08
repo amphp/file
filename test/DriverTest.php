@@ -59,36 +59,46 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
         file\StatCache::clear();
     }
 
+    protected function timeoutTest($name, callable $func) {
+        $co = amp\coroutine($func);
+        return function () use ($name, $func) {
+            $co = amp\coroutine($func);
+            $promise = $co();
+            yield amp\timeout($promise, 3000);
+            echo "{$name} completed successfully\n";
+        };
+    }
+
     public function testScandir() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $actual = (yield file\scandir($fixtureDir));
             $expected = ["dir", "small.txt"];
             $this->assertSame($expected, $actual);
-        });
+        }));
     }
 
     /**
      * @expectedException \Amp\File\FilesystemException
      */
     public function testScandirThrowsIfPathNotADirectory() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             (yield file\scandir(__FILE__));
-        });
+        }));
     }
 
     /**
      * @expectedException \Amp\File\FilesystemException
      */
     public function testScandirThrowsIfPathDoesntExist() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $path = self::getFixturePath() . "/nonexistent";
             (yield file\scandir($path));
-        });
+        }));
     }
 
     public function testSymlink() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
 
             $original = "{$fixtureDir}/small.txt";
@@ -96,11 +106,11 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $this->assertTrue(yield file\symlink($original, $link));
             $this->assertTrue(\is_link($link));
             yield file\unlink($link);
-        });
+        }));
     }
 
     public function testLstat() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
 
             $target = "{$fixtureDir}/small.txt";
@@ -108,126 +118,126 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $this->assertTrue(yield file\symlink($target, $link));
             $this->assertTrue(is_array(yield file\lstat($link)));
             yield file\unlink($link);
-        });
+        }));
     }
 
     public function testFileStat() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $stat = (yield file\stat("{$fixtureDir}/small.txt"));
             $this->assertInternalType("array", $stat);
-        });
+        }));
     }
 
     public function testDirStat() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $stat = (yield file\stat("{$fixtureDir}/dir"));
             $this->assertInternalType("array", $stat);
-        });
+        }));
     }
 
     public function testNonexistentPathStatResolvesToNull() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $stat = (yield file\stat("{$fixtureDir}/nonexistent"));
             $this->assertNull($stat);
-        });
+        }));
     }
 
     public function testExists() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $this->assertFalse(yield file\exists("{$fixtureDir}/nonexistent"));
             $this->assertTrue(yield file\exists("{$fixtureDir}/small.txt"));
-        });
+        }));
     }
 
     public function testSize() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $stat = (yield file\stat($path));
             $size = $stat["size"];
             file\StatCache::clear($path);
             $this->assertSame($size, (yield file\size($path)));
-        });
+        }));
     }
 
     /**
      * @expectedException \Amp\File\FilesystemException
      */
     public function testSizeFailsOnNonexistentPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             yield file\size($path);
-        });
+        }));
     }
 
     /**
      * @expectedException \Amp\File\FilesystemException
      */
     public function testSizeFailsOnDirectoryPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/dir";
             $this->assertTrue(yield file\isdir($path));
             file\StatCache::clear($path);
             yield file\size($path);
-        });
+        }));
     }
 
     public function testIsdirResolvesTrueOnDirectoryPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/dir";
             $this->assertTrue(yield file\isdir($path));
-        });
+        }));
     }
 
     public function testIsdirResolvesFalseOnFilePath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $this->assertFalse(yield file\isdir($path));
-        });
+        }));
     }
 
     public function testIsdirResolvesFalseOnNonexistentPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             $this->assertFalse(yield file\isdir($path));
-        });
+        }));
     }
 
     public function testIsfileResolvesTrueOnFilePath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $this->assertTrue(yield file\isfile($path));
-        });
+        }));
     }
 
     public function testIsfileResolvesFalseOnDirectoryPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/dir";
             $this->assertFalse(yield file\isfile($path));
-        });
+        }));
     }
 
     public function testIsfileResolvesFalseOnNonexistentPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             $this->assertFalse(yield file\isfile($path));
-        });
+        }));
     }
 
     public function testRename() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
 
             $contents1 = "rename test";
@@ -240,22 +250,22 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             yield file\unlink($new);
 
             $this->assertSame($contents1, $contents2);
-        });
+        }));
     }
 
     public function testUnlink() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $toUnlink = "{$fixtureDir}/unlink";
             yield file\put($toUnlink, "unlink me");
             $this->assertTrue((bool) (yield file\stat($toUnlink)));
             yield file\unlink($toUnlink);
             $this->assertNull(yield file\stat($toUnlink));
-        });
+        }));
     }
 
     public function testMkdirRmdir() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
 
             $dir = "{$fixtureDir}/newdir";
@@ -264,80 +274,80 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $stat = (yield file\stat($dir));
             yield file\rmdir($dir);
             $this->assertNull(yield file\stat($dir));
-        });
+        }));
     }
 
     public function testMtime() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $stat = (yield file\stat($path));
             $statMtime = $stat["mtime"];
             file\StatCache::clear($path);
             $this->assertSame($statMtime, (yield file\mtime($path)));
-        });
+        }));
     }
 
     /**
      * @expectedException \Amp\File\FilesystemException
      */
     public function testMtimeFailsOnNonexistentPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             yield file\mtime($path);
-        });
+        }));
     }
 
     public function testAtime() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $stat = (yield file\stat($path));
             $statAtime = $stat["atime"];
             file\StatCache::clear($path);
             $this->assertSame($statAtime, (yield file\atime($path)));
-        });
+        }));
     }
 
     /**
      * @expectedException \Amp\File\FilesystemException
      */
     public function testAtimeFailsOnNonexistentPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             yield file\atime($path);
-        });
+        }));
     }
 
     public function testCtime() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $stat = (yield file\stat($path));
             $statCtime = $stat["ctime"];
             file\StatCache::clear($path);
             $this->assertSame($statCtime, (yield file\ctime($path)));
-        });
+        }));
     }
 
     /**
      * @expectedException \Amp\File\FilesystemException
      */
     public function testCtimeFailsOnNonexistentPath() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             yield file\ctime($path);
-        });
+        }));
     }
 
     /**
      * @group slow
      */
     public function testTouch() {
-        amp\run(function () {
+        amp\run($this->timeoutTest(__METHOD__, function () {
             $fixtureDir = self::getFixturePath();
 
             $touch = "{$fixtureDir}/touch";
@@ -352,6 +362,6 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
 
             $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
             $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
-        });
+        }));
     }
 }
