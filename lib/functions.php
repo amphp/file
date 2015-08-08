@@ -39,33 +39,124 @@ function driver() {
  * Execute a file stat operation
  *
  * If the requested path does not exist the resulting Promise will resolve to NULL.
+ * The returned Promise whould never resolve as a failure.
  *
- * @param string $path The file system path to stat
- * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
+ * @param string $path An absolute file system path
+ * @return \Amp\Promise<array|null>
  */
 function stat($path) {
     return filesystem()->stat($path);
 }
 
 /**
+ * Does the specified path exist?
+ *
+ * This function should never resolve as a failure -- only a successfull bool value
+ * indicating the existence of the specified path.
+ *
+ * @param string $path An absolute file system path
+ * @return \Amp\Promise<bool>
+ */
+function exists($path) {
+    return filesystem()->exists($path);
+}
+
+/**
+ * Retrieve the size in bytes of the file at the specified path.
+ *
+ * If the path does not exist or is not a regular file this
+ * function's returned Promise WILL resolve as a failure.
+ *
+ * @param string $path An absolute file system path
+ * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file
+ * @return \Amp\Promise<int>
+ */
+function size($path) {
+    return filesystem()->size($path);
+}
+
+/**
+ * Does the specified path exist and is it a directory?
+ *
+ * If the path does not exist the returned Promise will resolve
+ * to FALSE and will not reject with an error.
+ *
+ * @param string $path An absolute file system path
+ * @return \Amp\Promise<bool>
+ */
+function isdir($path) {
+    return filesystem()->isdir($path);
+}
+
+/**
+ * Does the specified path exist and is it a file?
+ *
+ * If the path does not exist the returned Promise will resolve
+ * to FALSE and will not reject with an error.
+ *
+ * @param string $path An absolute file system path
+ * @return \Amp\Promise<bool>
+ */
+function isfile($path) {
+    return filesystem()->isfile($path);
+}
+
+/**
+ * Retrieve the path's last modification time as a unix timestamp
+ *
+ * @param string $path An absolute file system path
+ * @fails \Amp\Files\FilesystemException If the path does not exist
+ * @return \Amp\Promise<int>
+ */
+function mtime($path) {
+    return filesystem()->mtime($path);
+}
+
+/**
+ * Retrieve the path's last access time as a unix timestamp
+ *
+ * @param string $path An absolute file system path
+ * @fails \Amp\Files\FilesystemException If the path does not exist
+ * @return \Amp\Promise<int>
+ */
+function atime($path) {
+    return filesystem()->atime($path);
+}
+
+/**
+ * Retrieve the path's creation time as a unix timestamp
+ *
+ * @param string $path An absolute file system path
+ * @fails \Amp\Files\FilesystemException If the path does not exist
+ * @return \Amp\Promise<int>
+ */
+function ctime($path) {
+    return filesystem()->ctime($path);
+}
+
+/**
  * Same as stat() except if the path is a link then the link's data is returned
  *
- * @param string $path The file system path to stat
- * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
+ * If the requested path does not exist the resulting Promise will resolve to NULL.
+ * The returned Promise whould never resolve as a failure.
+ *
+ * @param string $path An absolute file system path
+ * @return \Amp\Promise<array|null>
  */
 function lstat($path) {
     return filesystem()->lstat($path);
 }
 
 /**
- * Create a symlink $link pointing to the file/directory located at $target
+ * Create a symlink $link pointing to the file/directory located at $original
  *
- * @param string $target
+ * @param string $original
  * @param string $link
- * @return \Amp\Promise
+ * @fails \Amp\Files\FilesystemException If the operation fails
+ * @return \Amp\Promise<null>
  */
-function symlink($target, $link) {
-    return filesystem()->symlink($target, $link);
+function symlink($original, $link) {
+    return filesystem()->symlink($original, $link);
 }
 
 /**
@@ -73,7 +164,8 @@ function symlink($target, $link) {
  *
  * @param string $from
  * @param string $to
- * @return \Amp\Promise
+ * @fails \Amp\Files\FilesystemException If the operation fails
+ * @return \Amp\Promise<null>
  */
 function rename($from, $to) {
     return filesystem()->rename($from, $to);
@@ -83,7 +175,7 @@ function rename($from, $to) {
  * Delete a file
  *
  * @param string $path
- * @return \Amp\Promise
+ * @return \Amp\Promise<null>
  */
 function unlink($path) {
     return filesystem()->unlink($path);
@@ -94,7 +186,7 @@ function unlink($path) {
  *
  * @param string $path
  * @param int $mode
- * @return \Amp\Promise
+ * @return \Amp\Promise<null>
  */
 function mkdir($path, $mode = 0644) {
     return filesystem()->mkdir($path, $mode);
@@ -103,8 +195,8 @@ function mkdir($path, $mode = 0644) {
 /**
  * Delete a directory
  *
- * @param string $path
- * @return \Amp\Promise
+ * @param string $pat
+ * @return \Amp\Promise<null>
  */
 function rmdir($path) {
     return filesystem()->rmdir($path);
@@ -116,7 +208,7 @@ function rmdir($path) {
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
  * @param string $path
- * @return \Amp\Promise
+ * @return \Amp\Promise<array>
  */
 function scandir($path) {
     return filesystem()->scandir($path);
@@ -127,7 +219,7 @@ function scandir($path) {
  *
  * @param string $path
  * @param int $mode
- * @return \Amp\Promise
+ * @return \Amp\Promise<null>
  */
 function chmod($path, $mode) {
     return filesystem()->chmod($path, $mode);
@@ -139,7 +231,7 @@ function chmod($path, $mode) {
  * @param string $path
  * @param int $uid
  * @param int $gid
- * @return \Amp\Promise
+ * @return \Amp\Promise<null>
  */
 function chown($path, $uid, $gid) {
     return filesystem()->chown($path, $uid, $gid);
@@ -151,7 +243,7 @@ function chown($path, $uid, $gid) {
  * If the file does not exist it will be created automatically.
  *
  * @param string $path
- * @return \Amp\Promise
+ * @return \Amp\Promise<null>
  */
 function touch($path) {
     return filesystem()->touch($path);
@@ -161,7 +253,7 @@ function touch($path) {
  * Buffer the specified file's contents
  *
  * @param string $path The file path from which to buffer contents
- * @return \Amp\Promise A promise resolving to a string upon successful resolution
+ * @return \Amp\Promise<string>
  */
 function get($path) {
     return filesystem()->get($path);

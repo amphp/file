@@ -25,15 +25,134 @@ class UvDriver implements Driver {
     public function stat($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;
-        \uv_fs_stat($this->loop, $path, function($fh, $stat) use ($promisor) {
-            if ($fh) {
-                $stat["isdir"] = (bool) ($stat["mode"] & \UV::S_IFDIR);
-                $stat["isfile"] = empty($stat["isdir"]);
-            } else {
+        \uv_fs_stat($this->loop, $path, function($fh, $stat) use ($promisor, $path) {
+            if (empty($fh)) {
                 $stat = null;
+            } else {
+                StatCache::set($path, $stat);
             }
             $this->reactor->delRef();
             $promisor->succeed($stat);
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function exists($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            $promisor->succeed((bool) $result);
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isdir($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed(!($result["mode"] & \UV::S_IFREG));
+            } else {
+                $promisor->succeed(false);
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isfile($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed((bool) ($result["mode"] & \UV::S_IFREG));
+            } else {
+                $promisor->succeed(false);
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function size($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if (empty($result)) {
+                $promisor->fail(new FilesystemException(
+                    "Specified path does not exist"
+                ));
+            } elseif (($result["mode"] & \UV::S_IFREG)) {
+                $promisor->succeed($result["size"]);
+            } else {
+                $promisor->fail(new FilesystemException(
+                    "Specified path is not a regular file"
+                ));
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function mtime($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed($result["mtime"]);
+            } else {
+                $promisor->fail(new FilesystemException(
+                    "Specified path does not exist"
+                ));
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function atime($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed($result["atime"]);
+            } else {
+                $promisor->fail(new FilesystemException(
+                    "Specified path does not exist"
+                ));
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function ctime($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed($result["ctime"]);
+            } else {
+                $promisor->fail(new FilesystemException(
+                    "Specified path does not exist"
+                ));
+            }
         });
 
         return $promisor->promise();
@@ -46,10 +165,7 @@ class UvDriver implements Driver {
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_lstat($this->loop, $path, function($fh, $stat) use ($promisor) {
-            if ($fh) {
-                $stat["isdir"] = (bool) ($stat["mode"] & \UV::S_IFDIR);
-                $stat["isfile"] = empty($stat["isdir"]);
-            } else {
+            if (empty($fh)) {
                 $stat = null;
             }
             $this->reactor->delRef();

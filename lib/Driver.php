@@ -9,9 +9,77 @@ interface Driver {
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *
      * @param string $path The file system path to stat
-     * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
+     * @return \Amp\Promise<array|null>
      */
     public function stat($path);
+
+    /**
+     * Does the specified path exist?
+     *
+     * This function should never resolve as a failure -- only a successfull bool value
+     * indicating the existence of the specified path.
+     *
+     * @param string $path An absolute file system path
+     * @return \Amp\Promise<bool>
+     */
+    public function exists($path);
+
+    /**
+     * Retrieve the size in bytes of the file at the specified path.
+     *
+     * If the path does not exist or is not a regular file this
+     * function's returned Promise WILL resolve as a failure.
+     *
+     * @param string $path An absolute file system path
+     * @return \Amp\Promise<int>
+     */
+    public function size($path);
+
+    /**
+     * Does the specified path exist and is it a directory?
+     *
+     * If the path does not exist the returned Promise will resolve
+     * to FALSE and will not reject with an error.
+     *
+     * @param string $path An absolute file system path
+     * @return \Amp\Promise<bool>
+     */
+    public function isdir($path);
+
+    /**
+     * Does the specified path exist and is it a file?
+     *
+     * If the path does not exist the returned Promise will resolve
+     * to FALSE and will not reject with an error.
+     *
+     * @param string $path An absolute file system path
+     * @return \Amp\Promise<bool>
+     */
+    public function isfile($path);
+
+    /**
+     * Retrieve the path's last modification time as a unix timestamp
+     *
+     * @param string $path An absolute file system path
+     * @return \Amp\Promise<int>
+     */
+    public function mtime($path);
+
+    /**
+     * Retrieve the path's last access time as a unix timestamp
+     *
+     * @param string $path An absolute file system path
+     * @return \Amp\Promise<int>
+     */
+    public function atime($path);
+
+    /**
+     * Retrieve the path's creation time as a unix timestamp
+     *
+     * @param string $path An absolute file system path
+     * @return \Amp\Promise<int>
+     */
+    public function ctime($path);
 
     /**
      * Same as stat() except if the path is a link then the link's data is returned

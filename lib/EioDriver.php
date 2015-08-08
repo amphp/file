@@ -54,24 +54,148 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function stat($path) {
+        if ($stat = StatCache::get($path)) {
+            return new Success($stat);
+        }
+
         $this->incrementPending();
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_stat($path, $priority, [$this, "onStat"], $promisor);
+        $data = [$promisor, $path];
+        \eio_stat($path, $priority, [$this, "onStat"], $data);
 
         return $promisor->promise();
     }
 
-    private function onStat($promisor, $result, $req) {
-        if ($result === -1) {
-            $stat = null;
-        } else {
-            $stat = $result;
-            $stat["isfile"] = (bool) ($stat["mode"] & \EIO_S_IFREG);
-            $stat["isdir"] = empty($stat["isfile"]);
-        }
+    private function onStat($data, $result, $req) {
+        list($promisor, $path) = $data;
         $this->decrementPending();
-        $promisor->succeed($stat);
+        if ($result === -1) {
+            $promisor->succeed(null);
+        } else {
+            StatCache::set($path, $result);
+            $promisor->succeed($result);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function exists($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            $promisor->succeed((bool) $result);
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isdir($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed(!($result["mode"] & \EIO_S_IFREG));
+            } else {
+                $promisor->succeed(false);
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isfile($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed((bool) ($result["mode"] & \EIO_S_IFREG));
+            } else {
+                $promisor->succeed(false);
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function size($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if (empty($result)) {
+                $promisor->fail(new FilesystemException(
+                    "Specified path does not exist"
+                ));
+            } elseif (($result["mode"] & \EIO_S_IFREG)) {
+                $promisor->succeed($result["size"]);
+            } else {
+                $promisor->fail(new FilesystemException(
+                    "Specified path is not a regular file"
+                ));
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function mtime($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed($result["mtime"]);
+            } else {
+                $promisor->fail(new FilesystemException(
+                    "Specified path does not exist"
+                ));
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function atime($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed($result["atime"]);
+            } else {
+                $promisor->fail(new FilesystemException(
+                    "Specified path does not exist"
+                ));
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function ctime($path) {
+        $promisor = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+            if ($result) {
+                $promisor->succeed($result["ctime"]);
+            } else {
+                $promisor->fail(new FilesystemException(
+                    "Specified path does not exist"
+                ));
+            }
+        });
+
+        return $promisor->promise();
     }
 
     /**
@@ -81,9 +205,18 @@ class EioDriver implements Driver {
         $this->incrementPending();
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_lstat($path, $priority, [$this, "onStat"], $promisor);
+        \eio_lstat($path, $priority, [$this, "onLstat"], $promisor);
 
         return $promisor->promise();
+    }
+
+    private function onLstat($promisor, $result, $req) {
+        $this->decrementPending();
+        if ($result === -1) {
+            $promisor->succeed(null);
+        } else {
+            $promisor->succeed($result);
+        }
     }
 
     /**
@@ -101,7 +234,7 @@ class EioDriver implements Driver {
     private function onGenericResult($promisor, $result, $req) {
         $this->decrementPending();
         if ($result === -1) {
-            $promisor->fail(new \RuntimeException(
+            $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
@@ -128,9 +261,23 @@ class EioDriver implements Driver {
         $this->incrementPending();
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_unlink($path, $priority, [$this, "onGenericResult"], $promisor);
+        $data = [$promisor, $path];
+        \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
 
         return $promisor->promise();
+    }
+
+    private function onUnlink($data, $result, $req) {
+        list($promisor, $path) = $data;
+        $this->decrementPending();
+        if ($result === -1) {
+            $promisor->fail(new FilesystemException(
+                \eio_get_last_error($req)
+            ));
+        } else {
+            StatCache::clear($path);
+            $promisor->succeed(true);
+        }
     }
 
     /**
@@ -152,9 +299,23 @@ class EioDriver implements Driver {
         $this->incrementPending();
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_rmdir($path, $priority, [$this, "onGenericResult"], $promisor);
+        $data = [$promisor, $path];
+        \eio_rmdir($path, $priority, [$this, "onRmdir"], $data);
 
         return $promisor->promise();
+    }
+
+    private function onRmdir($data, $result, $req) {
+        list($promisor, $path) = $data;
+        $this->decrementPending();
+        if ($result === -1) {
+            $promisor->fail(new FilesystemException(
+                \eio_get_last_error($req)
+            ));
+        } else {
+            StatCache::clear($path);
+            $promisor->succeed(true);
+        }
     }
 
     /**
@@ -173,7 +334,7 @@ class EioDriver implements Driver {
     private function onScandir($promisor, $result, $req) {
         $this->decrementPending();
         if ($result === -1) {
-            $promisor->fail(new \RuntimeException(
+            $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
@@ -234,7 +395,7 @@ class EioDriver implements Driver {
 
     private function onGetOpen($promisor, $result, $req) {
         if ($result === -1) {
-            $promisor->fail(new \RuntimeException(
+            $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
@@ -246,7 +407,7 @@ class EioDriver implements Driver {
     private function onGetFstat($fhAndPromisor, $result, $req) {
         list($fh, $promisor) = $fhAndPromisor;
         if ($result === -1) {
-            $promisor->fail(new \RuntimeException(
+            $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
             return;
@@ -263,7 +424,7 @@ class EioDriver implements Driver {
         $priority = \EIO_PRI_DEFAULT;
         \eio_close($fh, $priority, $this->callableDelReq);
         if ($result === -1) {
-            $promisor->fail(new \RuntimeException(
+            $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
@@ -290,7 +451,7 @@ class EioDriver implements Driver {
     private function onPutOpen($data, $result, $req) {
         list($contents, $promisor) = $data;
         if ($result === -1) {
-            $promisor->fail(new \RuntimeException(
+            $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
@@ -309,7 +470,7 @@ class EioDriver implements Driver {
         $priority = \EIO_PRI_DEFAULT;
         \eio_close($fh, $priority, $this->callableDelReq);
         if ($result === -1) {
-            $promisor->fail(new \RuntimeException(
+            $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
