@@ -23,7 +23,7 @@
     ],
     "require": {
         "php": ">=5.5",
-        "amphp/amp": "^1"
+        "amphp/amp": "dev-master#a806161f11f4e6bcd5006214c3c407795f44db35"
     },
     "require-dev": {
         "phpunit/phpunit": "~4.8",
