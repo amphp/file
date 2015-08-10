@@ -8,30 +8,26 @@ use Amp\Failure;
 use Amp\Deferred;
 
 class EioDriver implements Driver {
-    private static $isEioInitialized = false;
-    private $stream;
     private $watcher;
     private $callableDelReq;
-    private $internalIncrement;
-    private $internalDecrement;
     private $pending = 0;
+    private static $stream;
 
+    /**
+     * We have to keep a static reference of eio event streams
+     * because if we don't garbage collection can unload eio's
+     * underlying pipe via a system close() call before it's
+     * finished and generate a SIGPIPE.
+     */
     public function __construct() {
-        if (empty(self::$isEioInitialized)) {
+        if (empty(self::$stream)) {
             \eio_init();
-            self::$isEioInitialized = true;
+            self::$stream = \eio_get_event_stream();
         }
-        $this->stream = \eio_get_event_stream();
         $this->callableDelReq = function() {
             $this->decrementPending();
         };
-        $this->internalIncrement = function() {
-            $this->incrementPending();
-        };
-        $this->internalDecrement = function() {
-            $this->decrementPending();
-        };
-        $this->watcher = \Amp\onReadable($this->stream, function() {
+        $this->watcher = \Amp\onReadable(self::$stream, function() {
             while (\eio_npending()) {
                 \eio_poll();
             }
@@ -479,16 +475,6 @@ class EioDriver implements Driver {
     }
 
     public function __destruct() {
-        $this->stream = null;
         \Amp\cancel($this->watcher);
-
-        /**
-         * pecl/eio has a race condition issue when freeing threaded
-         * resources and we can get intermittent segfaults at script
-         * shutdown in certain cases if we don't wait for a moment.
-         *
-         * @TODO see if we can PR a fix for this problem in pecl/eio
-         */
-        usleep(1000);
     }
 }
