@@ -10,6 +10,19 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
+    public function open($path, $mode) {
+        if (!$fh = \fopen($path, $mode)) {
+            return new Failure(new FilesystemException(
+                "Failed opening file handle"
+            ));
+        }
+
+        return new Success(new BlockingHandle($fh, $path, $mode));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function stat($path) {
         if ($stat = @\stat($path)) {
             StatCache::set($path, $stat);

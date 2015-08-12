@@ -22,6 +22,77 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
+    public function open($path, $mode) {
+        switch ($mode) {
+            case "r":   $flags = \UV::O_RDONLY; break;
+            case "r+":  $flags = \UV::O_RDWR; break;
+            case "w":   $flags = \UV::O_WRONLY | \UV::O_CREAT; break;
+            case "w+":  $flags = \UV::O_RDWR | \UV::O_CREAT; break;
+            case "a":   $flags = \UV::O_WRONLY | \UV::O_CREAT | \UV::O_APPEND; break;
+            case "a+":  $flags = \UV::O_RDWR | \UV::O_CREAT | \UV::O_APPEND; break;
+            case "x":   $flags = \UV::O_WRONLY | \UV::O_CREAT | \UV::O_EXCL; break;
+            case "x+":  $flags = \UV::O_RDWR | \UV::O_CREAT | \UV::O_EXCL; break;
+            case "c":   $flags = \UV::O_WRONLY | \UV::O_CREAT; break;
+            case "c+":  $flags = \UV::O_RDWR | \UV::O_CREAT; break;
+            default: return new Failure(new FilesystemException(
+                "Invalid open mode"
+            ));
+        }
+        $chmod = ($flags & \UV::O_CREAT) ? 0644 : 0;
+        $this->reactor->addRef();
+        $promisor = new Deferred;
+        $openArr = [$mode, $path, $promisor];
+        \uv_fs_open($this->loop, $path, $flags, $chmod, function($fh) use ($openArr) {
+            if ($fh) {
+                $this->onOpenHandle($fh, $openArr);
+            } else {
+                $this->reactor->delRef();
+                $promisor->fail(new \RuntimeException(
+                    "Failed opening file handle"
+                ));
+            }
+        });
+
+        return $promisor->promise();
+    }
+
+    private function onOpenHandle($fh, array $openArr) {
+        list($mode) = $openArr;
+        if ($mode[0] === "w") {
+            \uv_fs_ftruncate($this->loop, $fh, $length = 0, function($fh) use ($openArr) {
+                $this->reactor->delRef();
+                if ($fh) {
+                    $this->finalizeHandle($fh, $size = 0, $openArr);
+                } else {
+                    $promisor->fail(new FilesystemException(
+                        "Failed truncating file"
+                    ));
+                }
+            });
+        } else {
+            \uv_fs_fstat($this->loop, $fh, function($fh, $stat) use ($openArr) {
+                $this->reactor->delRef();
+                if ($fh) {
+                    StatCache::set($openArr[1], $stat);
+                    $this->finalizeHandle($fh, $stat["size"], $openArr);
+                } else {
+                    $promisor->fail(new FilesystemException(
+                        "Failed reading file size from open handle"
+                    ));
+                }
+            });
+        }
+    }
+
+    private function finalizeHandle($fh, $size, array $openArr) {
+        list($mode, $path, $promisor) = $openArr;
+        $handle = new UvHandle($this->reactor, $fh, $path, $mode, $size);
+        $promisor->succeed($handle);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function stat($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;

@@ -9,6 +9,7 @@ class UvDriverTest extends DriverTest {
             \Amp\reactor($reactor);
             $driver = new \Amp\File\UvDriver($reactor);
             \Amp\File\filesystem($driver);
+            parent::setUp();
         } else {
             $this->markTestSkipped(
                 "php-uv extension not loaded"

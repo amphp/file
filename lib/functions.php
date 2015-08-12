@@ -36,6 +36,17 @@ function driver() {
 }
 
 /**
+ * Open a handle for the specified path
+ *
+ * @param string $path
+ * @param string $mode
+ * @return \Amp\File\Handle
+ */
+function open($path, $mode) {
+    return filesystem()->open($path, $mode);
+}
+
+/**
  * Execute a file stat operation
  *
  * If the requested path does not exist the resulting Promise will resolve to NULL.

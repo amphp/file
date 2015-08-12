@@ -9,8 +9,9 @@ use Amp\Deferred;
 
 class EioDriver implements Driver {
     private $watcher;
-    private $callableDelReq;
     private $pending = 0;
+    private $incrementor;
+    private $callableDecrementor;
     private static $stream;
 
     /**
@@ -24,8 +25,25 @@ class EioDriver implements Driver {
             \eio_init();
             self::$stream = \eio_get_event_stream();
         }
-        $this->callableDelReq = function() {
-            $this->decrementPending();
+        $this->callableDecrementor = function() {
+            \call_user_func($this->incrementor, -1);
+        };
+        $this->incrementor = function ($increment) {
+            switch ($increment) {
+                case 1:
+                case -1:
+                    $this->pending += $increment;
+                    break;
+                default:
+                    throw new FilesystemException(
+                        "Invalid pending event increment; 1 or -1 required"
+                    );
+            }
+            if ($this->pending === 0) {
+                \Amp\disable($this->watcher);
+            } elseif ($this->pending === 1) {
+                \Amp\enable($this->watcher);
+            }
         };
         $this->watcher = \Amp\onReadable(self::$stream, function() {
             while (\eio_npending()) {
@@ -34,15 +52,74 @@ class EioDriver implements Driver {
         }, $options = ["enable" => false]);
     }
 
-    private function incrementPending() {
-        if ($this->pending++ === 0) {
-            \Amp\enable($this->watcher);
+    /**
+     * {@inheritdoc}
+     */
+    public function open($path, $mode) {
+        switch ($mode) {
+            case "r":   $flags = \EIO_O_RDONLY; break;
+            case "r+":  $flags = \EIO_O_RDWR; break;
+            case "w":   $flags = \EIO_O_WRONLY | \EIO_O_CREAT; break;
+            case "w+":  $flags = \EIO_O_RDWR | \EIO_O_CREAT; break;
+            case "a":   $flags = \EIO_O_WRONLY | \EIO_O_CREAT | \EIO_O_APPEND; break;
+            case "a+":  $flags = \EIO_O_RDWR | \EIO_O_CREAT | \EIO_O_APPEND; break;
+            case "x":   $flags = \EIO_O_WRONLY | \EIO_O_CREAT | \EIO_O_EXCL; break;
+            case "x+":  $flags = \EIO_O_RDWR | \EIO_O_CREAT | \EIO_O_EXCL; break;
+            case "c":   $flags = \EIO_O_WRONLY | \EIO_O_CREAT; break;
+            case "c+":  $flags = \EIO_O_RDWR | \EIO_O_CREAT; break;
+            default: return new Failure(new FilesystemException(
+                "Invalid open mode"
+            ));
+        }
+        $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
+        \call_user_func($this->incrementor, 1);
+        $promisor = new Deferred;
+        $openArr = [$mode, $path, $promisor];
+        \eio_open($path, $flags, $chmod, $priority = null, [$this, "onOpenHandle"], $openArr);
+
+        return $promisor->promise();
+    }
+
+    private function onOpenHandle($openArr, $result, $req) {
+        list($mode, $path, $promisor) = $openArr;
+        if ($result === -1) {
+            \call_user_func($this->incrementor, -1);
+            $promisor->fail(new FilesystemException(
+                \eio_get_last_error($req)
+            ));
+        } elseif ($mode[0] === "a") {
+            \array_unshift($openArr, $result);
+            \eio_ftruncate($result, $offset = 0, $priority = null, [$this, "onOpenFtruncate"], $openArr);
+        } else {
+            \array_unshift($openArr, $result);
+            \eio_fstat($result, $priority = null, [$this, "onOpenFstat"], $openArr);
         }
     }
 
-    private function decrementPending() {
-        if ($this->pending-- === 1) {
-            \Amp\disable($this->watcher);
+    private function onOpenFtruncate($openArr, $result, $req) {
+        \call_user_func($this->incrementor, -1);
+        list($fh, $mode, $path, $promisor) = $openArr;
+        if ($result === -1) {
+            $promisor->fail(new FilesystemException(
+                \eio_get_last_error($req)
+            ));
+        } else {
+            $handle = new EioHandle($this->incrementor, $fh, $path, $mode, $size = 0);
+            $promisor->succeed($handle);
+        }
+    }
+
+    private function onOpenFstat($openArr, $result, $req) {
+        \call_user_func($this->incrementor, -1);
+        list($fh, $mode, $path, $promisor) = $openArr;
+        if ($result === -1) {
+            $promisor->fail(new FilesystemException(
+                \eio_get_last_error($req)
+            ));
+        } else {
+            StatCache::set($path, $result);
+            $handle = new EioHandle($this->incrementor, $fh, $path, $mode, $result["size"]);
+            $promisor->succeed($handle);
         }
     }
 
@@ -54,7 +131,7 @@ class EioDriver implements Driver {
             return new Success($stat);
         }
 
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         $data = [$promisor, $path];
@@ -65,7 +142,7 @@ class EioDriver implements Driver {
 
     private function onStat($data, $result, $req) {
         list($promisor, $path) = $data;
-        $this->decrementPending();
+        \call_user_func($this->incrementor, -1);
         if ($result === -1) {
             $promisor->succeed(null);
         } else {
@@ -198,7 +275,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function lstat($path) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_lstat($path, $priority, [$this, "onLstat"], $promisor);
@@ -207,7 +284,7 @@ class EioDriver implements Driver {
     }
 
     private function onLstat($promisor, $result, $req) {
-        $this->decrementPending();
+        \call_user_func($this->incrementor, -1);
         if ($result === -1) {
             $promisor->succeed(null);
         } else {
@@ -219,7 +296,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function symlink($target, $link) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_symlink($target, $link, $priority, [$this, "onGenericResult"], $promisor);
@@ -228,7 +305,7 @@ class EioDriver implements Driver {
     }
 
     private function onGenericResult($promisor, $result, $req) {
-        $this->decrementPending();
+        \call_user_func($this->incrementor, -1);
         if ($result === -1) {
             $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -242,7 +319,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function rename($from, $to) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_rename($from, $to, $priority, [$this, "onGenericResult"], $promisor);
@@ -254,7 +331,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function unlink($path) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         $data = [$promisor, $path];
@@ -265,7 +342,7 @@ class EioDriver implements Driver {
 
     private function onUnlink($data, $result, $req) {
         list($promisor, $path) = $data;
-        $this->decrementPending();
+        \call_user_func($this->incrementor, -1);
         if ($result === -1) {
             $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -280,7 +357,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function mkdir($path, $mode = 0644) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $promisor);
@@ -292,7 +369,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function rmdir($path) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         $data = [$promisor, $path];
@@ -303,7 +380,7 @@ class EioDriver implements Driver {
 
     private function onRmdir($data, $result, $req) {
         list($promisor, $path) = $data;
-        $this->decrementPending();
+        \call_user_func($this->incrementor, -1);
         if ($result === -1) {
             $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -318,7 +395,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function scandir($path) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $flags = \EIO_READDIR_STAT_ORDER | \EIO_READDIR_DIRS_FIRST;
         $priority = \EIO_PRI_DEFAULT;
@@ -328,7 +405,7 @@ class EioDriver implements Driver {
     }
 
     private function onScandir($promisor, $result, $req) {
-        $this->decrementPending();
+        \call_user_func($this->incrementor, -1);
         if ($result === -1) {
             $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -342,7 +419,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function chmod($path, $mode) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $promisor);
@@ -354,7 +431,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function chown($path, $uid, $gid) {
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_chown($path, $uid, $gid, $priority, [$this, "onGenericResult"], $promisor);
@@ -382,7 +459,7 @@ class EioDriver implements Driver {
         $mode = 0;
         $priority = \EIO_PRI_DEFAULT;
 
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         \eio_open($path, $flags, $mode, $priority, [$this, "onGetOpen"], $promisor);
 
@@ -418,7 +495,7 @@ class EioDriver implements Driver {
     private function onGetRead($fhAndPromisor, $result, $req) {
         list($fh, $promisor) = $fhAndPromisor;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_close($fh, $priority, $this->callableDelReq);
+        \eio_close($fh, $priority, $this->callableDecrementor);
         if ($result === -1) {
             $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -436,7 +513,7 @@ class EioDriver implements Driver {
         $mode = \EIO_S_IRUSR | \EIO_S_IWUSR | \EIO_S_IXUSR;
         $priority = \EIO_PRI_DEFAULT;
 
-        $this->incrementPending();
+        \call_user_func($this->incrementor, 1);;
         $promisor = new Deferred;
         $data = [$contents, $promisor];
         \eio_open($path, $flags, $mode, $priority, [$this, "onPutOpen"], $data);
@@ -464,7 +541,7 @@ class EioDriver implements Driver {
         list($fh, $promisor) = $fhAndPromisor;
         \eio_close($fh);
         $priority = \EIO_PRI_DEFAULT;
-        \eio_close($fh, $priority, $this->callableDelReq);
+        \eio_close($fh, $priority, $this->callableDecrementor);
         if ($result === -1) {
             $promisor->fail(new FilesystemException(
                 \eio_get_last_error($req)

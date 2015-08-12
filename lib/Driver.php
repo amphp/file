@@ -4,6 +4,15 @@ namespace Amp\File;
 
 interface Driver {
     /**
+     * Open a handle for the specified path
+     *
+     * @param string $path
+     * @param string $mode
+     * @return \Amp\File\Handle
+     */
+    public function open($path, $mode);
+
+    /**
      * Execute a file stat operation
      *
      * If the requested path does not exist the resulting Promise will resolve to NULL.
