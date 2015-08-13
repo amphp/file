@@ -275,7 +275,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function lstat($path) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_lstat($path, $priority, [$this, "onLstat"], $promisor);
@@ -296,7 +296,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function symlink($target, $link) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_symlink($target, $link, $priority, [$this, "onGenericResult"], $promisor);
@@ -319,7 +319,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function rename($from, $to) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_rename($from, $to, $priority, [$this, "onGenericResult"], $promisor);
@@ -331,7 +331,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function unlink($path) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         $data = [$promisor, $path];
@@ -357,7 +357,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function mkdir($path, $mode = 0644) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $promisor);
@@ -369,7 +369,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function rmdir($path) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         $data = [$promisor, $path];
@@ -395,7 +395,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function scandir($path) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $flags = \EIO_READDIR_STAT_ORDER | \EIO_READDIR_DIRS_FIRST;
         $priority = \EIO_PRI_DEFAULT;
@@ -419,7 +419,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function chmod($path, $mode) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $promisor);
@@ -431,7 +431,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function chown($path, $uid, $gid) {
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_chown($path, $uid, $gid, $priority, [$this, "onGenericResult"], $promisor);
@@ -459,7 +459,7 @@ class EioDriver implements Driver {
         $mode = 0;
         $priority = \EIO_PRI_DEFAULT;
 
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         \eio_open($path, $flags, $mode, $priority, [$this, "onGetOpen"], $promisor);
 
@@ -513,7 +513,7 @@ class EioDriver implements Driver {
         $mode = \EIO_S_IRUSR | \EIO_S_IWUSR | \EIO_S_IXUSR;
         $priority = \EIO_PRI_DEFAULT;
 
-        \call_user_func($this->incrementor, 1);;
+        \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $data = [$contents, $promisor];
         \eio_open($path, $flags, $mode, $priority, [$this, "onPutOpen"], $data);
