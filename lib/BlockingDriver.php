@@ -24,7 +24,9 @@ class BlockingDriver implements Driver {
      * {@inheritdoc}
      */
     public function stat($path) {
-        if ($stat = @\stat($path)) {
+        if ($stat = StatCache::get($path)) {
+            return new Success($stat);
+        } elseif ($stat = @\stat($path)) {
             StatCache::set($path, $stat);
             \clearstatcache(true, $path);
         } else {

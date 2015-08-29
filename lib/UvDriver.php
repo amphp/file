@@ -94,6 +94,10 @@ class UvDriver implements Driver {
      * {@inheritdoc}
      */
     public function stat($path) {
+        if ($stat = StatCache::get($path)) {
+            return new Success($stat);
+        }
+
         $this->reactor->addRef();
         $promisor = new Deferred;
         \uv_fs_stat($this->loop, $path, function($fh, $stat) use ($promisor, $path) {
