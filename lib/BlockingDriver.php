@@ -197,6 +197,7 @@ class BlockingDriver implements Driver {
      * {@inheritdoc}
      */
     public function unlink($path) {
+        StatCache::clear($path);
         return new Success((bool) @\unlink($path));
     }
 
@@ -211,6 +212,7 @@ class BlockingDriver implements Driver {
      * {@inheritdoc}
      */
     public function rmdir($path) {
+        StatCache::clear($path);
         return new Success((bool) @\rmdir($path));
     }
 
