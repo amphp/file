@@ -47,8 +47,9 @@ class UvDriver implements Driver {
                 $this->onOpenHandle($fh, $openArr);
             } else {
                 $this->reactor->delRef();
+                list( , $path, $promisor) = $openArr;
                 $promisor->fail(new \RuntimeException(
-                    "Failed opening file handle"
+                    "Failed opening file handle to $path"
                 ));
             }
         });
@@ -64,8 +65,9 @@ class UvDriver implements Driver {
                 if ($fh) {
                     $this->finalizeHandle($fh, $size = 0, $openArr);
                 } else {
+                    list( , $path, $promisor) = $openArr;
                     $promisor->fail(new FilesystemException(
-                        "Failed truncating file"
+                        "Failed truncating file $path"
                     ));
                 }
             });
@@ -76,8 +78,9 @@ class UvDriver implements Driver {
                     StatCache::set($openArr[1], $stat);
                     $this->finalizeHandle($fh, $stat["size"], $openArr);
                 } else {
+                    list( , $path, $promisor) = $openArr;
                     $promisor->fail(new FilesystemException(
-                        "Failed reading file size from open handle"
+                        "Failed reading file size from open handle pointing to $path"
                     ));
                 }
             });
@@ -270,8 +273,9 @@ class UvDriver implements Driver {
     public function rename($from, $to) {
         $this->reactor->addRef();
         $promisor = new Deferred;
-        \uv_fs_rename($this->loop, $from, $to, function($fh) use ($promisor) {
+        \uv_fs_rename($this->loop, $from, $to, function($fh) use ($promisor, $from) {
             $this->reactor->delRef();
+            StatCache::clear($from);
             $promisor->succeed((bool)$fh);
         });
 
@@ -284,8 +288,9 @@ class UvDriver implements Driver {
     public function unlink($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;
-        \uv_fs_unlink($this->loop, $path, function($fh) use ($promisor) {
+        \uv_fs_unlink($this->loop, $path, function($fh) use ($promisor, $path) {
             $this->reactor->delRef();
+            StatCache::clear($path);
             $promisor->succeed((bool)$fh);
         });
 
@@ -312,8 +317,9 @@ class UvDriver implements Driver {
     public function rmdir($path) {
         $this->reactor->addRef();
         $promisor = new Deferred;
-        \uv_fs_rmdir($this->loop, $path, function($fh) use ($promisor) {
+        \uv_fs_rmdir($this->loop, $path, function($fh) use ($promisor, $path) {
             $this->reactor->delRef();
+            StatCache::clear($path);
             $promisor->succeed((bool)$fh);
         });
 
