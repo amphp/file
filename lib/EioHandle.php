@@ -2,7 +2,6 @@
 
 namespace Amp\File;
 
-use Amp\Promise;
 use Amp\Deferred;
 
 class EioHandle implements Handle {
