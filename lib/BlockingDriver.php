@@ -68,7 +68,7 @@ class BlockingDriver implements Driver {
                 \error_get_last()["message"]
             ));
         } else {
-            \clearstatcache($path);
+            \clearstatcache(true, $path);
             return new Success($size);
         }
     }
@@ -87,7 +87,7 @@ class BlockingDriver implements Driver {
             return new Success(false);
         }
         $isDir = @\is_dir($path);
-        \clearstatcache($path);
+        \clearstatcache(true, $path);
 
         return new Success($isDir);
     }
@@ -106,7 +106,7 @@ class BlockingDriver implements Driver {
             return new Success(false);
         }
         $isFile = @\is_file($path);
-        \clearstatcache($path);
+        \clearstatcache(true, $path);
 
         return new Success($isFile);
     }
@@ -124,7 +124,7 @@ class BlockingDriver implements Driver {
             ));
         }
         $mtime = @\filemtime($path);
-        \clearstatcache($path);
+        \clearstatcache(true, $path);
 
         return new Success($mtime);
     }
@@ -142,7 +142,7 @@ class BlockingDriver implements Driver {
             ));
         }
         $atime = @\fileatime($path);
-        \clearstatcache($path);
+        \clearstatcache(true, $path);
 
         return new Success($atime);
     }
@@ -160,7 +160,7 @@ class BlockingDriver implements Driver {
             ));
         }
         $ctime = @\filectime($path);
-        \clearstatcache($path);
+        \clearstatcache(true, $path);
 
         return new Success($ctime);
     }
