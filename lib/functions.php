@@ -240,11 +240,11 @@ function chmod($path, $mode) {
  * chown a file or directory
  *
  * @param string $path
- * @param int $uid
- * @param int $gid
+ * @param int $uid -1 to ignore
+ * @param int $gid -1 to ignore
  * @return \Amp\Promise<null>
  */
-function chown($path, $uid, $gid) {
+function chown($path, $uid, $gid = -1) {
     return filesystem()->chown($path, $uid, $gid);
 }
 

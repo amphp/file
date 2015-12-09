@@ -247,17 +247,19 @@ class BlockingDriver implements Driver {
      * {@inheritdoc}
      */
     public function chown($path, $uid, $gid) {
-        if (!@\chown($path, $uid)) {
+        if ($uid !== -1 && !@\chown($path, $uid)) {
             return new Failure(new FilesystemException(
                 \error_get_last()["message"]
             ));
-        } elseif (!@\chgrp($path, $gid)) {
-            return new Failure(new FilesystemException(
-                \error_get_last()["message"]
-            ));
-        } else {
-            return new Success;
         }
+
+        if ($gid !== -1 && !@\chgrp($path, $gid)) {
+            return new Failure(new FilesystemException(
+                \error_get_last()["message"]
+            ));
+        }
+
+        return new Success;
     }
 
     /**
