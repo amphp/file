@@ -41,7 +41,7 @@ class UvHandle implements Handle {
         $op->type = self::OP_READ;
         $op->position = $this->position;
         $op->promisor = $promisor;
-        $op->readLen = $readLen - 1;
+        $op->readLen = $readLen;
         if ($this->isActive) {
             $this->queue[] = $op;
         } else {
