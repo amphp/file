@@ -28,7 +28,7 @@ class BlockingHandle implements Handle {
         if ($data !== false) {
             return new Success($data);
         } else {
-            return new Failure(new \RuntimeException(
+            return new Failure(new FilesystemException(
                 "Failed reading from file handle"
             ));
         }
@@ -42,7 +42,7 @@ class BlockingHandle implements Handle {
         if ($len !== false) {
             return new Success($data);
         } else {
-            return new Failure(new \RuntimeException(
+            return new Failure(new FilesystemException(
                 "Failed writing to file handle"
             ));
         }
@@ -55,7 +55,7 @@ class BlockingHandle implements Handle {
         if (\fclose($this->fh)) {
             return new Success;
         } else {
-            return new Failure(new \RuntimeException(
+            return new Failure(new FilesystemException(
                 "Failed closing file handle"
             ));
         }
