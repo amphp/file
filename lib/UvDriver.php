@@ -48,7 +48,7 @@ class UvDriver implements Driver {
             } else {
                 $this->reactor->delRef();
                 list( , $path, $promisor) = $openArr;
-                $promisor->fail(new \RuntimeException(
+                $promisor->fail(new FilesystemException(
                     "Failed opening file handle to $path"
                 ));
             }
@@ -403,7 +403,7 @@ class UvDriver implements Driver {
         $promise = $this->doFsOpen($path, $flags = \UV::O_RDONLY, $mode = 0);
         if (!$fh = (yield $promise)) {
             $this->reactor->delRef();
-            throw new \RuntimeException(
+            throw new FilesystemException(
                 "Failed opening file handle: {$path}"
             );
         }
@@ -412,13 +412,13 @@ class UvDriver implements Driver {
         $stat = (yield $this->doFsStat($fh));
         if (empty($stat)) {
             $this->reactor->delRef();
-            $promisor->fail(new \RuntimeException(
+            $promisor->fail(new FilesystemException(
                 "stat operation failed on open file handle"
             ));
         } elseif (!$stat["isfile"]) {
             \uv_fs_close($this->loop, $fh, function() use ($promisor) {
                 $this->reactor->delRef();
-                $promisor->fail(new \RuntimeException(
+                $promisor->fail(new FilesystemException(
                     "cannot buffer contents: path is not a file"
                 ));
             });
@@ -427,7 +427,7 @@ class UvDriver implements Driver {
             if ($buffer === false ) {
                 \uv_fs_close($this->loop, $fh, function() use ($promisor) {
                     $this->reactor->delRef();
-                    $promisor->fail(new \RuntimeException(
+                    $promisor->fail(new FilesystemException(
                         "read operation failed on open file handle"
                     ));
                 });
@@ -489,7 +489,7 @@ class UvDriver implements Driver {
         $promise = $this->doFsOpen($path, $flags, $mode);
         if (!$fh = (yield $promise)) {
             $this->reactor->delRef();
-            throw new \RuntimeException(
+            throw new FilesystemException(
                 "Failed opening write file handle"
             );
         }
@@ -500,7 +500,7 @@ class UvDriver implements Driver {
             \uv_fs_close($this->loop, $fh, function() use ($promisor, $result, $len) {
                 $this->reactor->delRef();
                 if ($result < 0) {
-                    $promisor->fail(new \RuntimeException(
+                    $promisor->fail(new FilesystemException(
                         uv_strerror($result)
                     ));
                 } else {

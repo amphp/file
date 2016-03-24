@@ -1,3 +1,7 @@
+### 0.1.2
+
+- Make UvHandle throw FilesystemException instead of \RuntimeException
+
 ### 0.1.1
 
 - UID / GID must be ignored when -1
