@@ -18,7 +18,7 @@ interface Driver {
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *
      * @param string $path The file system path to stat
-     * @return \Amp\Promise<array|null>
+     * @return \Interop\Async\Awaitable<array|null>
      */
     public function stat($path);
 
@@ -29,7 +29,7 @@ interface Driver {
      * indicating the existence of the specified path.
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<bool>
+     * @return \Interop\Async\Awaitable<bool>
      */
     public function exists($path);
 
@@ -40,7 +40,7 @@ interface Driver {
      * function's returned Promise WILL resolve as a failure.
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
+     * @return \Interop\Async\Awaitable<int>
      */
     public function size($path);
 
@@ -51,7 +51,7 @@ interface Driver {
      * to FALSE and will not reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<bool>
+     * @return \Interop\Async\Awaitable<bool>
      */
     public function isdir($path);
 
@@ -62,7 +62,7 @@ interface Driver {
      * to FALSE and will not reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<bool>
+     * @return \Interop\Async\Awaitable<bool>
      */
     public function isfile($path);
 
@@ -70,7 +70,7 @@ interface Driver {
      * Retrieve the path's last modification time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
+     * @return \Interop\Async\Awaitable<int>
      */
     public function mtime($path);
 
@@ -78,7 +78,7 @@ interface Driver {
      * Retrieve the path's last access time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
+     * @return \Interop\Async\Awaitable<int>
      */
     public function atime($path);
 
@@ -86,7 +86,7 @@ interface Driver {
      * Retrieve the path's creation time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
+     * @return \Interop\Async\Awaitable<int>
      */
     public function ctime($path);
 
@@ -94,7 +94,7 @@ interface Driver {
      * Same as stat() except if the path is a link then the link's data is returned
      *
      * @param string $path The file system path to stat
-     * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
+     * @return \Interop\Async\Awaitable A promise resolving to an associative array upon successful resolution
      */
     public function lstat($path);
 
@@ -103,7 +103,7 @@ interface Driver {
      *
      * @param string $target
      * @param string $link
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function symlink($target, $link);
 
@@ -112,7 +112,7 @@ interface Driver {
      *
      * @param string $from
      * @param string $to
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function rename($from, $to);
 
@@ -120,7 +120,7 @@ interface Driver {
      * Delete a file
      *
      * @param string $path
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function unlink($path);
 
@@ -129,7 +129,7 @@ interface Driver {
      *
      * @param string $path
      * @param int $mode
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function mkdir($path, $mode = 0644);
 
@@ -137,7 +137,7 @@ interface Driver {
      * Delete a directory
      *
      * @param string $path
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function rmdir($path);
 
@@ -147,7 +147,7 @@ interface Driver {
      * Dot entries are not included in the resulting array (i.e. "." and "..").
      *
      * @param string $path
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function scandir($path);
 
@@ -156,7 +156,7 @@ interface Driver {
      *
      * @param string $path
      * @param int $mode
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function chmod($path, $mode);
 
@@ -166,7 +166,7 @@ interface Driver {
      * @param string $path
      * @param int $uid
      * @param int $gid
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function chown($path, $uid, $gid);
 
@@ -176,7 +176,7 @@ interface Driver {
      * If the file does not exist it will be created automatically.
      *
      * @param string $path
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function touch($path);
 
@@ -184,7 +184,7 @@ interface Driver {
      * Buffer the specified file's contents
      *
      * @param string $path The file path from which to buffer contents
-     * @return \Amp\Promise A promise resolving to a string upon successful resolution
+     * @return \Interop\Async\Awaitable A promise resolving to a string upon successful resolution
      */
     public function get($path);
 
@@ -193,7 +193,7 @@ interface Driver {
      *
      * @param string $path The file path to which to $contents should be written
      * @param string $contents The data to write to the specified $path
-     * @return \Amp\Promise A promise resolving to the integer length written upon success
+     * @return \Interop\Async\Awaitable A promise resolving to the integer length written upon success
      */
     public function put($path, $contents);
 }

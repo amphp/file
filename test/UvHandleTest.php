@@ -6,13 +6,13 @@ use Amp as amp;
 use Amp\File as file;
 
 class UvHandleTest extends HandleTest {
-    protected function setUp() {
+    protected function lRun(callable $cb) {
         if (\extension_loaded("uv")) {
-            $reactor = new amp\UvReactor;
-            amp\reactor($reactor);
-            $driver = new file\UvDriver($reactor);
-            file\filesystem($driver);
-            parent::setUp();
+            $loop = new \Amp\Loop\UvLoop;
+            \Interop\Async\Loop::execute(function() use ($cb, $loop) {
+                \Amp\File\filesystem(new \Amp\File\UvDriver($loop));
+                \Amp\rethrow(new \Amp\Coroutine($cb()));
+            }, $loop);
         } else {
             $this->markTestSkipped(
                 "php-uv extension not loaded"
@@ -21,7 +21,7 @@ class UvHandleTest extends HandleTest {
     }
 
     public function testQueuedWritesOverrideEachOtherIfNotWaitedUpon() {
-        amp\run(function () {
+        $this->lRun(function () {
             $path = Fixture::path() . "/write";
             $handle = (yield file\open($path, "c+"));
             $this->assertSame(0, $handle->tell());

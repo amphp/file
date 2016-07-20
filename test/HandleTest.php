@@ -2,7 +2,6 @@
 
 namespace Amp\File\Test;
 
-use Amp as amp;
 use Amp\File as file;
 
 abstract class HandleTest extends \PHPUnit_Framework_TestCase {
@@ -18,8 +17,10 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
         file\StatCache::clear();
     }
 
+    abstract protected function lRun(callable $cb);
+
     public function testWrite() {
-        amp\run(function () {
+        $this->lRun(function () {
             $path = Fixture::path() . "/write";
             $handle = (yield file\open($path, "c+"));
             $this->assertSame(0, $handle->tell());
@@ -38,7 +39,7 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testReadingToEof() {
-        amp\run(function () {
+        $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $contents = "";
             $position = 0;
@@ -58,7 +59,7 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testQueuedReads() {
-        amp\run(function () {
+        $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
 
             $contents = "";
@@ -75,7 +76,7 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testReadingFromOffset() {
-        amp\run(function () {
+        $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame(0, $handle->tell());
             $handle->seek(10);
@@ -88,18 +89,18 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException Amp\File\FilesystemException
+     * @expectedException \Amp\File\FilesystemException
      * @expectedExceptionMessage Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected
      */
     public function testSeekThrowsOnInvalidWhence() {
-        amp\run(function () {
+        $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $handle->seek(0, 99999);
         });
     }
 
     public function testSeekSetCur() {
-        amp\run(function () {
+        $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame(0, $handle->tell());
             $handle->seek(10);
@@ -110,7 +111,7 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testSeekSetEnd() {
-        amp\run(function () {
+        $this->lRun(function () {
             $size = (yield file\size(__FILE__));
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame(0, $handle->tell());
@@ -120,21 +121,21 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame(__FILE__, $handle->path());
         });
     }
 
     public function testMode() {
-        amp\run(function () {
+        $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame("r", $handle->mode());
         });
     }
 
     public function testClose() {
-        amp\run(function () {
+        $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             yield $handle->close();
         });

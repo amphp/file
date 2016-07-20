@@ -6,11 +6,12 @@ use Amp as amp;
 use Amp\File as file;
 
 class EioHandleTest extends HandleTest {
-    protected function setUp() {
+    protected function lRun(callable $cb) {
         if (\extension_loaded("eio")) {
-            amp\reactor(amp\driver());
-            file\filesystem(new file\EioDriver);
-            parent::setUp();
+            \Interop\Async\Loop::execute(function() use ($cb) {
+                \Amp\File\filesystem(new \Amp\File\EioDriver);
+                \Amp\rethrow(new \Amp\Coroutine($cb()));
+            });
         } else {
             $this->markTestSkipped(
                 "eio extension not loaded"
@@ -19,7 +20,7 @@ class EioHandleTest extends HandleTest {
     }
 
     public function testQueuedWritesOverrideEachOtherIfNotWaitedUpon() {
-        amp\run(function () {
+        $this->lRun(function () {
             $path = Fixture::path() . "/write";
             $handle = (yield file\open($path, "c+"));
             $this->assertSame(0, $handle->tell());

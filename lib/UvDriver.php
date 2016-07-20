@@ -2,21 +2,31 @@
 
 namespace Amp\File;
 
-use Amp\UvReactor;
 use Amp\Success;
 use Amp\Failure;
 use Amp\Deferred;
+use Amp\Coroutine;
 
 class UvDriver implements Driver {
-    private $reactor;
+    private $driver;
     private $loop;
+    private $busy;
 
     /**
-     * @param \Amp\UvReactor $reactor
+     * @param \Interop\Async\Loop\Driver $driver
      */
-    public function __construct(UvReactor $reactor) {
-        $this->reactor = $reactor;
-        $this->loop = $this->reactor->getLoop();
+    public function __construct(\Interop\Async\Loop\Driver $driver) {
+        $loop = $driver->getHandle();
+        if (!is_resource($loop) || get_resource_type($loop) != "uv_loop") {
+            throw new \InvalidArgumentException("Expected a driver whose underlying loop is an uv_loop");
+        }
+        
+        $this->driver = $driver;
+        $this->loop = $loop;
+        
+        // dummy handle to be able to tell the loop that there is work being done and it shouldn't abort if there are no other watchers at a given moment 
+        $this->busy = $driver->repeat(PHP_INT_MAX, function(){ });
+        $driver->unreference($this->busy);
     }
 
     /**
@@ -39,47 +49,47 @@ class UvDriver implements Driver {
             ));
         }
         $chmod = ($flags & \UV::O_CREAT) ? 0644 : 0;
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        $openArr = [$mode, $path, $promisor];
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        $openArr = [$mode, $path, $deferred];
         \uv_fs_open($this->loop, $path, $flags, $chmod, function($fh) use ($openArr) {
             if ($fh) {
                 $this->onOpenHandle($fh, $openArr);
             } else {
-                $this->reactor->delRef();
-                list( , $path, $promisor) = $openArr;
-                $promisor->fail(new FilesystemException(
+                $this->driver->unreference($this->busy);
+                list( , $path, $deferred) = $openArr;
+                $deferred->fail(new FilesystemException(
                     "Failed opening file handle to $path"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function onOpenHandle($fh, array $openArr) {
         list($mode) = $openArr;
         if ($mode[0] === "w") {
             \uv_fs_ftruncate($this->loop, $fh, $length = 0, function($fh) use ($openArr) {
-                $this->reactor->delRef();
+                $this->driver->unreference($this->busy);
                 if ($fh) {
                     $this->finalizeHandle($fh, $size = 0, $openArr);
                 } else {
-                    list( , $path, $promisor) = $openArr;
-                    $promisor->fail(new FilesystemException(
+                    list( , $path, $deferred) = $openArr;
+                    $deferred->fail(new FilesystemException(
                         "Failed truncating file $path"
                     ));
                 }
             });
         } else {
             \uv_fs_fstat($this->loop, $fh, function($fh, $stat) use ($openArr) {
-                $this->reactor->delRef();
+                $this->driver->unreference($this->busy);
                 if ($fh) {
                     StatCache::set($openArr[1], $stat);
                     $this->finalizeHandle($fh, $stat["size"], $openArr);
                 } else {
-                    list( , $path, $promisor) = $openArr;
-                    $promisor->fail(new FilesystemException(
+                    list( , $path, $deferred) = $openArr;
+                    $deferred->fail(new FilesystemException(
                         "Failed reading file size from open handle pointing to $path"
                     ));
                 }
@@ -88,9 +98,9 @@ class UvDriver implements Driver {
     }
 
     private function finalizeHandle($fh, $size, array $openArr) {
-        list($mode, $path, $promisor) = $openArr;
-        $handle = new UvHandle($this->reactor, $fh, $path, $mode, $size);
-        $promisor->succeed($handle);
+        list($mode, $path, $deferred) = $openArr;
+        $handle = new UvHandle($this->loop, $this->busy, $fh, $path, $mode, $size);
+        $deferred->resolve($handle);
     }
 
     /**
@@ -101,263 +111,263 @@ class UvDriver implements Driver {
             return new Success($stat);
         }
 
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_stat($this->loop, $path, function($fh, $stat) use ($promisor, $path) {
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_stat($this->loop, $path, function($fh, $stat) use ($deferred, $path) {
             if (empty($fh)) {
                 $stat = null;
             } else {
                 StatCache::set($path, $stat);
             }
-            $this->reactor->delRef();
-            $promisor->succeed($stat);
+            $this->driver->unreference($this->busy);
+            $deferred->resolve($stat);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function exists($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
-            $promisor->succeed((bool) $result);
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+            $deferred->resolve((bool) $result);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function isdir($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed(!($result["mode"] & \UV::S_IFREG));
+                $deferred->resolve(!($result["mode"] & \UV::S_IFREG));
             } else {
-                $promisor->succeed(false);
+                $deferred->resolve(false);
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function isfile($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed((bool) ($result["mode"] & \UV::S_IFREG));
+                $deferred->resolve((bool) ($result["mode"] & \UV::S_IFREG));
             } else {
-                $promisor->succeed(false);
+                $deferred->resolve(false);
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function size($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if (empty($result)) {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
                 ));
             } elseif (($result["mode"] & \UV::S_IFREG)) {
-                $promisor->succeed($result["size"]);
+                $deferred->resolve($result["size"]);
             } else {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path is not a regular file"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function mtime($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed($result["mtime"]);
+                $deferred->resolve($result["mtime"]);
             } else {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function atime($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed($result["atime"]);
+                $deferred->resolve($result["atime"]);
             } else {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function ctime($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed($result["ctime"]);
+                $deferred->resolve($result["ctime"]);
             } else {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function lstat($path) {
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_lstat($this->loop, $path, function($fh, $stat) use ($promisor) {
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_lstat($this->loop, $path, function($fh, $stat) use ($deferred) {
             if (empty($fh)) {
                 $stat = null;
             }
-            $this->reactor->delRef();
-            $promisor->succeed($stat);
+            $this->driver->unreference($this->busy);
+            $deferred->resolve($stat);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function symlink($target, $link) {
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function($fh) use ($promisor) {
-            $this->reactor->delRef();
-            $promisor->succeed((bool)$fh);
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function($fh) use ($deferred) {
+            $this->driver->unreference($this->busy);
+            $deferred->resolve((bool)$fh);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function rename($from, $to) {
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_rename($this->loop, $from, $to, function($fh) use ($promisor, $from) {
-            $this->reactor->delRef();
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_rename($this->loop, $from, $to, function($fh) use ($deferred, $from) {
+            $this->driver->unreference($this->busy);
             StatCache::clear($from);
-            $promisor->succeed((bool)$fh);
+            $deferred->resolve((bool)$fh);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function unlink($path) {
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_unlink($this->loop, $path, function($fh) use ($promisor, $path) {
-            $this->reactor->delRef();
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_unlink($this->loop, $path, function($fh) use ($deferred, $path) {
+            $this->driver->unreference($this->busy);
             StatCache::clear($path);
-            $promisor->succeed((bool)$fh);
+            $deferred->resolve((bool)$fh);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function mkdir($path, $mode = 0644) {
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_mkdir($this->loop, $path, $mode, function($fh) use ($promisor) {
-            $this->reactor->delRef();
-            $promisor->succeed((bool)$fh);
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_mkdir($this->loop, $path, $mode, function($fh) use ($deferred) {
+            $this->driver->unreference($this->busy);
+            $deferred->resolve((bool)$fh);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function rmdir($path) {
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_rmdir($this->loop, $path, function($fh) use ($promisor, $path) {
-            $this->reactor->delRef();
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_rmdir($this->loop, $path, function($fh) use ($deferred, $path) {
+            $this->driver->unreference($this->busy);
             StatCache::clear($path);
-            $promisor->succeed((bool)$fh);
+            $deferred->resolve((bool)$fh);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function scandir($path) {
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        uv_fs_readdir($this->loop, $path, 0, function($fh, $data) use ($promisor, $path) {
-            $this->reactor->delRef();
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        uv_fs_readdir($this->loop, $path, 0, function($fh, $data) use ($deferred, $path) {
+            $this->driver->unreference($this->busy);
             if (empty($fh)) {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Failed reading contents from {$path}"
                 ));
             } else {
-                $promisor->succeed($data);
+                $deferred->resolve($data);
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function chmod($path, $mode) {
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_chmod($this->loop, $path, $mode, function($fh) use ($promisor) {
-            $this->reactor->delRef();
-            $promisor->succeed((bool)$fh);
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_chmod($this->loop, $path, $mode, function($fh) use ($deferred) {
+            $this->driver->unreference($this->busy);
+            $deferred->resolve((bool)$fh);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
@@ -365,150 +375,150 @@ class UvDriver implements Driver {
      */
     public function chown($path, $uid, $gid) {
         // @TODO Return a failure in windows environments
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_chown($this->loop, $path, $uid, $gid, function($fh) use ($promisor) {
-            $this->reactor->delRef();
-            $promisor->succeed((bool)$fh);
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_chown($this->loop, $path, $uid, $gid, function($fh) use ($deferred) {
+            $this->driver->unreference($this->busy);
+            $deferred->resolve((bool)$fh);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function touch($path) {
-        $this->reactor->addRef();
+        $this->driver->reference($this->busy);
         $atime = $mtime = time();
-        $promisor = new Deferred;
-        \uv_fs_utime($this->loop, $path, $mtime, $atime, function() use ($promisor) {
+        $deferred = new Deferred;
+        \uv_fs_utime($this->loop, $path, $mtime, $atime, function() use ($deferred) {
             // The uv_fs_utime() callback does not receive any args at this time
-            $this->reactor->delRef();
-            $promisor->succeed(true);
+            $this->driver->unreference($this->busy);
+            $deferred->resolve(true);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function get($path) {
-        return \Amp\resolve($this->doGet($path), $this->reactor);
+        return \Amp\resolve($this->doGet($path), $this->driver);
     }
 
     private function doGet($path): \Generator {
-        $this->reactor->addRef();
-        $promise = $this->doFsOpen($path, $flags = \UV::O_RDONLY, $mode = 0);
-        if (!$fh = (yield $promise)) {
-            $this->reactor->delRef();
+        $this->driver->reference($this->busy);
+        $awaitable = $this->doFsOpen($path, $flags = \UV::O_RDONLY, $mode = 0);
+        if (!$fh = yield $awaitable) {
+            $this->driver->unreference($this->busy);
             throw new FilesystemException(
                 "Failed opening file handle: {$path}"
             );
         }
 
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $stat = (yield $this->doFsStat($fh));
         if (empty($stat)) {
-            $this->reactor->delRef();
-            $promisor->fail(new FilesystemException(
+            $this->driver->unreference($this->busy);
+            $deferred->fail(new FilesystemException(
                 "stat operation failed on open file handle"
             ));
         } elseif (!$stat["isfile"]) {
-            \uv_fs_close($this->loop, $fh, function() use ($promisor) {
-                $this->reactor->delRef();
-                $promisor->fail(new FilesystemException(
+            \uv_fs_close($this->loop, $fh, function() use ($deferred) {
+                $this->driver->unreference($this->busy);
+                $deferred->fail(new FilesystemException(
                     "cannot buffer contents: path is not a file"
                 ));
             });
         } else {
             $buffer = (yield $this->doFsRead($fh, $offset = 0, $stat["size"]));
             if ($buffer === false ) {
-                \uv_fs_close($this->loop, $fh, function() use ($promisor) {
-                    $this->reactor->delRef();
-                    $promisor->fail(new FilesystemException(
+                \uv_fs_close($this->loop, $fh, function() use ($deferred) {
+                    $this->driver->unreference($this->busy);
+                    $deferred->fail(new FilesystemException(
                         "read operation failed on open file handle"
                     ));
                 });
             } else {
-                \uv_fs_close($this->loop, $fh, function() use ($promisor, $buffer) {
-                    $this->reactor->delRef();
-                    $promisor->succeed($buffer);
+                \uv_fs_close($this->loop, $fh, function() use ($deferred, $buffer) {
+                    $this->driver->unreference($this->busy);
+                    $deferred->resolve($buffer);
                 });
             }
         }
 
-        yield new \Amp\CoroutineResult(yield $promisor->promise());
+        yield Coroutine::result(yield $deferred->getAwaitable());
     }
 
     private function doFsOpen($path, $flags, $mode) {
-        $promisor = new Deferred;
-        \uv_fs_open($this->loop, $path, $flags, $mode, function($fh) use ($promisor, $path) {
-            $promisor->succeed($fh);
+        $deferred = new Deferred;
+        \uv_fs_open($this->loop, $path, $flags, $mode, function($fh) use ($deferred, $path) {
+            $deferred->resolve($fh);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function doFsStat($fh) {
-        $promisor = new Deferred;
-        \uv_fs_fstat($this->loop, $fh, function($fh, $stat) use ($promisor) {
+        $deferred = new Deferred;
+        \uv_fs_fstat($this->loop, $fh, function($fh, $stat) use ($deferred) {
             if ($fh) {
                 $stat["isdir"] = (bool) ($stat["mode"] & \UV::S_IFDIR);
                 $stat["isfile"] = !$stat["isdir"];
-                $promisor->succeed($stat);
+                $deferred->resolve($stat);
             } else {
-                $promisor->succeed();
+                $deferred->resolve();
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function doFsRead($fh, $offset, $len) {
-        $promisor = new Deferred;
-        \uv_fs_read($this->loop, $fh, $offset, $len, function($fh, $nread, $buffer) use ($promisor) {
-            $promisor->succeed(($nread < 0) ? false : $buffer);
+        $deferred = new Deferred;
+        \uv_fs_read($this->loop, $fh, $offset, $len, function($fh, $nread, $buffer) use ($deferred) {
+            $deferred->resolve($nread < 0 ? false : $buffer);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function put($path, $contents) {
-        return \Amp\resolve($this->doPut($path, $contents), $this->reactor);
+        return \Amp\resolve($this->doPut($path, $contents), $this->driver);
     }
 
     private function doPut($path, $contents): \Generator {
         $flags = \UV::O_WRONLY | \UV::O_CREAT;
         $mode = \UV::S_IRWXU | \UV::S_IRUSR;
-        $this->reactor->addRef();
-        $promise = $this->doFsOpen($path, $flags, $mode);
-        if (!$fh = (yield $promise)) {
-            $this->reactor->delRef();
+        $this->driver->reference($this->busy);
+        $awaitable = $this->doFsOpen($path, $flags, $mode);
+        if (!$fh = yield $awaitable) {
+            $this->driver->unreference($this->busy);
             throw new FilesystemException(
                 "Failed opening write file handle"
             );
         }
 
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $len = strlen($contents);
-        \uv_fs_write($this->loop, $fh, $contents, $offset = 0, function($fh, $result) use ($promisor, $len) {
-            \uv_fs_close($this->loop, $fh, function() use ($promisor, $result, $len) {
-                $this->reactor->delRef();
+        \uv_fs_write($this->loop, $fh, $contents, $offset = 0, function($fh, $result) use ($deferred, $len) {
+            \uv_fs_close($this->loop, $fh, function() use ($deferred, $result, $len) {
+                $this->driver->unreference($this->busy);
                 if ($result < 0) {
-                    $promisor->fail(new FilesystemException(
-                        uv_strerror($result)
+                    $deferred->fail(new FilesystemException(
+                        \uv_strerror($result)
                     ));
                 } else {
-                    $promisor->succeed($len);
+                    $deferred->resolve($len);
                 }
             });
         });
 
-        yield new \Amp\CoroutineResult(yield $promisor->promise());
+        yield Coroutine::result(yield $deferred->getAwaitable());
     }
 }

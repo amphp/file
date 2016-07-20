@@ -2,8 +2,8 @@
 
 namespace Amp\File\Test;
 
-use Amp as amp;
 use Amp\File as file;
+use Interop\Async\Loop;
 
 abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     private static $fixtureId;
@@ -58,9 +58,11 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     protected function setUp() {
         file\StatCache::clear();
     }
+    
+    abstract protected function lRun(callable $cb);
 
     public function testScandir() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $actual = (yield file\scandir($fixtureDir));
             $expected = ["dir", "small.txt"];
@@ -72,7 +74,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \Amp\File\FilesystemException
      */
     public function testScandirThrowsIfPathNotADirectory() {
-        amp\run(function () {
+        $this->lRun(function () {
             (yield file\scandir(__FILE__));
         });
     }
@@ -81,14 +83,14 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \Amp\File\FilesystemException
      */
     public function testScandirThrowsIfPathDoesntExist() {
-        amp\run(function () {
+        $this->lRun(function () {
             $path = self::getFixturePath() . "/nonexistent";
             (yield file\scandir($path));
         });
     }
 
     public function testSymlink() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
 
             $original = "{$fixtureDir}/small.txt";
@@ -100,7 +102,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testLstat() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
 
             $target = "{$fixtureDir}/small.txt";
@@ -112,7 +114,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testFileStat() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $stat = (yield file\stat("{$fixtureDir}/small.txt"));
             $this->assertInternalType("array", $stat);
@@ -120,7 +122,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testDirStat() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $stat = (yield file\stat("{$fixtureDir}/dir"));
             $this->assertInternalType("array", $stat);
@@ -128,7 +130,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testNonexistentPathStatResolvesToNull() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $stat = (yield file\stat("{$fixtureDir}/nonexistent"));
             $this->assertNull($stat);
@@ -136,7 +138,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testExists() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $this->assertFalse(yield file\exists("{$fixtureDir}/nonexistent"));
             $this->assertTrue(yield file\exists("{$fixtureDir}/small.txt"));
@@ -144,7 +146,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testSize() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $stat = (yield file\stat($path));
@@ -158,7 +160,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \Amp\File\FilesystemException
      */
     public function testSizeFailsOnNonexistentPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             yield file\size($path);
@@ -169,7 +171,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \Amp\File\FilesystemException
      */
     public function testSizeFailsOnDirectoryPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/dir";
             $this->assertTrue(yield file\isdir($path));
@@ -179,7 +181,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testIsdirResolvesTrueOnDirectoryPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/dir";
             $this->assertTrue(yield file\isdir($path));
@@ -187,7 +189,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testIsdirResolvesFalseOnFilePath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $this->assertFalse(yield file\isdir($path));
@@ -195,7 +197,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testIsdirResolvesFalseOnNonexistentPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             $this->assertFalse(yield file\isdir($path));
@@ -203,7 +205,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testIsfileResolvesTrueOnFilePath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $this->assertTrue(yield file\isfile($path));
@@ -211,7 +213,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testIsfileResolvesFalseOnDirectoryPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/dir";
             $this->assertFalse(yield file\isfile($path));
@@ -219,7 +221,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testIsfileResolvesFalseOnNonexistentPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             $this->assertFalse(yield file\isfile($path));
@@ -227,7 +229,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testRename() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
 
             $contents1 = "rename test";
@@ -244,7 +246,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testUnlink() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $toUnlink = "{$fixtureDir}/unlink";
             yield file\put($toUnlink, "unlink me");
@@ -255,20 +257,20 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testMkdirRmdir() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
 
             $dir = "{$fixtureDir}/newdir";
 
             yield file\mkdir($dir);
-            $stat = (yield file\stat($dir));
+            yield file\stat($dir);
             yield file\rmdir($dir);
             $this->assertNull(yield file\stat($dir));
         });
     }
 
     public function testMtime() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $stat = (yield file\stat($path));
@@ -282,7 +284,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \Amp\File\FilesystemException
      */
     public function testMtimeFailsOnNonexistentPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             yield file\mtime($path);
@@ -290,7 +292,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testAtime() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $stat = (yield file\stat($path));
@@ -304,7 +306,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \Amp\File\FilesystemException
      */
     public function testAtimeFailsOnNonexistentPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             yield file\atime($path);
@@ -312,7 +314,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testCtime() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/small.txt";
             $stat = (yield file\stat($path));
@@ -326,7 +328,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
      * @expectedException \Amp\File\FilesystemException
      */
     public function testCtimeFailsOnNonexistentPath() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $path = "{$fixtureDir}/nonexistent";
             yield file\ctime($path);
@@ -337,7 +339,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
      * @group slow
      */
     public function testTouch() {
-        amp\run(function () {
+        $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
 
             $touch = "{$fixtureDir}/touch";

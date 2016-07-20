@@ -2,10 +2,10 @@
 
 namespace Amp\File;
 
-use Amp\Promise;
 use Amp\Success;
 use Amp\Failure;
 use Amp\Deferred;
+use Interop\Async\Loop;
 
 class EioDriver implements Driver {
     private $watcher;
@@ -15,10 +15,10 @@ class EioDriver implements Driver {
     private static $stream;
 
     /**
-     * We have to keep a static reference of eio event streams
-     * because if we don't garbage collection can unload eio's
+     * We have to keep a static reference of eio event streams,
+     * because if we don't, garbage collection can unload eio's
      * underlying pipe via a system close() call before it's
-     * finished and generate a SIGPIPE.
+     * finished which generates a SIGPIPE.
      */
     public function __construct() {
         if (empty(self::$stream)) {
@@ -40,16 +40,17 @@ class EioDriver implements Driver {
                     );
             }
             if ($this->pending === 0) {
-                \Amp\disable($this->watcher);
+                Loop::disable($this->watcher);
             } elseif ($this->pending === 1) {
-                \Amp\enable($this->watcher);
+                Loop::enable($this->watcher);
             }
         };
-        $this->watcher = \Amp\onReadable(self::$stream, function() {
+        $this->watcher = Loop::onReadable(self::$stream, function() {
             while (\eio_npending()) {
                 \eio_poll();
             }
-        }, $options = ["enable" => false]);
+        });
+        Loop::disable($this->watcher);
     }
 
     /**
@@ -73,18 +74,18 @@ class EioDriver implements Driver {
         }
         $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
-        $openArr = [$mode, $path, $promisor];
+        $deferred = new Deferred;
+        $openArr = [$mode, $path, $deferred];
         \eio_open($path, $flags, $chmod, $priority = null, [$this, "onOpenHandle"], $openArr);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function onOpenHandle($openArr, $result, $req) {
-        list($mode, $path, $promisor) = $openArr;
+        list($mode, $path, $deferred) = $openArr;
         if ($result === -1) {
             \call_user_func($this->incrementor, -1);
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } elseif ($mode[0] === "a") {
@@ -98,28 +99,28 @@ class EioDriver implements Driver {
 
     private function onOpenFtruncate($openArr, $result, $req) {
         \call_user_func($this->incrementor, -1);
-        list($fh, $mode, $path, $promisor) = $openArr;
+        list($fh, $mode, $path, $deferred) = $openArr;
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
             $handle = new EioHandle($this->incrementor, $fh, $path, $mode, $size = 0);
-            $promisor->succeed($handle);
+            $deferred->resolve($handle);
         }
     }
 
     private function onOpenFstat($openArr, $result, $req) {
         \call_user_func($this->incrementor, -1);
-        list($fh, $mode, $path, $promisor) = $openArr;
+        list($fh, $mode, $path, $deferred) = $openArr;
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
             StatCache::set($path, $result);
             $handle = new EioHandle($this->incrementor, $fh, $path, $mode, $result["size"]);
-            $promisor->succeed($handle);
+            $deferred->resolve($handle);
         }
     }
 
@@ -132,22 +133,22 @@ class EioDriver implements Driver {
         }
 
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        $data = [$promisor, $path];
+        $data = [$deferred, $path];
         \eio_stat($path, $priority, [$this, "onStat"], $data);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function onStat($data, $result, $req) {
-        list($promisor, $path) = $data;
+        list($deferred, $path) = $data;
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $promisor->succeed(null);
+            $deferred->resolve(null);
         } else {
             StatCache::set($path, $result);
-            $promisor->succeed($result);
+            $deferred->resolve($result);
         }
     }
 
@@ -155,120 +156,120 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function exists($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
-            $promisor->succeed((bool) $result);
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+            $deferred->resolve((bool) $result);
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function isdir($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed(!($result["mode"] & \EIO_S_IFREG));
+                $deferred->resolve(!($result["mode"] & \EIO_S_IFREG));
             } else {
-                $promisor->succeed(false);
+                $deferred->resolve(false);
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function isfile($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed((bool) ($result["mode"] & \EIO_S_IFREG));
+                $deferred->resolve((bool) ($result["mode"] & \EIO_S_IFREG));
             } else {
-                $promisor->succeed(false);
+                $deferred->resolve(false);
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function size($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if (empty($result)) {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
                 ));
             } elseif (($result["mode"] & \EIO_S_IFREG)) {
-                $promisor->succeed($result["size"]);
+                $deferred->resolve($result["size"]);
             } else {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path is not a regular file"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function mtime($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed($result["mtime"]);
+                $deferred->resolve($result["mtime"]);
             } else {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function atime($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed($result["atime"]);
+                $deferred->resolve($result["atime"]);
             } else {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
      * {@inheritdoc}
      */
     public function ctime($path) {
-        $promisor = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($promisor) {
+        $deferred = new Deferred;
+        $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
-                $promisor->succeed($result["ctime"]);
+                $deferred->resolve($result["ctime"]);
             } else {
-                $promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
                 ));
             }
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
@@ -276,19 +277,19 @@ class EioDriver implements Driver {
      */
     public function lstat($path) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_lstat($path, $priority, [$this, "onLstat"], $promisor);
+        \eio_lstat($path, $priority, [$this, "onLstat"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
-    private function onLstat($promisor, $result, $req) {
+    private function onLstat($deferred, $result, $req) {
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $promisor->succeed(null);
+            $deferred->resolve(null);
         } else {
-            $promisor->succeed($result);
+            $deferred->resolve($result);
         }
     }
 
@@ -297,21 +298,21 @@ class EioDriver implements Driver {
      */
     public function symlink($target, $link) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_symlink($target, $link, $priority, [$this, "onGenericResult"], $promisor);
+        \eio_symlink($target, $link, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
-    private function onGenericResult($promisor, $result, $req) {
+    private function onGenericResult($deferred, $result, $req) {
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
-            $promisor->succeed(true);
+            $deferred->resolve(true);
         }
     }
 
@@ -320,11 +321,11 @@ class EioDriver implements Driver {
      */
     public function rename($from, $to) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_rename($from, $to, $priority, [$this, "onGenericResult"], $promisor);
+        \eio_rename($from, $to, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
@@ -332,24 +333,24 @@ class EioDriver implements Driver {
      */
     public function unlink($path) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        $data = [$promisor, $path];
+        $data = [$deferred, $path];
         \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function onUnlink($data, $result, $req) {
-        list($promisor, $path) = $data;
+        list($deferred, $path) = $data;
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
             StatCache::clear($path);
-            $promisor->succeed(true);
+            $deferred->resolve(true);
         }
     }
 
@@ -358,11 +359,11 @@ class EioDriver implements Driver {
      */
     public function mkdir($path, $mode = 0644) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $promisor);
+        \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
@@ -370,24 +371,24 @@ class EioDriver implements Driver {
      */
     public function rmdir($path) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        $data = [$promisor, $path];
+        $data = [$deferred, $path];
         \eio_rmdir($path, $priority, [$this, "onRmdir"], $data);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function onRmdir($data, $result, $req) {
-        list($promisor, $path) = $data;
+        list($deferred, $path) = $data;
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
             StatCache::clear($path);
-            $promisor->succeed(true);
+            $deferred->resolve(true);
         }
     }
 
@@ -396,22 +397,22 @@ class EioDriver implements Driver {
      */
     public function scandir($path) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $flags = \EIO_READDIR_STAT_ORDER | \EIO_READDIR_DIRS_FIRST;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_readdir($path, $flags, $priority, [$this, "onScandir"], $promisor);
+        \eio_readdir($path, $flags, $priority, [$this, "onScandir"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
-    private function onScandir($promisor, $result, $req) {
+    private function onScandir($deferred, $result, $req) {
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
-            $promisor->succeed($result["names"]);
+            $deferred->resolve($result["names"]);
         }
     }
 
@@ -420,11 +421,11 @@ class EioDriver implements Driver {
      */
     public function chmod($path, $mode) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $promisor);
+        \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
@@ -432,11 +433,11 @@ class EioDriver implements Driver {
      */
     public function chown($path, $uid, $gid) {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_chown($path, $uid, $gid, $priority, [$this, "onGenericResult"], $promisor);
+        \eio_chown($path, $uid, $gid, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
@@ -444,11 +445,11 @@ class EioDriver implements Driver {
      */
     public function touch($path) {
         $atime = $mtime = time();
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_utime($path, $atime, $mtime, $priority, [$this, "onGenericResult"], $promisor);
+        \eio_utime($path, $atime, $mtime, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
@@ -460,27 +461,27 @@ class EioDriver implements Driver {
         $priority = \EIO_PRI_DEFAULT;
 
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
-        \eio_open($path, $flags, $mode, $priority, [$this, "onGetOpen"], $promisor);
+        $deferred = new Deferred;
+        \eio_open($path, $flags, $mode, $priority, [$this, "onGetOpen"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
-    private function onGetOpen($promisor, $result, $req) {
+    private function onGetOpen($deferred, $result, $req) {
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
             $priority = \EIO_PRI_DEFAULT;
-            \eio_fstat($result, $priority, [$this, "onGetFstat"], [$result, $promisor]);
+            \eio_fstat($result, $priority, [$this, "onGetFstat"], [$result, $deferred]);
         }
     }
 
     private function onGetFstat($fhAndPromisor, $result, $req) {
-        list($fh, $promisor) = $fhAndPromisor;
+        list($fh, $deferred) = $fhAndPromisor;
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
             return;
@@ -493,15 +494,15 @@ class EioDriver implements Driver {
     }
 
     private function onGetRead($fhAndPromisor, $result, $req) {
-        list($fh, $promisor) = $fhAndPromisor;
+        list($fh, $deferred) = $fhAndPromisor;
         $priority = \EIO_PRI_DEFAULT;
         \eio_close($fh, $priority, $this->callableDecrementor);
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
-            $promisor->succeed($result);
+            $deferred->resolve($result);
         }
     }
 
@@ -514,17 +515,17 @@ class EioDriver implements Driver {
         $priority = \EIO_PRI_DEFAULT;
 
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
-        $data = [$contents, $promisor];
+        $deferred = new Deferred;
+        $data = [$contents, $deferred];
         \eio_open($path, $flags, $mode, $priority, [$this, "onPutOpen"], $data);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function onPutOpen($data, $result, $req) {
-        list($contents, $promisor) = $data;
+        list($contents, $deferred) = $data;
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
@@ -532,26 +533,26 @@ class EioDriver implements Driver {
             $offset = 0;
             $priority = \EIO_PRI_DEFAULT;
             $callback = [$this, "onPutWrite"];
-            $fhAndPromisor = [$result, $promisor];
+            $fhAndPromisor = [$result, $deferred];
             \eio_write($result, $contents, $length, $offset, $priority, $callback, $fhAndPromisor);
         }
     }
 
     private function onPutWrite($fhAndPromisor, $result, $req) {
-        list($fh, $promisor) = $fhAndPromisor;
+        list($fh, $deferred) = $fhAndPromisor;
         \eio_close($fh);
         $priority = \EIO_PRI_DEFAULT;
         \eio_close($fh, $priority, $this->callableDecrementor);
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
-            $promisor->succeed($result);
+            $deferred->resolve($result);
         }
     }
 
     public function __destruct() {
-        \Amp\cancel($this->watcher);
+        Loop::cancel($this->watcher);
     }
 }

@@ -52,7 +52,7 @@ class BlockingDriver implements Driver {
      * function's returned Promise WILL resolve as a failure.
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
+     * @return \Interop\Async\Awaitable<int>
      */
     public function size($path) {
         if (!@\file_exists($path)) {
@@ -80,7 +80,7 @@ class BlockingDriver implements Driver {
      * to FALSE. It will NOT reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<bool>
+     * @return \Interop\Async\Awaitable<bool>
      */
     public function isdir($path) {
         if (!@\file_exists($path)) {
@@ -99,7 +99,7 @@ class BlockingDriver implements Driver {
      * to FALSE. It will NOT reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<bool>
+     * @return \Interop\Async\Awaitable<bool>
      */
     public function isfile($path) {
         if (!@\file_exists($path)) {
@@ -115,7 +115,7 @@ class BlockingDriver implements Driver {
      * Retrieve the path's last modification time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
+     * @return \Interop\Async\Awaitable<int>
      */
     public function mtime($path) {
         if (!@\file_exists($path)) {
@@ -133,7 +133,7 @@ class BlockingDriver implements Driver {
      * Retrieve the path's last access time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
+     * @return \Interop\Async\Awaitable<int>
      */
     public function atime($path) {
         if (!@\file_exists($path)) {
@@ -151,7 +151,7 @@ class BlockingDriver implements Driver {
      * Retrieve the path's creation time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
+     * @return \Interop\Async\Awaitable<int>
      */
     public function ctime($path) {
         if (!@\file_exists($path)) {

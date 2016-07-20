@@ -2,7 +2,6 @@
 
 namespace Amp\File;
 
-use Amp\Promise;
 use Amp\Success;
 use Amp\Failure;
 

@@ -1,22 +1,27 @@
 <?php
 
 namespace Amp\File;
+use Interop\Async\Loop;
+
+const LOOP_STATE_IDENTIFIER = Driver::class;
 
 /**
  * Retrieve the application-wide filesystem instance
  *
- * @param \Amp\File\Driver $assign Use the specified object as the application-wide filesystem instance
+ * @param \Amp\File\Driver $driver Use the specified object as the application-wide filesystem instance
  * @return \Amp\File\Driver
  */
-function filesystem(Driver $assign = null) {
-    static $driver;
-    if ($assign) {
-        return ($driver = $assign);
-    } elseif ($driver) {
-        return $driver;
-    } else {
-        return ($driver = driver());
+function filesystem(Driver $driver = null) {
+    if ($driver === null) {
+        $driver = Loop::fetchState(LOOP_STATE_IDENTIFIER);
+        if ($driver) {
+            return $driver;
+        }
+        
+        $driver = driver();
     }
+    Loop::storeState(LOOP_STATE_IDENTIFIER, $driver);
+    return $driver;
 }
 
 /**
@@ -25,9 +30,10 @@ function filesystem(Driver $assign = null) {
  * @return \Amp\File\Driver
  */
 function driver() {
-    $reactor = \Amp\reactor();
-    if ($reactor instanceof \Amp\UvReactor) {
-        return new UvDriver($reactor);
+    $driver = Loop::get();
+    $loop = $driver->getHandle();
+    if (is_resource($loop) && get_resource_type($loop) == "uv_loop") {
+        return new UvDriver($driver);
     } elseif (\extension_loaded("eio")) {
         return new EioDriver;
     } else {
@@ -53,7 +59,7 @@ function open($path, $mode) {
  * The returned Promise whould never resolve as a failure.
  *
  * @param string $path An absolute file system path
- * @return \Amp\Promise<array|null>
+ * @return \Interop\Async\Awaitable<array|null>
  */
 function stat($path) {
     return filesystem()->stat($path);
@@ -66,7 +72,7 @@ function stat($path) {
  * indicating the existence of the specified path.
  *
  * @param string $path An absolute file system path
- * @return \Amp\Promise<bool>
+ * @return \Interop\Async\Awaitable<bool>
  */
 function exists($path) {
     return filesystem()->exists($path);
@@ -80,7 +86,7 @@ function exists($path) {
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file
- * @return \Amp\Promise<int>
+ * @return \Interop\Async\Awaitable<int>
  */
 function size($path) {
     return filesystem()->size($path);
@@ -93,7 +99,7 @@ function size($path) {
  * to FALSE and will not reject with an error.
  *
  * @param string $path An absolute file system path
- * @return \Amp\Promise<bool>
+ * @return \Interop\Async\Awaitable<bool>
  */
 function isdir($path) {
     return filesystem()->isdir($path);
@@ -106,7 +112,7 @@ function isdir($path) {
  * to FALSE and will not reject with an error.
  *
  * @param string $path An absolute file system path
- * @return \Amp\Promise<bool>
+ * @return \Interop\Async\Awaitable<bool>
  */
 function isfile($path) {
     return filesystem()->isfile($path);
@@ -117,7 +123,7 @@ function isfile($path) {
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
- * @return \Amp\Promise<int>
+ * @return \Interop\Async\Awaitable<int>
  */
 function mtime($path) {
     return filesystem()->mtime($path);
@@ -128,7 +134,7 @@ function mtime($path) {
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
- * @return \Amp\Promise<int>
+ * @return \Interop\Async\Awaitable<int>
  */
 function atime($path) {
     return filesystem()->atime($path);
@@ -139,7 +145,7 @@ function atime($path) {
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
- * @return \Amp\Promise<int>
+ * @return \Interop\Async\Awaitable<int>
  */
 function ctime($path) {
     return filesystem()->ctime($path);
@@ -152,7 +158,7 @@ function ctime($path) {
  * The returned Promise whould never resolve as a failure.
  *
  * @param string $path An absolute file system path
- * @return \Amp\Promise<array|null>
+ * @return \Interop\Async\Awaitable<array|null>
  */
 function lstat($path) {
     return filesystem()->lstat($path);
@@ -164,7 +170,7 @@ function lstat($path) {
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Amp\Promise<null>
+ * @return \Interop\Async\Awaitable<null>
  */
 function symlink($original, $link) {
     return filesystem()->symlink($original, $link);
@@ -176,7 +182,7 @@ function symlink($original, $link) {
  * @param string $from
  * @param string $to
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Amp\Promise<null>
+ * @return \Interop\Async\Awaitable<null>
  */
 function rename($from, $to) {
     return filesystem()->rename($from, $to);
@@ -186,7 +192,7 @@ function rename($from, $to) {
  * Delete a file
  *
  * @param string $path
- * @return \Amp\Promise<null>
+ * @return \Interop\Async\Awaitable<null>
  */
 function unlink($path) {
     return filesystem()->unlink($path);
@@ -197,7 +203,7 @@ function unlink($path) {
  *
  * @param string $path
  * @param int $mode
- * @return \Amp\Promise<null>
+ * @return \Interop\Async\Awaitable<null>
  */
 function mkdir($path, $mode = 0644) {
     return filesystem()->mkdir($path, $mode);
@@ -206,8 +212,8 @@ function mkdir($path, $mode = 0644) {
 /**
  * Delete a directory
  *
- * @param string $pat
- * @return \Amp\Promise<null>
+ * @param string $path
+ * @return \Interop\Async\Awaitable<null>
  */
 function rmdir($path) {
     return filesystem()->rmdir($path);
@@ -219,7 +225,7 @@ function rmdir($path) {
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
  * @param string $path
- * @return \Amp\Promise<array>
+ * @return \Interop\Async\Awaitable<array>
  */
 function scandir($path) {
     return filesystem()->scandir($path);
@@ -230,7 +236,7 @@ function scandir($path) {
  *
  * @param string $path
  * @param int $mode
- * @return \Amp\Promise<null>
+ * @return \Interop\Async\Awaitable<null>
  */
 function chmod($path, $mode) {
     return filesystem()->chmod($path, $mode);
@@ -242,7 +248,7 @@ function chmod($path, $mode) {
  * @param string $path
  * @param int $uid -1 to ignore
  * @param int $gid -1 to ignore
- * @return \Amp\Promise<null>
+ * @return \Interop\Async\Awaitable<null>
  */
 function chown($path, $uid, $gid = -1) {
     return filesystem()->chown($path, $uid, $gid);
@@ -254,7 +260,7 @@ function chown($path, $uid, $gid = -1) {
  * If the file does not exist it will be created automatically.
  *
  * @param string $path
- * @return \Amp\Promise<null>
+ * @return \Interop\Async\Awaitable<null>
  */
 function touch($path) {
     return filesystem()->touch($path);
@@ -264,7 +270,7 @@ function touch($path) {
  * Buffer the specified file's contents
  *
  * @param string $path The file path from which to buffer contents
- * @return \Amp\Promise<string>
+ * @return \Interop\Async\Awaitable<string>
  */
 function get($path) {
     return filesystem()->get($path);
@@ -275,7 +281,7 @@ function get($path) {
  *
  * @param string $path The file path to which to $contents should be written
  * @param string $contents The data to write to the specified $path
- * @return \Amp\Promise A promise resolving to the integer length written upon success
+ * @return \Interop\Async\Awaitable A promise resolving to the integer length written upon success
  */
 function put($path, $contents) {
     return filesystem()->put($path, $contents);

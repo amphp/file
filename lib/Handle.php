@@ -8,7 +8,7 @@ interface Handle {
      *
      * @param int $offset
      * @param int $len
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function read($len);
 
@@ -17,7 +17,7 @@ interface Handle {
      *
      * @param int $offset
      * @param string $data
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function write($data);
 
@@ -27,7 +27,7 @@ interface Handle {
      * Applications are not required to manually close handles -- they will
      * be unloaded automatically when the object is garbage collected.
      *
-     * @return \Amp\Promise
+     * @return \Interop\Async\Awaitable
      */
     public function close();
 

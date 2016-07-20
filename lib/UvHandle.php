@@ -10,7 +10,8 @@ class UvHandle implements Handle {
     const OP_READ = 1;
     const OP_WRITE = 2;
 
-    private $reactor;
+    private $busy;
+    private $driver;
     private $fh;
     private $path;
     private $mode;
@@ -22,13 +23,14 @@ class UvHandle implements Handle {
     private $isActive = false;
     private $isCloseInitialized = false;
 
-    public function __construct(UvReactor $reactor, $fh, $path, $mode, $size) {
-        $this->reactor = $reactor;
+    public function __construct(\Interop\Async\Loop\Driver $driver, $busy, $fh, $path, $mode, $size) {
+        $this->driver = $driver;
+        $this->busy = $busy;
         $this->fh = $fh;
         $this->path = $path;
         $this->mode = $mode;
         $this->size = $size;
-        $this->loop = $reactor->getLoop();
+        $this->loop = $driver->getHandle();
         $this->position = ($mode[0] === "a") ? $size : 0;
     }
 
@@ -36,11 +38,11 @@ class UvHandle implements Handle {
      * {@inheritdoc}
      */
     public function read($readLen) {
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_READ;
         $op->position = $this->position;
-        $op->promisor = $promisor;
+        $op->promisor = $deferred;
         $op->readLen = $readLen;
         if ($this->isActive) {
             $this->queue[] = $op;
@@ -49,7 +51,7 @@ class UvHandle implements Handle {
             $this->doRead($op);
         }
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     /**
@@ -57,11 +59,11 @@ class UvHandle implements Handle {
      */
     public function write($writeData) {
         $this->pendingWriteOps++;
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_WRITE;
         $op->position = $this->position;
-        $op->promisor = $promisor;
+        $op->promisor = $deferred;
         $op->writeData = $writeData;
         if ($this->isActive) {
             $this->queue[] = $op;
@@ -70,21 +72,21 @@ class UvHandle implements Handle {
             $this->doWrite($op);
         }
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function doRead($op) {
-        $this->reactor->addRef();
+        $this->driver->reference($this->busy);
         $onRead = function ($fh, $result, $buffer) use ($op) {
             $this->isActive = false;
-            $this->reactor->delRef();
+            $this->driver->unreference($this->busy);
             if ($result < 0) {
                 $op->promisor->fail(new FilesystemException(
                     \uv_strerror($result)
                 ));
             } else {
                 $this->position = $op->position + strlen($buffer);
-                $op->promisor->succeed($buffer);
+                $op->promisor->resolve($buffer);
             }
             if ($this->queue) {
                 $this->dequeue();
@@ -94,10 +96,10 @@ class UvHandle implements Handle {
     }
 
     private function doWrite($op) {
-        $this->reactor->addRef();
+        $this->driver->reference($this->busy);
         $onWrite = function ($fh, $result) use ($op) {
             $this->isActive = false;
-            $this->reactor->delRef();
+            $this->driver->unreference($this->busy);
             if ($result < 0) {
                 $op->promisor->fail(new FilesystemException(
                     \uv_strerror($result)
@@ -110,7 +112,7 @@ class UvHandle implements Handle {
                 $delta = $newPosition - $this->position;
                 $this->position = ($this->mode[0] === "a") ? $this->position : $newPosition;
                 $this->size += $delta;
-                $op->promisor->succeed($result);
+                $op->promisor->resolve($result);
             }
             if ($this->queue) {
                 $this->dequeue();
@@ -183,14 +185,14 @@ class UvHandle implements Handle {
      */
     public function close() {
         $this->isCloseInitialized = true;
-        $this->reactor->addRef();
-        $promisor = new Deferred;
-        \uv_fs_close($this->loop, $this->fh, function($fh) use ($promisor) {
-            $this->reactor->delRef();
-            $promisor->succeed();
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_close($this->loop, $this->fh, function($fh) use ($deferred) {
+            $this->driver->unreference($this->busy);
+            $deferred->resolve();
         });
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     public function __destruct() {

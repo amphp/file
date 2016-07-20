@@ -3,13 +3,13 @@
 namespace Amp\File\Test;
 
 class UvDriverTest extends DriverTest {
-    protected function setUp() {
+    protected function lRun(callable $cb) {
         if (\extension_loaded("uv")) {
-            $reactor = new \Amp\UvReactor;
-            \Amp\reactor($reactor);
-            $driver = new \Amp\File\UvDriver($reactor);
-            \Amp\File\filesystem($driver);
-            parent::setUp();
+            $loop = new \Amp\Loop\UvLoop;
+            \Interop\Async\Loop::execute(function() use ($cb, $loop) {
+                \Amp\File\filesystem(new \Amp\File\UvDriver($loop));
+                \Amp\rethrow(new \Amp\Coroutine($cb()));
+            }, $loop);
         } else {
             $this->markTestSkipped(
                 "php-uv extension not loaded"

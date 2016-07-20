@@ -2,6 +2,8 @@
 
 namespace Amp\File;
 
+use Interop\Async\Loop;
+
 class StatCache {
     private static $cache = [];
     private static $timeouts = [];
@@ -12,7 +14,7 @@ class StatCache {
     private static function init() {
         self::$isInitialized = true;
         self::$now = \time();
-        \Amp\repeat(function () {
+        $watcher = Loop::repeat(1000, function () {
             self::$now = $now = \time();
             foreach (self::$cache as $path => $expiry) {
                 if ($now > $expiry) {
@@ -24,7 +26,8 @@ class StatCache {
                     break;
                 }
             }
-        }, 1000, ["keep_alive" => false]);
+        });
+        Loop::unreference($watcher);
     }
 
     public static function get($path) {

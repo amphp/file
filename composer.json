@@ -23,9 +23,11 @@
     ],
     "require": {
         "php": ">=5.5",
-        "amphp/amp": "^1"
+        "amphp/amp": "dev-master as 2.0"
     },
+    "minimum-stability": "dev",
     "require-dev": {
+        "amphp/loop": "dev-master",
         "phpunit/phpunit": "~4.8",
         "fabpot/php-cs-fixer": "~1.9"
     },
@@ -42,7 +44,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.1.0-dev"
+            "dev-master": "0.2.0-dev"
         }
     }
 }

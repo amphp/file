@@ -31,11 +31,11 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function read($len) {
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_READ;
         $op->position = $this->position;
-        $op->promisor = $promisor;
+        $op->deferred = $deferred;
         $remaining = $this->size - $this->position;
         $op->readLen = ($len > $remaining) ? $remaining : $len;
         if ($this->isActive) {
@@ -46,7 +46,7 @@ class EioHandle implements Handle {
             \eio_read($this->fh, $op->readLen, $op->position, $priority = null, [$this, "onRead"], $op);
         }
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function dequeue() {
@@ -70,12 +70,12 @@ class EioHandle implements Handle {
         $this->isActive = false;
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $op->promisor->fail(new FilesystemException(
+            $op->deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
             $this->position = $op->position + \strlen($result);
-            $op->promisor->succeed($result);
+            $op->deferred->resolve($result);
         }
         if ($this->queue) {
             $this->dequeue();
@@ -86,11 +86,11 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function write($data) {
-        $promisor = new Deferred;
+        $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_WRITE;
         $op->position = $this->position;
-        $op->promisor = $promisor;
+        $op->deferred = $deferred;
         $op->writeData = $data;
         $this->pendingWriteOps++;
         if ($this->isActive) {
@@ -101,14 +101,14 @@ class EioHandle implements Handle {
             \eio_write($this->fh, $data, strlen($data), $op->position, $priority = null, [$this, "onWrite"], $op);
         }
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
     private function onWrite($op, $result, $req) {
         $this->isActive = false;
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $op->promisor->fail(new FilesystemException(
+            $op->deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
@@ -119,7 +119,7 @@ class EioHandle implements Handle {
             $delta = $newPosition - $this->position;
             $this->position = ($this->mode[0] === "a") ? $this->position : $newPosition;
             $this->size += $delta;
-            $op->promisor->succeed($result);
+            $op->deferred->resolve($result);
         }
         if ($this->queue) {
             $this->dequeue();
@@ -131,20 +131,20 @@ class EioHandle implements Handle {
      */
     public function close() {
         \call_user_func($this->incrementor, 1);
-        $promisor = new Deferred;
-        \eio_close($this->fh, $priority = null, [$this, "onClose"], $promisor);
+        $deferred = new Deferred;
+        \eio_close($this->fh, $priority = null, [$this, "onClose"], $deferred);
 
-        return $promisor->promise();
+        return $deferred->getAwaitable();
     }
 
-    private function onClose($promisor, $result, $req) {
+    private function onClose($deferred, $result, $req) {
         \call_user_func($this->incrementor, -1);
         if ($result === -1) {
-            $promisor->fail(new FilesystemException(
+            $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
             ));
         } else {
-            $promisor->succeed();
+            $deferred->resolve();
         }
     }
 
