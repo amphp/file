@@ -13,14 +13,14 @@ const LOOP_STATE_IDENTIFIER = Driver::class;
  */
 function filesystem(Driver $driver = null) {
     if ($driver === null) {
-        $driver = Loop::fetchState(LOOP_STATE_IDENTIFIER);
+        $driver = Loop::getState(LOOP_STATE_IDENTIFIER);
         if ($driver) {
             return $driver;
         }
         
         $driver = driver();
     }
-    Loop::storeState(LOOP_STATE_IDENTIFIER, $driver);
+    Loop::setState(LOOP_STATE_IDENTIFIER, $driver);
     return $driver;
 }
 
