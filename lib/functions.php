@@ -40,7 +40,7 @@ function driver() {
  *
  * @param string $path
  * @param string $mode
- * @return \Amp\File\Handle
+ * @return \Amp\Promise<\Amp\File\Handle>
  */
 function open($path, $mode) {
     return filesystem()->open($path, $mode);
