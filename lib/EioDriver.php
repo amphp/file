@@ -74,7 +74,7 @@ class EioDriver implements Driver {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $openArr = [$mode, $path, $deferred];
-        \eio_open($path, $flags, $chmod, $priority = null, [$this, "onOpenHandle"], $openArr);
+        \eio_open($path, $flags, $chmod, \EIO_PRI_DEFAULT, [$this, "onOpenHandle"], $openArr);
 
         return $deferred->getAwaitable();
     }
@@ -88,10 +88,10 @@ class EioDriver implements Driver {
             ));
         } elseif ($mode[0] === "a") {
             \array_unshift($openArr, $result);
-            \eio_ftruncate($result, $offset = 0, $priority = null, [$this, "onOpenFtruncate"], $openArr);
+            \eio_ftruncate($result, $offset = 0, \EIO_PRI_DEFAULT, [$this, "onOpenFtruncate"], $openArr);
         } else {
             \array_unshift($openArr, $result);
-            \eio_fstat($result, $priority = null, [$this, "onOpenFstat"], $openArr);
+            \eio_fstat($result, \EIO_PRI_DEFAULT, [$this, "onOpenFstat"], $openArr);
         }
     }
 

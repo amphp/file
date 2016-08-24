@@ -44,7 +44,7 @@ class EioHandle implements Handle {
         } else {
             \call_user_func($this->incrementor, 1);
             $this->isActive = true;
-            \eio_read($this->fh, $op->readLen, $op->position, $priority = null, [$this, "onRead"], $op);
+            \eio_read($this->fh, $op->readLen, $op->position, \EIO_PRI_DEFAULT, [$this, "onRead"], $op);
         }
 
         return $deferred->getAwaitable();
@@ -57,12 +57,12 @@ class EioHandle implements Handle {
             case self::OP_READ:
                 ($this->incrementor)(1);
                 $this->isActive = true;
-                \eio_read($this->fh, $op->readLen, $op->position, $priority = null, [$this, "onRead"], $op);
+                \eio_read($this->fh, $op->readLen, $op->position, \EIO_PRI_DEFAULT, [$this, "onRead"], $op);
                 break;
             case self::OP_WRITE:
                 ($this->incrementor)(1);
                 $this->isActive = true;
-                \eio_write($this->fh, $op->writeData, \strlen($op->writeData), $op->position, $priority = null, [$this, "onWrite"], $op);
+                \eio_write($this->fh, $op->writeData, \strlen($op->writeData), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
                 break;
         }
     }
@@ -99,7 +99,7 @@ class EioHandle implements Handle {
         } else {
             \call_user_func($this->incrementor, 1);
             $this->isActive = true;
-            \eio_write($this->fh, $data, strlen($data), $op->position, $priority = null, [$this, "onWrite"], $op);
+            \eio_write($this->fh, $data, strlen($data), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
         }
 
         return $deferred->getAwaitable();
@@ -133,7 +133,7 @@ class EioHandle implements Handle {
     public function close(): Awaitable {
         ($this->incrementor)(1);
         $deferred = new Deferred;
-        \eio_close($this->fh, $priority = null, [$this, "onClose"], $deferred);
+        \eio_close($this->fh, \EIO_PRI_DEFAULT, [$this, "onClose"], $deferred);
 
         return $deferred->getAwaitable();
     }
@@ -152,7 +152,7 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek(int $offset, int $whence = \SEEK_SET): Awaitable {
+    public function seek(int $offset, int $whence = \SEEK_SET) {
         $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:
