@@ -43,7 +43,7 @@ class EioDriver implements Driver {
                 Loop::enable($this->watcher);
             }
         };
-        $this->watcher = Loop::onReadable(self::$stream, function () {
+        $this->watcher = Loop::onReadable(self::$stream, static function () {
             while (\eio_npending()) {
                 \eio_poll();
             }
@@ -465,7 +465,9 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function touch(string $path): Awaitable {
-        $atime = $mtime = time();
+        $atime = $mtime = \time();
+        
+        ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_utime($path, $atime, $mtime, $priority, [$this, "onGenericResult"], $deferred);
