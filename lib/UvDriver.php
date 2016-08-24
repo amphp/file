@@ -2,10 +2,8 @@
 
 namespace Amp\File;
 
-use Amp\Success;
-use Amp\Failure;
-use Amp\Deferred;
-use Amp\Coroutine;
+use Amp\{ Coroutine, Deferred, Failure, Success };
+use Interop\Async\Awaitable;
 
 class UvDriver implements Driver {
     private $driver;
@@ -32,7 +30,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function open($path, $mode) {
+    public function open(string $path, string $mode): Awaitable {
         switch ($mode) {
             case "r":   $flags = \UV::O_RDONLY; break;
             case "r+":  $flags = \UV::O_RDWR; break;
@@ -106,7 +104,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function stat($path) {
+    public function stat(string $path): Awaitable {
         if ($stat = StatCache::get($path)) {
             return new Success($stat);
         }
@@ -129,7 +127,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function exists($path) {
+    public function exists(string $path): Awaitable {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             $deferred->resolve((bool) $result);
@@ -141,7 +139,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function isdir($path) {
+    public function isdir(string $path): Awaitable {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -157,7 +155,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function isfile($path) {
+    public function isfile(string $path): Awaitable {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -173,7 +171,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function size($path) {
+    public function size(string $path): Awaitable {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if (empty($result)) {
@@ -195,7 +193,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mtime($path) {
+    public function mtime(string $path): Awaitable {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -213,7 +211,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function atime($path) {
+    public function atime(string $path): Awaitable {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -231,7 +229,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function ctime($path) {
+    public function ctime(string $path): Awaitable {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -249,7 +247,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function lstat($path) {
+    public function lstat(string $path): Awaitable {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
         \uv_fs_lstat($this->loop, $path, function($fh, $stat) use ($deferred) {
@@ -266,21 +264,49 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function symlink($target, $link) {
+    public function symlink(string $target, string $link): Awaitable {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
-        uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function($fh) use ($deferred) {
+        \uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function($fh) use ($deferred) {
             $this->driver->unreference($this->busy);
             $deferred->resolve((bool)$fh);
         });
 
         return $deferred->getAwaitable();
     }
-
+    
     /**
      * {@inheritdoc}
      */
-    public function rename($from, $to) {
+    public function link(string $target, string $link): Awaitable {
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_link($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function($fh) use ($deferred) {
+            $this->driver->unreference($this->busy);
+            $deferred->resolve((bool)$fh);
+        });
+        
+        return $deferred->getAwaitable();
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function readlink(string $path): Awaitable {
+        $this->driver->reference($this->busy);
+        $deferred = new Deferred;
+        \uv_fs_readlink($this->loop, $path, function($fh) use ($deferred) {
+            $this->driver->unreference($this->busy);
+            $deferred->resolve((bool)$fh);
+        });
+        
+        return $deferred->getAwaitable();
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function rename(string $from, string $to): Awaitable {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
         \uv_fs_rename($this->loop, $from, $to, function($fh) use ($deferred, $from) {
@@ -295,7 +321,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function unlink($path) {
+    public function unlink(string $path): Awaitable {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
         \uv_fs_unlink($this->loop, $path, function($fh) use ($deferred, $path) {
@@ -310,7 +336,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644) {
+    public function mkdir(string $path, int $mode = 0644): Awaitable {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
         \uv_fs_mkdir($this->loop, $path, $mode, function($fh) use ($deferred) {
@@ -324,7 +350,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function rmdir($path) {
+    public function rmdir(string $path): Awaitable {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
         \uv_fs_rmdir($this->loop, $path, function($fh) use ($deferred, $path) {
@@ -339,7 +365,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function scandir($path) {
+    public function scandir(string $path): Awaitable {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
         uv_fs_readdir($this->loop, $path, 0, function($fh, $data) use ($deferred, $path) {
@@ -359,7 +385,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function chmod($path, $mode) {
+    public function chmod(string $path, int $mode): Awaitable {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
         \uv_fs_chmod($this->loop, $path, $mode, function($fh) use ($deferred) {
@@ -373,7 +399,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function chown($path, $uid, $gid) {
+    public function chown(string $path, int $uid, int $gid): Awaitable {
         // @TODO Return a failure in windows environments
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
@@ -388,7 +414,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function touch($path) {
+    public function touch(string $path): Awaitable {
         $this->driver->reference($this->busy);
         $atime = $mtime = time();
         $deferred = new Deferred;
@@ -404,8 +430,8 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function get($path) {
-        return \Amp\resolve($this->doGet($path), $this->driver);
+    public function get(string $path): Awaitable {
+        return new Coroutine($this->doGet($path));
     }
 
     private function doGet($path): \Generator {
@@ -449,7 +475,7 @@ class UvDriver implements Driver {
             }
         }
 
-        yield Coroutine::result(yield $deferred->getAwaitable());
+        return yield $deferred->getAwaitable();
     }
 
     private function doFsOpen($path, $flags, $mode) {
@@ -488,8 +514,8 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function put($path, $contents) {
-        return \Amp\resolve($this->doPut($path, $contents), $this->driver);
+    public function put(string $path, string $contents): Awaitable {
+        return new Coroutine($this->doPut($path, $contents));
     }
 
     private function doPut($path, $contents): \Generator {
@@ -519,6 +545,6 @@ class UvDriver implements Driver {
             });
         });
 
-        yield Coroutine::result(yield $deferred->getAwaitable());
+        return yield $deferred->getAwaitable();
     }
 }

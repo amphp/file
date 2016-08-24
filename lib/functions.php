@@ -1,6 +1,8 @@
 <?php
 
 namespace Amp\File;
+
+use Interop\Async\Awaitable;
 use Interop\Async\Loop;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
@@ -11,7 +13,7 @@ const LOOP_STATE_IDENTIFIER = Driver::class;
  * @param \Amp\File\Driver $driver Use the specified object as the application-wide filesystem instance
  * @return \Amp\File\Driver
  */
-function filesystem(Driver $driver = null) {
+function filesystem(Driver $driver = null): Driver {
     if ($driver === null) {
         $driver = Loop::getState(LOOP_STATE_IDENTIFIER);
         if ($driver) {
@@ -29,10 +31,10 @@ function filesystem(Driver $driver = null) {
  *
  * @return \Amp\File\Driver
  */
-function driver() {
+function driver(): Driver {
     $driver = Loop::get();
     $loop = $driver->getHandle();
-    if (is_resource($loop) && get_resource_type($loop) == "uv_loop") {
+    if (\is_resource($loop) && \get_resource_type($loop) == "uv_loop") {
         return new UvDriver($driver);
     } elseif (\extension_loaded("eio")) {
         return new EioDriver;
@@ -46,9 +48,9 @@ function driver() {
  *
  * @param string $path
  * @param string $mode
- * @return \Amp\File\Handle
+ * @return \Interop\Async\Awaitable<\Amp\File\Handle>
  */
-function open($path, $mode) {
+function open(string $path, string $mode): Awaitable {
     return filesystem()->open($path, $mode);
 }
 
@@ -61,7 +63,7 @@ function open($path, $mode) {
  * @param string $path An absolute file system path
  * @return \Interop\Async\Awaitable<array|null>
  */
-function stat($path) {
+function stat(string $path): Awaitable {
     return filesystem()->stat($path);
 }
 
@@ -74,7 +76,7 @@ function stat($path) {
  * @param string $path An absolute file system path
  * @return \Interop\Async\Awaitable<bool>
  */
-function exists($path) {
+function exists(string $path): Awaitable {
     return filesystem()->exists($path);
 }
 
@@ -88,7 +90,7 @@ function exists($path) {
  * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file
  * @return \Interop\Async\Awaitable<int>
  */
-function size($path) {
+function size(string $path): Awaitable {
     return filesystem()->size($path);
 }
 
@@ -101,7 +103,7 @@ function size($path) {
  * @param string $path An absolute file system path
  * @return \Interop\Async\Awaitable<bool>
  */
-function isdir($path) {
+function isdir(string $path): Awaitable {
     return filesystem()->isdir($path);
 }
 
@@ -114,7 +116,7 @@ function isdir($path) {
  * @param string $path An absolute file system path
  * @return \Interop\Async\Awaitable<bool>
  */
-function isfile($path) {
+function isfile(string $path): Awaitable {
     return filesystem()->isfile($path);
 }
 
@@ -125,7 +127,7 @@ function isfile($path) {
  * @fails \Amp\Files\FilesystemException If the path does not exist
  * @return \Interop\Async\Awaitable<int>
  */
-function mtime($path) {
+function mtime(string $path): Awaitable {
     return filesystem()->mtime($path);
 }
 
@@ -147,7 +149,7 @@ function atime($path) {
  * @fails \Amp\Files\FilesystemException If the path does not exist
  * @return \Interop\Async\Awaitable<int>
  */
-function ctime($path) {
+function ctime(string $path): Awaitable {
     return filesystem()->ctime($path);
 }
 
@@ -160,7 +162,7 @@ function ctime($path) {
  * @param string $path An absolute file system path
  * @return \Interop\Async\Awaitable<array|null>
  */
-function lstat($path) {
+function lstat(string $path): Awaitable {
     return filesystem()->lstat($path);
 }
 
@@ -172,8 +174,32 @@ function lstat($path) {
  * @fails \Amp\Files\FilesystemException If the operation fails
  * @return \Interop\Async\Awaitable<null>
  */
-function symlink($original, $link) {
+function symlink(string $original, string $link): Awaitable {
     return filesystem()->symlink($original, $link);
+}
+
+/**
+ * Create a hard link $link pointing to the file/directory located at $original
+ *
+ * @param string $original
+ * @param string $link
+ * @fails \Amp\Files\FilesystemException If the operation fails
+ * @return \Interop\Async\Awaitable<null>
+ */
+function link(string $original, string $link): Awaitable {
+    return filesystem()->symlink($original, $link);
+}
+
+/**
+ * Read the symlink at $path
+ *
+ * @param string $original
+ * @param string $link
+ * @fails \Amp\Files\FilesystemException If the operation fails
+ * @return \Interop\Async\Awaitable<null>
+ */
+function readlink(string $path): Awaitable {
+    return filesystem()->readlink($path);
 }
 
 /**
@@ -184,7 +210,7 @@ function symlink($original, $link) {
  * @fails \Amp\Files\FilesystemException If the operation fails
  * @return \Interop\Async\Awaitable<null>
  */
-function rename($from, $to) {
+function rename(string $from, string $to): Awaitable {
     return filesystem()->rename($from, $to);
 }
 
@@ -194,7 +220,7 @@ function rename($from, $to) {
  * @param string $path
  * @return \Interop\Async\Awaitable<null>
  */
-function unlink($path) {
+function unlink(string $path): Awaitable {
     return filesystem()->unlink($path);
 }
 
@@ -205,7 +231,7 @@ function unlink($path) {
  * @param int $mode
  * @return \Interop\Async\Awaitable<null>
  */
-function mkdir($path, $mode = 0644) {
+function mkdir(string $path, int $mode = 0644): Awaitable {
     return filesystem()->mkdir($path, $mode);
 }
 
@@ -215,7 +241,7 @@ function mkdir($path, $mode = 0644) {
  * @param string $path
  * @return \Interop\Async\Awaitable<null>
  */
-function rmdir($path) {
+function rmdir(string $path): Awaitable {
     return filesystem()->rmdir($path);
 }
 
@@ -227,7 +253,7 @@ function rmdir($path) {
  * @param string $path
  * @return \Interop\Async\Awaitable<array>
  */
-function scandir($path) {
+function scandir(string $path): Awaitable {
     return filesystem()->scandir($path);
 }
 
@@ -238,7 +264,7 @@ function scandir($path) {
  * @param int $mode
  * @return \Interop\Async\Awaitable<null>
  */
-function chmod($path, $mode) {
+function chmod(string $path, int $mode): Awaitable {
     return filesystem()->chmod($path, $mode);
 }
 
@@ -250,7 +276,7 @@ function chmod($path, $mode) {
  * @param int $gid -1 to ignore
  * @return \Interop\Async\Awaitable<null>
  */
-function chown($path, $uid, $gid = -1) {
+function chown(string $path, int $uid, int $gid = -1): Awaitable {
     return filesystem()->chown($path, $uid, $gid);
 }
 
@@ -262,7 +288,7 @@ function chown($path, $uid, $gid = -1) {
  * @param string $path
  * @return \Interop\Async\Awaitable<null>
  */
-function touch($path) {
+function touch(string $path): Awaitable {
     return filesystem()->touch($path);
 }
 
@@ -272,7 +298,7 @@ function touch($path) {
  * @param string $path The file path from which to buffer contents
  * @return \Interop\Async\Awaitable<string>
  */
-function get($path) {
+function get(string $path): Awaitable {
     return filesystem()->get($path);
 }
 
@@ -283,6 +309,6 @@ function get($path) {
  * @param string $contents The data to write to the specified $path
  * @return \Interop\Async\Awaitable A promise resolving to the integer length written upon success
  */
-function put($path, $contents) {
+function put(string $path, string $contents): Awaitable {
     return filesystem()->put($path, $contents);
 }

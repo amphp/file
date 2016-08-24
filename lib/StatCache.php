@@ -30,11 +30,11 @@ class StatCache {
         Loop::unreference($watcher);
     }
 
-    public static function get($path) {
+    public static function get(string $path) {
         return isset(self::$cache[$path]) ? self::$cache[$path] : null;
     }
 
-    public static function set($path, array $stat) {
+    public static function set(string $path, array $stat) {
         if (self::$ttl <= 0) {
             return;
         }
@@ -45,11 +45,11 @@ class StatCache {
         self::$timeouts[$path] = self::$now + self::$ttl;
     }
 
-    public static function ttl($seconds) {
-        self::$ttl = (int) $seconds;
+    public static function ttl(int $seconds) {
+        self::$ttl = $seconds;
     }
 
-    public static function clear($path = null) {
+    public static function clear(string $path = null) {
         if (isset($path)) {
             unset(
                 self::$cache[$path],

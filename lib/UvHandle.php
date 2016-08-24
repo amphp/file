@@ -2,9 +2,8 @@
 
 namespace Amp\File;
 
-use Amp\Promise;
 use Amp\Deferred;
-use Amp\UvReactor;
+use Interop\Async\{ Awaitable, Loop\Driver };
 
 class UvHandle implements Handle {
     const OP_READ = 1;
@@ -23,7 +22,7 @@ class UvHandle implements Handle {
     private $isActive = false;
     private $isCloseInitialized = false;
 
-    public function __construct(\Interop\Async\Loop\Driver $driver, $busy, $fh, $path, $mode, $size) {
+    public function __construct(Driver $driver, $busy, $fh, $path, $mode, $size) {
         $this->driver = $driver;
         $this->busy = $busy;
         $this->fh = $fh;
@@ -37,7 +36,7 @@ class UvHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read($readLen) {
+    public function read(int $readLen): Awaitable {
         $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_READ;
@@ -57,7 +56,7 @@ class UvHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function write($writeData) {
+    public function write(string $writeData): Awaitable {
         $this->pendingWriteOps++;
         $deferred = new Deferred;
         $op = new \StdClass;
@@ -133,7 +132,7 @@ class UvHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek($offset, $whence = \SEEK_SET) {
+    public function seek(int $offset, int $whence = \SEEK_SET): Awaitable {
         $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:
@@ -155,35 +154,35 @@ class UvHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function tell() {
+    public function tell(): int {
         return $this->position;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function eof() {
+    public function eof(): bool {
         return ($this->pendingWriteOps > 0) ? false : ($this->size <= $this->position);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function path() {
+    public function path(): string {
         return $this->path;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function mode() {
+    public function mode(): string {
         return $this->mode;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function close() {
+    public function close(): Awaitable {
         $this->isCloseInitialized = true;
         $this->driver->reference($this->busy);
         $deferred = new Deferred;

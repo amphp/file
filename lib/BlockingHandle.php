@@ -2,8 +2,8 @@
 
 namespace Amp\File;
 
-use Amp\Success;
-use Amp\Failure;
+use Amp\{ Success, Failure };
+use Interop\Async\Awaitable;
 
 class BlockingHandle implements Handle {
     private $fh;
@@ -13,7 +13,7 @@ class BlockingHandle implements Handle {
     /**
      * @param resource $fh An open uv filesystem descriptor
      */
-    public function __construct($fh, $path, $mode) {
+    public function __construct($fh, string $path, string $mode) {
         $this->fh = $fh;
         $this->path = $path;
         $this->mode = $mode;
@@ -22,8 +22,8 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read($len) {
-        $data = \fread($this->fh, $len);
+    public function read(int $length): Awaitable {
+        $data = \fread($this->fh, $length);
         if ($data !== false) {
             return new Success($data);
         } else {
@@ -36,7 +36,7 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function write($data) {
+    public function write(string $data): Awaitable {
         $len = \fwrite($this->fh, $data);
         if ($len !== false) {
             return new Success($data);
@@ -50,7 +50,7 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function close() {
+    public function close(): Awaitable {
         if (\fclose($this->fh)) {
             return new Success;
         } else {
@@ -63,7 +63,7 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek($position, $whence = \SEEK_SET) {
+    public function seek(int $position, int $whence = \SEEK_SET) {
         switch ($whence) {
             case \SEEK_SET:
             case \SEEK_CUR:
@@ -80,28 +80,28 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function tell() {
+    public function tell(): int {
         return \ftell($this->fh);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function eof() {
+    public function eof(): bool {
         return \feof($this->fh);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function path() {
+    public function path(): string {
         return $this->path;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function mode() {
+    public function mode(): string {
         return $this->mode;
     }
 }

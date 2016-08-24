@@ -2,15 +2,17 @@
 
 namespace Amp\File;
 
+use Interop\Async\Awaitable;
+
 interface Driver {
     /**
      * Open a handle for the specified path
      *
      * @param string $path
      * @param string $mode
-     * @return \Amp\File\Handle
+     * @return \Interop\Async\Awaitable<\Amp\File\Handle>
      */
-    public function open($path, $mode);
+    public function open(string $path, string $mode): Awaitable;
 
     /**
      * Execute a file stat operation
@@ -20,7 +22,7 @@ interface Driver {
      * @param string $path The file system path to stat
      * @return \Interop\Async\Awaitable<array|null>
      */
-    public function stat($path);
+    public function stat(string $path): Awaitable;
 
     /**
      * Does the specified path exist?
@@ -31,7 +33,7 @@ interface Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<bool>
      */
-    public function exists($path);
+    public function exists(string $path): Awaitable;
 
     /**
      * Retrieve the size in bytes of the file at the specified path.
@@ -42,7 +44,7 @@ interface Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<int>
      */
-    public function size($path);
+    public function size(string $path): Awaitable;
 
     /**
      * Does the specified path exist and is it a directory?
@@ -53,7 +55,7 @@ interface Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<bool>
      */
-    public function isdir($path);
+    public function isdir(string $path): Awaitable;
 
     /**
      * Does the specified path exist and is it a file?
@@ -64,7 +66,7 @@ interface Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<bool>
      */
-    public function isfile($path);
+    public function isfile(string $path): Awaitable;
 
     /**
      * Retrieve the path's last modification time as a unix timestamp
@@ -72,7 +74,7 @@ interface Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<int>
      */
-    public function mtime($path);
+    public function mtime(string $path): Awaitable;
 
     /**
      * Retrieve the path's last access time as a unix timestamp
@@ -80,7 +82,7 @@ interface Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<int>
      */
-    public function atime($path);
+    public function atime(string $path): Awaitable;
 
     /**
      * Retrieve the path's creation time as a unix timestamp
@@ -88,7 +90,7 @@ interface Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<int>
      */
-    public function ctime($path);
+    public function ctime(string $path): Awaitable;
 
     /**
      * Same as stat() except if the path is a link then the link's data is returned
@@ -96,7 +98,7 @@ interface Driver {
      * @param string $path The file system path to stat
      * @return \Interop\Async\Awaitable A promise resolving to an associative array upon successful resolution
      */
-    public function lstat($path);
+    public function lstat(string $path): Awaitable;
 
     /**
      * Create a symlink $link pointing to the file/directory located at $target
@@ -105,8 +107,25 @@ interface Driver {
      * @param string $link
      * @return \Interop\Async\Awaitable
      */
-    public function symlink($target, $link);
-
+    public function symlink(string $target, string $link): Awaitable;
+    
+    /**
+     * Create a hard link $link pointing to the file/directory located at $target
+     *
+     * @param string $target
+     * @param string $link
+     * @return \Interop\Async\Awaitable
+     */
+    public function link(string $target, string $link): Awaitable;
+    
+    /**
+     * Read the symlink at $path.
+     *
+     * @param string $target
+     * @return \Interop\Async\Awaitable
+     */
+    public function readlink(string $target): Awaitable;
+    
     /**
      * Rename a file or directory
      *
@@ -114,7 +133,7 @@ interface Driver {
      * @param string $to
      * @return \Interop\Async\Awaitable
      */
-    public function rename($from, $to);
+    public function rename(string $from, string $to): Awaitable;
 
     /**
      * Delete a file
@@ -122,7 +141,7 @@ interface Driver {
      * @param string $path
      * @return \Interop\Async\Awaitable
      */
-    public function unlink($path);
+    public function unlink(string $path): Awaitable;
 
     /**
      * Create a director
@@ -131,7 +150,7 @@ interface Driver {
      * @param int $mode
      * @return \Interop\Async\Awaitable
      */
-    public function mkdir($path, $mode = 0644);
+    public function mkdir(string $path, int $mode = 0644): Awaitable;
 
     /**
      * Delete a directory
@@ -139,7 +158,7 @@ interface Driver {
      * @param string $path
      * @return \Interop\Async\Awaitable
      */
-    public function rmdir($path);
+    public function rmdir(string $path): Awaitable;
 
     /**
      * Retrieve an array of files and directories inside the specified path
@@ -149,7 +168,7 @@ interface Driver {
      * @param string $path
      * @return \Interop\Async\Awaitable
      */
-    public function scandir($path);
+    public function scandir(string $path): Awaitable;
 
     /**
      * chmod a file or directory
@@ -158,7 +177,7 @@ interface Driver {
      * @param int $mode
      * @return \Interop\Async\Awaitable
      */
-    public function chmod($path, $mode);
+    public function chmod(string $path, int $mode): Awaitable;
 
     /**
      * chown a file or directory
@@ -168,7 +187,7 @@ interface Driver {
      * @param int $gid
      * @return \Interop\Async\Awaitable
      */
-    public function chown($path, $uid, $gid);
+    public function chown(string $path, int $uid, int $gid): Awaitable;
 
     /**
      * Update the access and modification time of the specified path
@@ -178,7 +197,7 @@ interface Driver {
      * @param string $path
      * @return \Interop\Async\Awaitable
      */
-    public function touch($path);
+    public function touch(string $path): Awaitable;
 
     /**
      * Buffer the specified file's contents
@@ -186,7 +205,7 @@ interface Driver {
      * @param string $path The file path from which to buffer contents
      * @return \Interop\Async\Awaitable A promise resolving to a string upon successful resolution
      */
-    public function get($path);
+    public function get(string $path): Awaitable;
 
     /**
      * Write the contents string to the specified path.
@@ -195,5 +214,5 @@ interface Driver {
      * @param string $contents The data to write to the specified $path
      * @return \Interop\Async\Awaitable A promise resolving to the integer length written upon success
      */
-    public function put($path, $contents);
+    public function put(string $path, string $contents): Awaitable;
 }

@@ -2,14 +2,14 @@
 
 namespace Amp\File;
 
-use Amp\Success;
-use Amp\Failure;
+use Amp\{ Success, Failure };
+use Interop\Async\Awaitable;
 
 class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function open($path, $mode) {
+    public function open(string $path, string $mode): Awaitable {
         if (!$fh = \fopen($path, $mode)) {
             return new Failure(new FilesystemException(
                 "Failed opening file handle"
@@ -22,7 +22,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function stat($path) {
+    public function stat(string $path): Awaitable {
         if ($stat = StatCache::get($path)) {
             return new Success($stat);
         } elseif ($stat = @\stat($path)) {
@@ -38,7 +38,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function exists($path) {
+    public function exists(string $path): Awaitable {
         if ($exists = @\file_exists($path)) {
             \clearstatcache(true, $path);
         }
@@ -54,7 +54,7 @@ class BlockingDriver implements Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<int>
      */
-    public function size($path) {
+    public function size(string $path): Awaitable {
         if (!@\file_exists($path)) {
             return new Failure(new FilesystemException(
                 "Path does not exist"
@@ -82,7 +82,7 @@ class BlockingDriver implements Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<bool>
      */
-    public function isdir($path) {
+    public function isdir(string $path): Awaitable {
         if (!@\file_exists($path)) {
             return new Success(false);
         }
@@ -101,7 +101,7 @@ class BlockingDriver implements Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<bool>
      */
-    public function isfile($path) {
+    public function isfile(string $path): Awaitable {
         if (!@\file_exists($path)) {
             return new Success(false);
         }
@@ -117,7 +117,7 @@ class BlockingDriver implements Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<int>
      */
-    public function mtime($path) {
+    public function mtime(string $path): Awaitable {
         if (!@\file_exists($path)) {
             return new Failure(new FilesystemException(
                 "Path does not exist"
@@ -135,7 +135,7 @@ class BlockingDriver implements Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<int>
      */
-    public function atime($path) {
+    public function atime(string $path): Awaitable {
         if (!@\file_exists($path)) {
             return new Failure(new FilesystemException(
                 "Path does not exist"
@@ -153,7 +153,7 @@ class BlockingDriver implements Driver {
      * @param string $path An absolute file system path
      * @return \Interop\Async\Awaitable<int>
      */
-    public function ctime($path) {
+    public function ctime(string $path): Awaitable {
         if (!@\file_exists($path)) {
             return new Failure(new FilesystemException(
                 "Path does not exist"
@@ -168,7 +168,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function lstat($path) {
+    public function lstat(string $path): Awaitable {
         if ($stat = @\lstat($path)) {
             \clearstatcache(true, $path);
         } else {
@@ -181,21 +181,51 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function symlink($target, $link) {
-        return new Success((bool) @\symlink($target, $link));
+    public function symlink(string $target, string $link): Awaitable {
+        if (!@\symlink($target, $link)) {
+            return new Failure(new FilesystemException("Could not create symbolic link"));
+        }
+    
+        return new Success(true);
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function link(string $target, string $link): Awaitable {
+        if (!@\link($target, $link)) {
+            return new Failure(new FilesystemException("Could not create hard link"));
+        }
+        
+        return new Success(true);
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function readlink(string $path): Awaitable {
+        if (!($result = @\readlink($path))) {
+            return new Failure(new FilesystemException("Could not read symbolic link"));
+        }
+        
+        return new Success($result);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rename($from, $to) {
-        return new Success((bool) @\rename($from, $to));
+    public function rename(string $from, string $to): Awaitable {
+        if (!@\rename($from, $to)) {
+            return new Failure(new FilesystemException("Could not rename file"));
+        }
+    
+        return new Success(true);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function unlink($path) {
+    public function unlink(string $path): Awaitable {
         StatCache::clear($path);
         return new Success((bool) @\unlink($path));
     }
@@ -203,14 +233,14 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644) {
+    public function mkdir(string $path, int $mode = 0644): Awaitable {
         return new Success((bool) @\mkdir($path, $mode));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rmdir($path) {
+    public function rmdir(string $path): Awaitable {
         StatCache::clear($path);
         return new Success((bool) @\rmdir($path));
     }
@@ -218,7 +248,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function scandir($path) {
+    public function scandir(string $path): Awaitable {
         if (!@\is_dir($path)) {
             return new Failure(new FilesystemException(
                 "Not a directory"
@@ -239,14 +269,14 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function chmod($path, $mode) {
+    public function chmod(string $path, int $mode): Awaitable {
         return new Success((bool) @\chmod($path, $mode));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function chown($path, $uid, $gid) {
+    public function chown(string $path, int $uid, int $gid): Awaitable {
         if ($uid !== -1 && !@\chown($path, $uid)) {
             return new Failure(new FilesystemException(
                 \error_get_last()["message"]
@@ -265,14 +295,14 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function touch($path) {
+    public function touch(string $path): Awaitable {
         return new Success((bool) \touch($path));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function get($path) {
+    public function get(string $path): Awaitable {
         $result = @\file_get_contents($path);
         return ($result === false)
             ? new Failure(new FilesystemException(\error_get_last()["message"]))
@@ -283,7 +313,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function put($path, $contents) {
+    public function put(string $path, string $contents): Awaitable {
         $result = @\file_put_contents($path, $contents);
         return ($result === false)
             ? new Failure(new FilesystemException(\error_get_last()["message"]))

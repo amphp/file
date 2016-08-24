@@ -2,24 +2,24 @@
 
 namespace Amp\File;
 
+use Interop\Async\Awaitable;
+
 interface Handle {
     /**
      * Read $len bytes from the open file handle starting at $offset
      *
-     * @param int $offset
-     * @param int $len
-     * @return \Interop\Async\Awaitable
+     * @param int $length
+     * @return \Interop\Async\Awaitable<string>
      */
-    public function read($len);
+    public function read(int $length): Awaitable;
 
     /**
      * Write $data to the open file handle starting at $offset
      *
-     * @param int $offset
      * @param string $data
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Awaitable<int>
      */
-    public function write($data);
+    public function write(string $data): Awaitable;
 
     /**
      * Close the file handle
@@ -29,7 +29,7 @@ interface Handle {
      *
      * @return \Interop\Async\Awaitable
      */
-    public function close();
+    public function close(): Awaitable;
 
     /**
      * Set the handle's internal pointer position
@@ -44,33 +44,33 @@ interface Handle {
      * @param int $whence
      * @return void
      */
-    public function seek($position, $whence = \SEEK_SET);
+    public function seek(int $position, int $whence = \SEEK_SET);
 
     /**
      * Return the current internal offset position of the file handle
      *
      * @return int
      */
-    public function tell();
+    public function tell(): int;
 
     /**
      * Test for "end-of-file" on the file handle
      *
      * @return bool
      */
-    public function eof();
+    public function eof(): bool;
 
     /**
      * Retrieve the path used when opening the file handle
      *
      * @return string
      */
-    public function path();
+    public function path(): string;
 
     /**
      * Retrieve the mode used when opening the file handle
      *
      * @return string
      */
-    public function mode();
+    public function mode(): string;
 }

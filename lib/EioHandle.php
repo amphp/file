@@ -3,6 +3,7 @@
 namespace Amp\File;
 
 use Amp\Deferred;
+use Interop\Async\Awaitable;
 
 class EioHandle implements Handle {
     const OP_READ = 1;
@@ -18,7 +19,7 @@ class EioHandle implements Handle {
     private $pendingWriteOps = 0;
     private $isActive = false;
 
-    public function __construct(callable $incrementor, $fh, $path, $mode, $size) {
+    public function __construct(callable $incrementor, $fh, string $path, string $mode, int $size) {
         $this->incrementor = $incrementor;
         $this->fh = $fh;
         $this->path = $path;
@@ -30,14 +31,14 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read($len) {
+    public function read(int $length): Awaitable {
         $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_READ;
         $op->position = $this->position;
         $op->deferred = $deferred;
         $remaining = $this->size - $this->position;
-        $op->readLen = ($len > $remaining) ? $remaining : $len;
+        $op->readLen = ($length > $remaining) ? $remaining : $length;
         if ($this->isActive) {
             $this->queue[] = $op;
         } else {
@@ -54,12 +55,12 @@ class EioHandle implements Handle {
         $op = \array_shift($this->queue);
         switch ($op->type) {
             case self::OP_READ:
-                \call_user_func($this->incrementor, 1);
+                ($this->incrementor)(1);
                 $this->isActive = true;
                 \eio_read($this->fh, $op->readLen, $op->position, $priority = null, [$this, "onRead"], $op);
                 break;
             case self::OP_WRITE:
-                \call_user_func($this->incrementor, 1);
+                ($this->incrementor)(1);
                 $this->isActive = true;
                 \eio_write($this->fh, $op->writeData, \strlen($op->writeData), $op->position, $priority = null, [$this, "onWrite"], $op);
                 break;
@@ -68,7 +69,7 @@ class EioHandle implements Handle {
 
     private function onRead($op, $result, $req) {
         $this->isActive = false;
-        \call_user_func($this->incrementor, -1);
+        ($this->incrementor)(-1);
         if ($result === -1) {
             $op->deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -85,7 +86,7 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function write($data) {
+    public function write(string $data): Awaitable {
         $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_WRITE;
@@ -106,7 +107,7 @@ class EioHandle implements Handle {
 
     private function onWrite($op, $result, $req) {
         $this->isActive = false;
-        \call_user_func($this->incrementor, -1);
+        ($this->incrementor)(-1);
         if ($result === -1) {
             $op->deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -129,8 +130,8 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function close() {
-        \call_user_func($this->incrementor, 1);
+    public function close(): Awaitable {
+        ($this->incrementor)(1);
         $deferred = new Deferred;
         \eio_close($this->fh, $priority = null, [$this, "onClose"], $deferred);
 
@@ -151,7 +152,7 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek($offset, $whence = \SEEK_SET) {
+    public function seek(int $offset, int $whence = \SEEK_SET): Awaitable {
         $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:
@@ -173,28 +174,28 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function tell() {
+    public function tell(): int {
         return $this->position;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function eof() {
+    public function eof(): bool {
         return ($this->pendingWriteOps > 0) ? false : ($this->size <= $this->position);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function path() {
+    public function path(): string {
         return $this->path;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function mode() {
+    public function mode(): string {
         return $this->mode;
     }
 }
