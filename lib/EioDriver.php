@@ -452,7 +452,7 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid) {
+    public function chown(string $path, int $uid, int $gid): Awaitable {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
