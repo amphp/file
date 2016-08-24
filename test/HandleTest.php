@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 namespace Amp\File\Test;
 
@@ -45,7 +45,7 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
             $position = 0;
 
             $stat = (yield file\stat(__FILE__));
-            $chunkSize = \floor(($stat["size"] / 5));
+            $chunkSize = (int) \floor(($stat["size"] / 5));
 
             while (!$handle->eof()) {
                 $chunk = (yield $handle->read($chunkSize));
