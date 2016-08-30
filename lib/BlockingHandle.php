@@ -12,17 +12,29 @@ class BlockingHandle implements Handle {
 
     /**
      * @param resource $fh An open uv filesystem descriptor
+     * @param string $path
+     * @param string $mode
      */
     public function __construct($fh, string $path, string $mode) {
         $this->fh = $fh;
         $this->path = $path;
         $this->mode = $mode;
     }
-
+    
+    public function __destruct() {
+        if ($this->fh !== null) {
+            \fclose($this->fh);
+        }
+    }
+    
     /**
      * {@inheritdoc}
      */
     public function read(int $length): Awaitable {
+        if ($this->fh === null) {
+            throw new \Error("The file has been closed");
+        }
+        
         $data = \fread($this->fh, $length);
         if ($data !== false) {
             return new Success($data);
@@ -37,9 +49,13 @@ class BlockingHandle implements Handle {
      * {@inheritdoc}
      */
     public function write(string $data): Awaitable {
+        if ($this->fh === null) {
+            throw new \Error("The file has been closed");
+        }
+        
         $len = \fwrite($this->fh, $data);
         if ($len !== false) {
-            return new Success($data);
+            return new Success($len);
         } else {
             return new Failure(new FilesystemException(
                 "Failed writing to file handle"
@@ -51,7 +67,14 @@ class BlockingHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Awaitable {
-        if (\fclose($this->fh)) {
+        if ($this->fh === null) {
+            throw new \Error("The file has already been closed");
+        }
+        
+        $fh = $this->fh;
+        $this->fh = null;
+        
+        if (\fclose($fh)) {
             return new Success;
         } else {
             return new Failure(new FilesystemException(
@@ -63,15 +86,21 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek(int $position, int $whence = \SEEK_SET) {
+    public function seek(int $position, int $whence = \SEEK_SET): Awaitable {
+        if ($this->fh === null) {
+            throw new \Error("The file has been closed");
+        }
+        
         switch ($whence) {
             case \SEEK_SET:
             case \SEEK_CUR:
             case \SEEK_END:
-                \fseek($this->fh, $position, $whence);
-                return;
+                if (@\fseek($this->fh, $position, $whence) === -1) {
+                    return new Failure(new FilesystemException("Could not seek in file"));
+                }
+                return new Success($this->tell());
             default:
-                throw new FilesystemException(
+                throw new \Error(
                     "Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"
                 );
         }
@@ -81,6 +110,10 @@ class BlockingHandle implements Handle {
      * {@inheritdoc}
      */
     public function tell(): int {
+        if ($this->fh === null) {
+            throw new \Error("The file has been closed");
+        }
+        
         return \ftell($this->fh);
     }
 
@@ -88,6 +121,10 @@ class BlockingHandle implements Handle {
      * {@inheritdoc}
      */
     public function eof(): bool {
+        if ($this->fh === null) {
+            throw new \Error("The file has been closed");
+        }
+        
         return \feof($this->fh);
     }
 

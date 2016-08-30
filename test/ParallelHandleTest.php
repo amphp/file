@@ -2,10 +2,12 @@
 
 namespace Amp\File\Test;
 
-class BlockingHandleTest extends HandleTest {
+use Amp\Parallel\Worker\DefaultPool;
+
+class ParallelHandleTest extends HandleTest {
     protected function lRun(callable $cb) {
         \Interop\Async\Loop::execute(function() use ($cb) {
-            \Amp\File\filesystem(new \Amp\File\BlockingDriver);
+            \Amp\File\filesystem(new \Amp\File\ParallelDriver(new DefaultPool));
             \Amp\rethrow(new \Amp\Coroutine($cb()));
         });
     }

@@ -19,6 +19,10 @@
         {
             "name": "Daniel Lowrey",
             "email": "rdlowrey@php.net"
+        },
+        {
+            "name": "Aaron Piotrowski",
+            "email": "aaron@trowski.com"
         }
     ],
     "require": {
@@ -27,8 +31,12 @@
     "minimum-stability": "dev",
     "require-dev": {
         "amphp/loop": "dev-master",
+        "amphp/parallel": "dev-master as 0.1",
         "phpunit/phpunit": "^5.0",
         "friendsofphp/php-cs-fixer": "~1.9"
+    },
+    "suggest": {
+        "amphp/parallel": "Provides async file access without the eio or uv extension."
     },
     "autoload": {
         "psr-4": {
@@ -43,7 +51,8 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.2.0-dev"
+            "dev-master": "0.1.0-dev",
+            "dev-amp_v2": "0.2.0-dev"
         }
     }
 }

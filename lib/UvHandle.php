@@ -2,7 +2,7 @@
 
 namespace Amp\File;
 
-use Amp\Deferred;
+use Amp\{ Deferred, Success };
 use Interop\Async\{ Awaitable, Loop\Driver };
 
 class UvHandle implements Handle {
@@ -145,10 +145,12 @@ class UvHandle implements Handle {
                 $this->position = $this->size + $offset;
                 break;
             default:
-                throw new FilesystemException(
+                throw new \Error(
                     "Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"
                 );
         }
+        
+        return new Success($this->position);
     }
 
     /**

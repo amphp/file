@@ -42,9 +42,9 @@ interface Handle {
      *
      * @param int $position
      * @param int $whence
-     * @return void
+     * @return \Interop\Async\Awaitable<int> New offset position.
      */
-    public function seek(int $position, int $whence = \SEEK_SET);
+    public function seek(int $position, int $whence = \SEEK_SET): Awaitable;
 
     /**
      * Return the current internal offset position of the file handle

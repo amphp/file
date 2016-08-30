@@ -79,7 +79,7 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
         $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame(0, $handle->tell());
-            $handle->seek(10);
+            yield $handle->seek(10);
             $this->assertSame(10, $handle->tell());
             $chunk = (yield $handle->read(90));
             $this->assertSame(100, $handle->tell());
@@ -89,13 +89,12 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \Amp\File\FilesystemException
-     * @expectedExceptionMessage Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected
+     * @expectedException \Error
      */
     public function testSeekThrowsOnInvalidWhence() {
         $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
-            $handle->seek(0, 99999);
+            yield $handle->seek(0, 99999);
         });
     }
 
@@ -103,9 +102,9 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
         $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame(0, $handle->tell());
-            $handle->seek(10);
+            yield $handle->seek(10);
             $this->assertSame(10, $handle->tell());
-            $handle->seek(-10, \SEEK_CUR);
+            yield $handle->seek(-10, \SEEK_CUR);
             $this->assertSame(0, $handle->tell());
         });
     }
@@ -115,7 +114,7 @@ abstract class HandleTest extends \PHPUnit_Framework_TestCase {
             $size = (yield file\size(__FILE__));
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame(0, $handle->tell());
-            $handle->seek(-10, \SEEK_END);
+            yield $handle->seek(-10, \SEEK_END);
             $this->assertSame($size - 10, $handle->tell());
         });
     }

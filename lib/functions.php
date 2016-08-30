@@ -2,8 +2,8 @@
 
 namespace Amp\File;
 
-use Interop\Async\Awaitable;
-use Interop\Async\Loop;
+use Amp\Parallel\Worker\Worker;
+use Interop\Async\{ Awaitable, Loop };
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
@@ -38,6 +38,8 @@ function driver(): Driver {
         return new UvDriver($driver);
     } elseif (\extension_loaded("eio")) {
         return new EioDriver;
+    } elseif (\interface_exists(Worker::class)) {
+        return new ParallelDriver;
     } else {
         return new BlockingDriver;
     }

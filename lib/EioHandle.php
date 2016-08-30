@@ -2,7 +2,7 @@
 
 namespace Amp\File;
 
-use Amp\Deferred;
+use Amp\{ Deferred, Success };
 use Interop\Async\Awaitable;
 
 class EioHandle implements Handle {
@@ -42,7 +42,7 @@ class EioHandle implements Handle {
         if ($this->isActive) {
             $this->queue[] = $op;
         } else {
-            \call_user_func($this->incrementor, 1);
+            ($this->incrementor)(1);
             $this->isActive = true;
             \eio_read($this->fh, $op->readLen, $op->position, \EIO_PRI_DEFAULT, [$this, "onRead"], $op);
         }
@@ -97,9 +97,9 @@ class EioHandle implements Handle {
         if ($this->isActive) {
             $this->queue[] = $op;
         } else {
-            \call_user_func($this->incrementor, 1);
+            ($this->incrementor)(1);
             $this->isActive = true;
-            \eio_write($this->fh, $data, strlen($data), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
+            \eio_write($this->fh, $data, \strlen($data), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
         }
 
         return $deferred->getAwaitable();
@@ -139,7 +139,7 @@ class EioHandle implements Handle {
     }
 
     private function onClose($deferred, $result, $req) {
-        \call_user_func($this->incrementor, -1);
+        ($this->incrementor)(-1);
         if ($result === -1) {
             $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -152,7 +152,7 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek(int $offset, int $whence = \SEEK_SET) {
+    public function seek(int $offset, int $whence = \SEEK_SET): Awaitable {
         $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:
@@ -165,10 +165,12 @@ class EioHandle implements Handle {
                 $this->position = $this->size + $offset;
                 break;
             default:
-                throw new FilesystemException(
+                throw new \Error(
                     "Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"
                 );
         }
+        
+        return new Success($this->position);
     }
 
     /**
