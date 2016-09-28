@@ -300,13 +300,44 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644) {
+    public function mkdir($path, $mode = 0644, $recursive) {
         $this->reactor->addRef();
         $promisor = new Deferred;
-        \uv_fs_mkdir($this->loop, $path, $mode, function($fh) use ($promisor) {
-            $this->reactor->delRef();
-            $promisor->succeed((bool)$fh);
-        });
+
+        if ($recursive) {
+            $arrayPath = array_filter(explode(DIRECTORY_SEPARATOR, $path));
+            $tmpPath = "";
+
+            $callback = function() use (
+                &$callback, &$arrayPath, &$tmpPath, $mode, $promisor
+            ) {
+                $tmpPath .= DIRECTORY_SEPARATOR . array_shift($arrayPath);
+
+                if (empty($arrayPath)) {
+                    \uv_fs_mkdir($this->loop, $tmpPath, $mode, function($fh) use ($promisor) {
+                        $this->reactor->delRef();
+                        $promisor->succeed((bool)$fh);
+                    });
+                } else {
+                    $this->isdir($tmpPath)->when(function ($error, $result) use (
+                        $callback, $tmpPath, $mode
+                    ) {
+                        if ($result) {
+                            $callback();
+                        } else {
+                            \uv_fs_mkdir($this->loop, $tmpPath, $mode, $callback);
+                        }
+                    });
+                }
+            };
+
+            $callback();
+        } else {
+            \uv_fs_mkdir($this->loop, $path, $mode, function($fh) use ($promisor) {
+                $this->reactor->delRef();
+                $promisor->succeed((bool)$fh);
+            });
+        }
 
         return $promisor->promise();
     }

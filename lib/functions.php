@@ -197,10 +197,11 @@ function unlink($path) {
  *
  * @param string $path
  * @param int $mode
+ * @param bool $recursive
  * @return \Amp\Promise<null>
  */
-function mkdir($path, $mode = 0644) {
-    return filesystem()->mkdir($path, $mode);
+function mkdir($path, $mode = 0644, $recursive = false) {
+    return filesystem()->mkdir($path, $mode, $recursive);
 }
 
 /**

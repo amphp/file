@@ -356,11 +356,39 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644) {
+    public function mkdir($path, $mode = 0644, $recursive) {
         \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $promisor);
+
+        if ($recursive) {
+            $arrayPath = array_filter(explode(DIRECTORY_SEPARATOR, $path));
+            $tmpPath = "";
+
+            $callback = function() use (
+                &$callback, &$arrayPath, &$tmpPath, $mode, $priority, $promisor
+            ) {
+                $tmpPath .= DIRECTORY_SEPARATOR . array_shift($arrayPath);
+
+                if (empty($arrayPath)) {
+                    \eio_mkdir($tmpPath, $mode, $priority, [$this, "onGenericResult"], $promisor);
+                } else {
+                    $this->isdir($tmpPath)->when(function ($error, $result) use (
+                        $callback, $tmpPath, $mode, $priority
+                    ) {
+                        if ($result) {
+                            $callback();
+                        } else {
+                            \eio_mkdir($tmpPath, $mode, $priority, $callback);
+                        }
+                    });
+                }
+            };
+
+            $callback();
+        } else {
+            \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $promisor);
+        }
 
         return $promisor->promise();
     }

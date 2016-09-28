@@ -261,9 +261,14 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $dir = "{$fixtureDir}/newdir";
 
             yield file\mkdir($dir);
-            $stat = (yield file\stat($dir));
+            $this->assertNotNull(yield file\stat($dir));
             yield file\rmdir($dir);
             $this->assertNull(yield file\stat($dir));
+
+            $dir = "{$fixtureDir}/newdir/with/recursive/creation";
+
+            yield file\mkdir($dir, 0744, true);
+            $this->assertNotNull(yield file\stat($dir));
         });
     }
 

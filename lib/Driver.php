@@ -129,9 +129,10 @@ interface Driver {
      *
      * @param string $path
      * @param int $mode
+     * @param bool $recursive
      * @return \Amp\Promise
      */
-    public function mkdir($path, $mode = 0644);
+    public function mkdir($path, $mode = 0644, $recursive);
 
     /**
      * Delete a directory
