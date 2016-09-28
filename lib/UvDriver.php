@@ -300,7 +300,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644, $recursive) {
+    public function mkdir($path, $mode = 0644, $recursive = false) {
         $this->reactor->addRef();
         $promisor = new Deferred;
 

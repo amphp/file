@@ -356,7 +356,7 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644, $recursive) {
+    public function mkdir($path, $mode = 0644, $recursive = false) {
         \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
