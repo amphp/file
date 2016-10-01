@@ -243,6 +243,21 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
         });
     }
 
+    public function testPutTruncates() {
+    	amp\run(function () {
+			$fixturePath = self::getFixturePath() . "/trunc";
+			$contents = "long data";
+			$short = "data";
+
+			yield file\put($fixturePath, $contents);
+			yield file\put($fixturePath, $short);
+			$contents2 = (yield file\get($fixturePath));
+			yield file\unlink($fixturePath);
+
+			$this->assertSame($short, $contents2);
+		});
+	}
+
     public function testUnlink() {
         amp\run(function () {
             $fixtureDir = self::getFixturePath();

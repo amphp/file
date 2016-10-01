@@ -515,7 +515,7 @@ class UvDriver implements Driver {
     }
 
     private function doPut($path, $contents): \Generator {
-        $flags = \UV::O_WRONLY | \UV::O_CREAT;
+        $flags = \UV::O_WRONLY | \UV::O_CREAT | \UV::O_TRUNC;
         $mode = \UV::S_IRWXU | \UV::S_IRUSR;
         $this->reactor->addRef();
         $promise = $this->doFsOpen($path, $flags, $mode);
