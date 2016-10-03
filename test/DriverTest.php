@@ -268,7 +268,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
 			$mask = umask(062);
             yield file\put($toUnlink, "unlink me");
 			umask($mask);
-			$stat = yield file\stat($toUnlink);
+			$stat = (yield file\stat($toUnlink));
             $this->assertTrue(($stat["mode"] & 0777) == 0604);
             yield file\unlink($toUnlink);
             $this->assertNull(yield file\stat($toUnlink));
@@ -290,7 +290,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $dir = "{$fixtureDir}/newdir/with/recursive/creation";
 
             yield file\mkdir($dir, 0764, true); // the umask is 022 by default
-			$stat = yield file\stat($dir);
+			$stat = (yield file\stat($dir));
 			$this->assertTrue(($stat["mode"] & 0777) == 0744);
         });
     }
