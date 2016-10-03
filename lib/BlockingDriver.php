@@ -203,7 +203,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644, $recursive = false) {
+    public function mkdir($path, $mode = 0666, $recursive = false) {
         return new Success((bool) @\mkdir($path, $mode, $recursive));
     }
 

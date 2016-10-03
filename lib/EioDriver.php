@@ -71,7 +71,7 @@ class EioDriver implements Driver {
                 "Invalid open mode"
             ));
         }
-        $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
+        $chmod = ($flags & \EIO_O_CREAT) ? 0666 : 0;
         \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $openArr = [$mode, $path, $promisor];
@@ -356,7 +356,7 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644, $recursive = false) {
+    public function mkdir($path, $mode = 0666, $recursive = false) {
         \call_user_func($this->incrementor, 1);
         $promisor = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
@@ -538,8 +538,8 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function put($path, $contents) {
-        $flags = \EIO_O_RDWR | \EIO_O_CREAT | \EIO_O_TRUNC;
-        $mode = \EIO_S_IRUSR | \EIO_S_IWUSR | \EIO_S_IXUSR;
+        $flags = \EIO_O_WRONLY | \EIO_O_CREAT | \EIO_O_TRUNC;
+        $mode = 0666;
         $priority = \EIO_PRI_DEFAULT;
 
         \call_user_func($this->incrementor, 1);

@@ -38,7 +38,7 @@ class UvDriver implements Driver {
                 "Invalid open mode"
             ));
         }
-        $chmod = ($flags & \UV::O_CREAT) ? 0644 : 0;
+        $chmod = ($flags & \UV::O_CREAT) ? 0666 : 0;
         $this->reactor->addRef();
         $promisor = new Deferred;
         $openArr = [$mode, $path, $promisor];
@@ -300,7 +300,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir($path, $mode = 0644, $recursive = false) {
+    public function mkdir($path, $mode = 0666, $recursive = false) {
         $this->reactor->addRef();
         $promisor = new Deferred;
 
@@ -516,7 +516,7 @@ class UvDriver implements Driver {
 
     private function doPut($path, $contents): \Generator {
         $flags = \UV::O_WRONLY | \UV::O_CREAT | \UV::O_TRUNC;
-        $mode = \UV::S_IRWXU | \UV::S_IRUSR;
+        $mode = 0666;
         $this->reactor->addRef();
         $promise = $this->doFsOpen($path, $flags, $mode);
         if (!$fh = (yield $promise)) {
