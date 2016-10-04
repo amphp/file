@@ -282,7 +282,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $dir = "{$fixtureDir}/newdir";
 
             yield file\mkdir($dir);
-			$stat = yield file\stat($dir);
+			$stat = (yield file\stat($dir));
             $this->assertTrue(($stat["mode"] & 0777) == 0644);
             yield file\rmdir($dir);
             $this->assertNull(yield file\stat($dir));
