@@ -7,7 +7,7 @@ use Amp\File as file;
 
 abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     private static $fixtureId;
-	private static $umask;
+    private static $umask;
 
     private static function getFixturePath() {
         if (empty(self::$fixtureId)) {
@@ -34,7 +34,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
         $fixtureDir = self::getFixturePath();
 
         self::clearFixtureDir();
-		self::$umask = umask(0022);
+        self::$umask = umask(0022);
 
         if (!\mkdir($fixtureDir, $mode = 0777, $recursive = true)) {
             throw new \RuntimeException(
@@ -55,7 +55,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
 
     public static function tearDownAfterClass() {
         self::clearFixtureDir();
-		umask(self::$umask);
+        umask(self::$umask);
     }
 
     protected function setUp() {
@@ -265,10 +265,10 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
         amp\run(function () {
             $fixtureDir = self::getFixturePath();
             $toUnlink = "{$fixtureDir}/unlink";
-			$mask = umask(062);
+            $mask = umask(062);
             yield file\put($toUnlink, "unlink me");
-			umask($mask);
-			$stat = (yield file\stat($toUnlink));
+            umask($mask);
+            $stat = (yield file\stat($toUnlink));
             $this->assertTrue(($stat["mode"] & 0777) == 0604);
             yield file\unlink($toUnlink);
             $this->assertNull(yield file\stat($toUnlink));
@@ -282,7 +282,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $dir = "{$fixtureDir}/newdir";
 
             yield file\mkdir($dir);
-			$stat = (yield file\stat($dir));
+            $stat = (yield file\stat($dir));
             $this->assertTrue(($stat["mode"] & 0777) == 0644);
             yield file\rmdir($dir);
             $this->assertNull(yield file\stat($dir));
@@ -290,8 +290,8 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
             $dir = "{$fixtureDir}/newdir/with/recursive/creation";
 
             yield file\mkdir($dir, 0764, true); // the umask is 022 by default
-			$stat = (yield file\stat($dir));
-			$this->assertTrue(($stat["mode"] & 0777) == 0744);
+            $stat = (yield file\stat($dir));
+            $this->assertTrue(($stat["mode"] & 0777) == 0744);
         });
     }
 
