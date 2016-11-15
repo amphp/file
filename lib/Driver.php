@@ -2,7 +2,7 @@
 
 namespace Amp\File;
 
-use Interop\Async\Awaitable;
+use Interop\Async\Promise;
 
 interface Driver {
     /**
@@ -10,9 +10,9 @@ interface Driver {
      *
      * @param string $path
      * @param string $mode
-     * @return \Interop\Async\Awaitable<\Amp\File\Handle>
+     * @return \Interop\Async\Promise<\Amp\File\Handle>
      */
-    public function open(string $path, string $mode): Awaitable;
+    public function open(string $path, string $mode): Promise;
 
     /**
      * Execute a file stat operation
@@ -20,9 +20,9 @@ interface Driver {
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *
      * @param string $path The file system path to stat
-     * @return \Interop\Async\Awaitable<array|null>
+     * @return \Interop\Async\Promise<array|null>
      */
-    public function stat(string $path): Awaitable;
+    public function stat(string $path): Promise;
 
     /**
      * Does the specified path exist?
@@ -31,9 +31,9 @@ interface Driver {
      * indicating the existence of the specified path.
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<bool>
+     * @return \Interop\Async\Promise<bool>
      */
-    public function exists(string $path): Awaitable;
+    public function exists(string $path): Promise;
 
     /**
      * Retrieve the size in bytes of the file at the specified path.
@@ -42,9 +42,9 @@ interface Driver {
      * function's returned Promise WILL resolve as a failure.
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function size(string $path): Awaitable;
+    public function size(string $path): Promise;
 
     /**
      * Does the specified path exist and is it a directory?
@@ -53,9 +53,9 @@ interface Driver {
      * to FALSE and will not reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<bool>
+     * @return \Interop\Async\Promise<bool>
      */
-    public function isdir(string $path): Awaitable;
+    public function isdir(string $path): Promise;
 
     /**
      * Does the specified path exist and is it a file?
@@ -64,101 +64,101 @@ interface Driver {
      * to FALSE and will not reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<bool>
+     * @return \Interop\Async\Promise<bool>
      */
-    public function isfile(string $path): Awaitable;
+    public function isfile(string $path): Promise;
 
     /**
      * Retrieve the path's last modification time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function mtime(string $path): Awaitable;
+    public function mtime(string $path): Promise;
 
     /**
      * Retrieve the path's last access time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function atime(string $path): Awaitable;
+    public function atime(string $path): Promise;
 
     /**
      * Retrieve the path's creation time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function ctime(string $path): Awaitable;
+    public function ctime(string $path): Promise;
 
     /**
      * Same as stat() except if the path is a link then the link's data is returned
      *
      * @param string $path The file system path to stat
-     * @return \Interop\Async\Awaitable A promise resolving to an associative array upon successful resolution
+     * @return \Interop\Async\Promise A promise resolving to an associative array upon successful resolution
      */
-    public function lstat(string $path): Awaitable;
+    public function lstat(string $path): Promise;
 
     /**
      * Create a symlink $link pointing to the file/directory located at $target
      *
      * @param string $target
      * @param string $link
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function symlink(string $target, string $link): Awaitable;
+    public function symlink(string $target, string $link): Promise;
     
     /**
      * Create a hard link $link pointing to the file/directory located at $target
      *
      * @param string $target
      * @param string $link
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function link(string $target, string $link): Awaitable;
+    public function link(string $target, string $link): Promise;
     
     /**
      * Read the symlink at $path.
      *
      * @param string $target
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function readlink(string $target): Awaitable;
+    public function readlink(string $target): Promise;
     
     /**
      * Rename a file or directory
      *
      * @param string $from
      * @param string $to
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function rename(string $from, string $to): Awaitable;
+    public function rename(string $from, string $to): Promise;
 
     /**
      * Delete a file
      *
      * @param string $path
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function unlink(string $path): Awaitable;
+    public function unlink(string $path): Promise;
 
     /**
      * Create a director
      *
      * @param string $path
      * @param int $mode
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function mkdir(string $path, int $mode = 0644): Awaitable;
+    public function mkdir(string $path, int $mode = 0644): Promise;
 
     /**
      * Delete a directory
      *
      * @param string $path
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function rmdir(string $path): Awaitable;
+    public function rmdir(string $path): Promise;
 
     /**
      * Retrieve an array of files and directories inside the specified path
@@ -166,18 +166,18 @@ interface Driver {
      * Dot entries are not included in the resulting array (i.e. "." and "..").
      *
      * @param string $path
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function scandir(string $path): Awaitable;
+    public function scandir(string $path): Promise;
 
     /**
      * chmod a file or directory
      *
      * @param string $path
      * @param int $mode
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function chmod(string $path, int $mode): Awaitable;
+    public function chmod(string $path, int $mode): Promise;
 
     /**
      * chown a file or directory
@@ -185,9 +185,9 @@ interface Driver {
      * @param string $path
      * @param int $uid
      * @param int $gid
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function chown(string $path, int $uid, int $gid): Awaitable;
+    public function chown(string $path, int $uid, int $gid): Promise;
 
     /**
      * Update the access and modification time of the specified path
@@ -195,24 +195,24 @@ interface Driver {
      * If the file does not exist it will be created automatically.
      *
      * @param string $path
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function touch(string $path): Awaitable;
+    public function touch(string $path): Promise;
 
     /**
      * Buffer the specified file's contents
      *
      * @param string $path The file path from which to buffer contents
-     * @return \Interop\Async\Awaitable A promise resolving to a string upon successful resolution
+     * @return \Interop\Async\Promise A promise resolving to a string upon successful resolution
      */
-    public function get(string $path): Awaitable;
+    public function get(string $path): Promise;
 
     /**
      * Write the contents string to the specified path.
      *
      * @param string $path The file path to which to $contents should be written
      * @param string $contents The data to write to the specified $path
-     * @return \Interop\Async\Awaitable A promise resolving to the integer length written upon success
+     * @return \Interop\Async\Promise A promise resolving to the integer length written upon success
      */
-    public function put(string $path, string $contents): Awaitable;
+    public function put(string $path, string $contents): Promise;
 }

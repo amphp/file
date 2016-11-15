@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Success, Failure };
-use Interop\Async\Awaitable;
+use Interop\Async\Promise;
 
 class BlockingHandle implements Handle {
     private $fh;
@@ -30,7 +30,7 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read(int $length): Awaitable {
+    public function read(int $length): Promise {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }
@@ -48,7 +48,7 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function write(string $data): Awaitable {
+    public function write(string $data): Promise {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }
@@ -66,7 +66,7 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function close(): Awaitable {
+    public function close(): Promise {
         if ($this->fh === null) {
             throw new \Error("The file has already been closed");
         }
@@ -86,7 +86,7 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek(int $position, int $whence = \SEEK_SET): Awaitable {
+    public function seek(int $position, int $whence = \SEEK_SET): Promise {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }

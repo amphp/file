@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Deferred, Success };
-use Interop\Async\Awaitable;
+use Interop\Async\Promise;
 
 class EioHandle implements Handle {
     const OP_READ = 1;
@@ -31,7 +31,7 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read(int $length): Awaitable {
+    public function read(int $length): Promise {
         $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_READ;
@@ -47,7 +47,7 @@ class EioHandle implements Handle {
             \eio_read($this->fh, $op->readLen, $op->position, \EIO_PRI_DEFAULT, [$this, "onRead"], $op);
         }
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function dequeue() {
@@ -86,7 +86,7 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function write(string $data): Awaitable {
+    public function write(string $data): Promise {
         $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_WRITE;
@@ -102,7 +102,7 @@ class EioHandle implements Handle {
             \eio_write($this->fh, $data, \strlen($data), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
         }
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onWrite($op, $result, $req) {
@@ -130,12 +130,12 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function close(): Awaitable {
+    public function close(): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         \eio_close($this->fh, \EIO_PRI_DEFAULT, [$this, "onClose"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onClose($deferred, $result, $req) {
@@ -152,7 +152,7 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek(int $offset, int $whence = \SEEK_SET): Awaitable {
+    public function seek(int $offset, int $whence = \SEEK_SET): Promise {
         $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:

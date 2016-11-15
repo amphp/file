@@ -2,24 +2,24 @@
 
 namespace Amp\File;
 
-use Interop\Async\Awaitable;
+use Interop\Async\Promise;
 
 interface Handle {
     /**
      * Read $len bytes from the open file handle starting at $offset
      *
      * @param int $length
-     * @return \Interop\Async\Awaitable<string>
+     * @return \Interop\Async\Promise<string>
      */
-    public function read(int $length): Awaitable;
+    public function read(int $length): Promise;
 
     /**
      * Write $data to the open file handle starting at $offset
      *
      * @param string $data
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function write(string $data): Awaitable;
+    public function write(string $data): Promise;
 
     /**
      * Close the file handle
@@ -27,9 +27,9 @@ interface Handle {
      * Applications are not required to manually close handles -- they will
      * be unloaded automatically when the object is garbage collected.
      *
-     * @return \Interop\Async\Awaitable
+     * @return \Interop\Async\Promise
      */
-    public function close(): Awaitable;
+    public function close(): Promise;
 
     /**
      * Set the handle's internal pointer position
@@ -42,9 +42,9 @@ interface Handle {
      *
      * @param int $position
      * @param int $whence
-     * @return \Interop\Async\Awaitable<int> New offset position.
+     * @return \Interop\Async\Promise<int> New offset position.
      */
-    public function seek(int $position, int $whence = \SEEK_SET): Awaitable;
+    public function seek(int $position, int $whence = \SEEK_SET): Promise;
 
     /**
      * Return the current internal offset position of the file handle

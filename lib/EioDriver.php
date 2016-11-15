@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Deferred, Failure, Success };
-use Interop\Async\{ Awaitable, Loop };
+use Interop\Async\{ Loop, Promise };
 
 class EioDriver implements Driver {
     private $watcher;
@@ -54,7 +54,7 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function open(string $path, string $mode): Awaitable {
+    public function open(string $path, string $mode): Promise {
         switch ($mode) {
             case "r":   $flags = \EIO_O_RDONLY; break;
             case "r+":  $flags = \EIO_O_RDWR; break;
@@ -76,7 +76,7 @@ class EioDriver implements Driver {
         $openArr = [$mode, $path, $deferred];
         \eio_open($path, $flags, $chmod, \EIO_PRI_DEFAULT, [$this, "onOpenHandle"], $openArr);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onOpenHandle($openArr, $result, $req) {
@@ -125,7 +125,7 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function stat(string $path): Awaitable {
+    public function stat(string $path): Promise {
         if ($stat = StatCache::get($path)) {
             return new Success($stat);
         }
@@ -136,7 +136,7 @@ class EioDriver implements Driver {
         $data = [$deferred, $path];
         \eio_stat($path, $priority, [$this, "onStat"], $data);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onStat($data, $result, $req) {
@@ -153,19 +153,19 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function exists(string $path): Awaitable {
+    public function exists(string $path): Promise {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             $deferred->resolve((bool) $result);
         });
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function isdir(string $path): Awaitable {
+    public function isdir(string $path): Promise {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -175,13 +175,13 @@ class EioDriver implements Driver {
             }
         });
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function isfile(string $path): Awaitable {
+    public function isfile(string $path): Promise {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -191,13 +191,13 @@ class EioDriver implements Driver {
             }
         });
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function size(string $path): Awaitable {
+    public function size(string $path): Promise {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if (empty($result)) {
@@ -213,13 +213,13 @@ class EioDriver implements Driver {
             }
         });
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function mtime(string $path): Awaitable {
+    public function mtime(string $path): Promise {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -231,13 +231,13 @@ class EioDriver implements Driver {
             }
         });
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function atime(string $path): Awaitable {
+    public function atime(string $path): Promise {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -249,13 +249,13 @@ class EioDriver implements Driver {
             }
         });
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function ctime(string $path): Awaitable {
+    public function ctime(string $path): Promise {
         $deferred = new Deferred;
         $this->stat($path)->when(function ($error, $result) use ($deferred) {
             if ($result) {
@@ -267,19 +267,19 @@ class EioDriver implements Driver {
             }
         });
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function lstat(string $path): Awaitable {
+    public function lstat(string $path): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_lstat($path, $priority, [$this, "onLstat"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onLstat($deferred, $result, $req) {
@@ -294,37 +294,37 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function symlink(string $target, string $link): Awaitable {
+    public function symlink(string $target, string $link): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_symlink($target, $link, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
     
     /**
      * {@inheritdoc}
      */
-    public function link(string $target, string $link): Awaitable {
+    public function link(string $target, string $link): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_link($target, $link, $priority, [$this, "onGenericResult"], $deferred);
     
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
     
     /**
      * {@inheritdoc}
      */
-    public function readlink(string $path): Awaitable {
+    public function readlink(string $path): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_readlink($path, $priority, [$this, "onGenericResult"], $deferred);
         
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
     private function onGenericResult($deferred, $result, $req) {
         ($this->incrementor)(-1);
@@ -340,26 +340,26 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function rename(string $from, string $to): Awaitable {
+    public function rename(string $from, string $to): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_rename($from, $to, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function unlink(string $path): Awaitable {
+    public function unlink(string $path): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         $data = [$deferred, $path];
         \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onUnlink($data, $result, $req) {
@@ -378,26 +378,26 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644): Awaitable {
+    public function mkdir(string $path, int $mode = 0644): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rmdir(string $path): Awaitable {
+    public function rmdir(string $path): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         $data = [$deferred, $path];
         \eio_rmdir($path, $priority, [$this, "onRmdir"], $data);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onRmdir($data, $result, $req) {
@@ -416,14 +416,14 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function scandir(string $path): Awaitable {
+    public function scandir(string $path): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $flags = \EIO_READDIR_STAT_ORDER | \EIO_READDIR_DIRS_FIRST;
         $priority = \EIO_PRI_DEFAULT;
         \eio_readdir($path, $flags, $priority, [$this, "onScandir"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onScandir($deferred, $result, $req) {
@@ -440,31 +440,31 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function chmod(string $path, int $mode): Awaitable {
+    public function chmod(string $path, int $mode): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Awaitable {
+    public function chown(string $path, int $uid, int $gid): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_chown($path, $uid, $gid, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path): Awaitable {
+    public function touch(string $path): Promise {
         $atime = $mtime = \time();
         
         ($this->incrementor)(1);
@@ -472,13 +472,13 @@ class EioDriver implements Driver {
         $priority = \EIO_PRI_DEFAULT;
         \eio_utime($path, $atime, $mtime, $priority, [$this, "onGenericResult"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function get(string $path): Awaitable {
+    public function get(string $path): Promise {
         $flags = $flags = \EIO_O_RDONLY;
         $mode = 0;
         $priority = \EIO_PRI_DEFAULT;
@@ -487,7 +487,7 @@ class EioDriver implements Driver {
         $deferred = new Deferred;
         \eio_open($path, $flags, $mode, $priority, [$this, "onGetOpen"], $deferred);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onGetOpen($deferred, $result, $req) {
@@ -532,7 +532,7 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function put(string $path, string $contents): Awaitable {
+    public function put(string $path, string $contents): Promise {
         $flags = \EIO_O_RDWR | \EIO_O_CREAT;
         $mode = \EIO_S_IRUSR | \EIO_S_IWUSR | \EIO_S_IXUSR;
         $priority = \EIO_PRI_DEFAULT;
@@ -542,7 +542,7 @@ class EioDriver implements Driver {
         $data = [$contents, $deferred];
         \eio_open($path, $flags, $mode, $priority, [$this, "onPutOpen"], $data);
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function onPutOpen($data, $result, $req) {

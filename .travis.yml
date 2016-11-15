@@ -12,7 +12,7 @@ matrix:
     - php: nightly
   fast_finish: true
 
-before_script:
+install:
   - git clone https://bitbucket.org/osmanov/pecl-eio;
     pushd pecl-eio;
     phpize;

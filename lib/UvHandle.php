@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Deferred, Success };
-use Interop\Async\{ Awaitable, Loop\Driver };
+use Interop\Async\{ Promise, Loop\Driver };
 
 class UvHandle implements Handle {
     const OP_READ = 1;
@@ -36,7 +36,7 @@ class UvHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read(int $readLen): Awaitable {
+    public function read(int $readLen): Promise {
         $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_READ;
@@ -50,13 +50,13 @@ class UvHandle implements Handle {
             $this->doRead($op);
         }
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function write(string $writeData): Awaitable {
+    public function write(string $writeData): Promise {
         $this->pendingWriteOps++;
         $deferred = new Deferred;
         $op = new \StdClass;
@@ -71,7 +71,7 @@ class UvHandle implements Handle {
             $this->doWrite($op);
         }
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     private function doRead($op) {
@@ -132,7 +132,7 @@ class UvHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek(int $offset, int $whence = \SEEK_SET): Awaitable {
+    public function seek(int $offset, int $whence = \SEEK_SET): Promise {
         $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:
@@ -184,7 +184,7 @@ class UvHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function close(): Awaitable {
+    public function close(): Promise {
         $this->isCloseInitialized = true;
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
@@ -193,7 +193,7 @@ class UvHandle implements Handle {
             $deferred->resolve();
         });
 
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
 
     public function __destruct() {

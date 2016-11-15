@@ -1,11 +1,12 @@
-<?php
+<?php declare(strict_types = 1);
+
 namespace Amp\File;
 
 use Amp\{ Coroutine, Success };
 use Amp\Parallel\{
     TaskException, Worker\Worker, WorkerException
 };
-use Interop\Async\Awaitable;
+use Interop\Async\Promise;
 
 class ParallelHandle implements Handle {
     /** @var \Amp\Parallel\Worker\Worker */
@@ -61,13 +62,13 @@ class ParallelHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function close(): Awaitable {
+    public function close(): Promise {
         $this->open = false;
         
         if ($this->worker->isRunning()) {
-            $awaitable = $this->worker->enqueue(new Internal\FileTask('fclose', [], $this->id));
+            $promise = $this->worker->enqueue(new Internal\FileTask('fclose', [], $this->id));
             $this->id = null;
-            return $awaitable;
+            return $promise;
         }
         
         return new Success;
@@ -80,7 +81,7 @@ class ParallelHandle implements Handle {
         return ($this->pendingWrites > 0) ? false : ($this->size <= $this->position);
     }
     
-    public function read(int $length): Awaitable {
+    public function read(int $length): Promise {
         if ($this->id === null) {
             throw new \Error("The file has been closed");
         }
@@ -105,7 +106,7 @@ class ParallelHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function write(string $data): Awaitable {
+    public function write(string $data): Promise {
         if ($this->id === null) {
             throw new \Error("The file has been closed");
         }
@@ -134,7 +135,7 @@ class ParallelHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek(int $offset, int $whence = SEEK_SET): Awaitable {
+    public function seek(int $offset, int $whence = SEEK_SET): Promise {
         if ($this->id === null) {
             throw new \Error("The file has been closed");
         }

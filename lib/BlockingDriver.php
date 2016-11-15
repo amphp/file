@@ -3,13 +3,13 @@
 namespace Amp\File;
 
 use Amp\{ Success, Failure };
-use Interop\Async\Awaitable;
+use Interop\Async\Promise;
 
 class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function open(string $path, string $mode): Awaitable {
+    public function open(string $path, string $mode): Promise {
         if (!$fh = \fopen($path, $mode)) {
             return new Failure(new FilesystemException(
                 "Failed opening file handle"
@@ -22,7 +22,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function stat(string $path): Awaitable {
+    public function stat(string $path): Promise {
         if ($stat = StatCache::get($path)) {
             return new Success($stat);
         } elseif ($stat = @\stat($path)) {
@@ -38,7 +38,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function exists(string $path): Awaitable {
+    public function exists(string $path): Promise {
         if ($exists = @\file_exists($path)) {
             \clearstatcache(true, $path);
         }
@@ -52,9 +52,9 @@ class BlockingDriver implements Driver {
      * function's returned Promise WILL resolve as a failure.
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function size(string $path): Awaitable {
+    public function size(string $path): Promise {
         if (!@\file_exists($path)) {
             return new Failure(new FilesystemException(
                 "Path does not exist"
@@ -80,9 +80,9 @@ class BlockingDriver implements Driver {
      * to FALSE. It will NOT reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<bool>
+     * @return \Interop\Async\Promise<bool>
      */
-    public function isdir(string $path): Awaitable {
+    public function isdir(string $path): Promise {
         if (!@\file_exists($path)) {
             return new Success(false);
         }
@@ -99,9 +99,9 @@ class BlockingDriver implements Driver {
      * to FALSE. It will NOT reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<bool>
+     * @return \Interop\Async\Promise<bool>
      */
-    public function isfile(string $path): Awaitable {
+    public function isfile(string $path): Promise {
         if (!@\file_exists($path)) {
             return new Success(false);
         }
@@ -115,9 +115,9 @@ class BlockingDriver implements Driver {
      * Retrieve the path's last modification time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function mtime(string $path): Awaitable {
+    public function mtime(string $path): Promise {
         if (!@\file_exists($path)) {
             return new Failure(new FilesystemException(
                 "Path does not exist"
@@ -133,9 +133,9 @@ class BlockingDriver implements Driver {
      * Retrieve the path's last access time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function atime(string $path): Awaitable {
+    public function atime(string $path): Promise {
         if (!@\file_exists($path)) {
             return new Failure(new FilesystemException(
                 "Path does not exist"
@@ -151,9 +151,9 @@ class BlockingDriver implements Driver {
      * Retrieve the path's creation time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \Interop\Async\Awaitable<int>
+     * @return \Interop\Async\Promise<int>
      */
-    public function ctime(string $path): Awaitable {
+    public function ctime(string $path): Promise {
         if (!@\file_exists($path)) {
             return new Failure(new FilesystemException(
                 "Path does not exist"
@@ -168,7 +168,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function lstat(string $path): Awaitable {
+    public function lstat(string $path): Promise {
         if ($stat = @\lstat($path)) {
             \clearstatcache(true, $path);
         } else {
@@ -181,7 +181,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function symlink(string $target, string $link): Awaitable {
+    public function symlink(string $target, string $link): Promise {
         if (!@\symlink($target, $link)) {
             return new Failure(new FilesystemException("Could not create symbolic link"));
         }
@@ -192,7 +192,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function link(string $target, string $link): Awaitable {
+    public function link(string $target, string $link): Promise {
         if (!@\link($target, $link)) {
             return new Failure(new FilesystemException("Could not create hard link"));
         }
@@ -203,7 +203,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function readlink(string $path): Awaitable {
+    public function readlink(string $path): Promise {
         if (!($result = @\readlink($path))) {
             return new Failure(new FilesystemException("Could not read symbolic link"));
         }
@@ -214,7 +214,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function rename(string $from, string $to): Awaitable {
+    public function rename(string $from, string $to): Promise {
         if (!@\rename($from, $to)) {
             return new Failure(new FilesystemException("Could not rename file"));
         }
@@ -225,7 +225,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function unlink(string $path): Awaitable {
+    public function unlink(string $path): Promise {
         StatCache::clear($path);
         return new Success((bool) @\unlink($path));
     }
@@ -233,14 +233,14 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644): Awaitable {
+    public function mkdir(string $path, int $mode = 0644): Promise {
         return new Success((bool) @\mkdir($path, $mode));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rmdir(string $path): Awaitable {
+    public function rmdir(string $path): Promise {
         StatCache::clear($path);
         return new Success((bool) @\rmdir($path));
     }
@@ -248,7 +248,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function scandir(string $path): Awaitable {
+    public function scandir(string $path): Promise {
         if (!@\is_dir($path)) {
             return new Failure(new FilesystemException(
                 "Not a directory"
@@ -269,14 +269,14 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function chmod(string $path, int $mode): Awaitable {
+    public function chmod(string $path, int $mode): Promise {
         return new Success((bool) @\chmod($path, $mode));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Awaitable {
+    public function chown(string $path, int $uid, int $gid): Promise {
         if ($uid !== -1 && !@\chown($path, $uid)) {
             return new Failure(new FilesystemException(
                 \error_get_last()["message"]
@@ -295,14 +295,14 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path): Awaitable {
+    public function touch(string $path): Promise {
         return new Success((bool) \touch($path));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function get(string $path): Awaitable {
+    public function get(string $path): Promise {
         $result = @\file_get_contents($path);
         return ($result === false)
             ? new Failure(new FilesystemException(\error_get_last()["message"]))
@@ -313,7 +313,7 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function put(string $path, string $contents): Awaitable {
+    public function put(string $path, string $contents): Promise {
         $result = @\file_put_contents($path, $contents);
         return ($result === false)
             ? new Failure(new FilesystemException(\error_get_last()["message"]))

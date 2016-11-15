@@ -5,7 +5,7 @@ namespace Amp\File;
 use Amp\{ Coroutine, Deferred };
 use Amp\Parallel\{ TaskException, Worker, WorkerException };
 use Amp\Parallel\Worker\Pool;
-use Interop\Async\Awaitable;
+use Interop\Async\Promise;
 
 class ParallelDriver implements Driver {
     /**
@@ -26,14 +26,14 @@ class ParallelDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function open(string $path, string $mode): Awaitable {
+    public function open(string $path, string $mode): Promise {
         $worker = $this->pool->get();
         
         $task = new Internal\FileTask("fopen", [$path, $mode]);
         
         $deferred = new Deferred;
-        $awaitable = $worker->enqueue($task);
-        $awaitable->when(static function ($exception, array $result = null) use ($worker, $deferred, $path) {
+        $promise = $worker->enqueue($task);
+        $promise->when(static function ($exception, array $result = null) use ($worker, $deferred, $path) {
             if ($exception) {
                 $deferred->fail($exception);
                 return;
@@ -44,7 +44,7 @@ class ParallelDriver implements Driver {
             $deferred->resolve(new ParallelHandle($worker, $id, $path, $size, $mode));
         });
         
-        return $deferred->getAwaitable();
+        return $deferred->promise();
     }
     
     private function runFileTask(Internal\FileTask $task): \Generator {
@@ -63,153 +63,153 @@ class ParallelDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function unlink(string $path): Awaitable {
+    public function unlink(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("unlink", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function stat(string $path): Awaitable {
+    public function stat(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("stat", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function rename(string $from, string $to): Awaitable {
+    public function rename(string $from, string $to): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("rename", [$from, $to])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function isfile(string $path): Awaitable {
+    public function isfile(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("isfile", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function isdir(string $path): Awaitable {
+    public function isdir(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("isdir", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function link(string $target, string $link): Awaitable {
+    public function link(string $target, string $link): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("link", [$target, $link])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function symlink(string $target, string $link): Awaitable {
+    public function symlink(string $target, string $link): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("symlink", [$target, $link])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function readlink(string $path): Awaitable {
+    public function readlink(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("readlink", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644): Awaitable {
+    public function mkdir(string $path, int $mode = 0644): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("mkdir", [$path, $mode])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function scandir(string $path): Awaitable {
+    public function scandir(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("scandir", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function rmdir(string $path): Awaitable {
+    public function rmdir(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("rmdir", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function chmod(string $path, int $mode): Awaitable {
+    public function chmod(string $path, int $mode): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("chmod", [$path, $mode])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Awaitable {
+    public function chown(string $path, int $uid, int $gid): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("chown", [$path, $uid, $gid])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function exists(string $path): Awaitable {
+    public function exists(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("exists", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function size(string $path): Awaitable {
+    public function size(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("size", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function mtime(string $path): Awaitable {
+    public function mtime(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("mtime", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function atime(string $path): Awaitable {
+    public function atime(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("atime", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function ctime(string $path): Awaitable {
+    public function ctime(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("ctime", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function lstat(string $path): Awaitable {
+    public function lstat(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("lstat", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path): Awaitable {
+    public function touch(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("touch", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function get(string $path): Awaitable {
+    public function get(string $path): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("get", [$path])));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function put(string $path, string $contents): Awaitable {
+    public function put(string $path, string $contents): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("put", [$path, $contents])));
 }}

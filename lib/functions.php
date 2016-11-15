@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\Parallel\Worker\Worker;
-use Interop\Async\{ Awaitable, Loop };
+use Interop\Async\{ Loop, Promise };
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
@@ -50,9 +50,9 @@ function driver(): Driver {
  *
  * @param string $path
  * @param string $mode
- * @return \Interop\Async\Awaitable<\Amp\File\Handle>
+ * @return \Interop\Async\Promise<\Amp\File\Handle>
  */
-function open(string $path, string $mode): Awaitable {
+function open(string $path, string $mode): Promise {
     return filesystem()->open($path, $mode);
 }
 
@@ -63,9 +63,9 @@ function open(string $path, string $mode): Awaitable {
  * The returned Promise whould never resolve as a failure.
  *
  * @param string $path An absolute file system path
- * @return \Interop\Async\Awaitable<array|null>
+ * @return \Interop\Async\Promise<array|null>
  */
-function stat(string $path): Awaitable {
+function stat(string $path): Promise {
     return filesystem()->stat($path);
 }
 
@@ -76,9 +76,9 @@ function stat(string $path): Awaitable {
  * indicating the existence of the specified path.
  *
  * @param string $path An absolute file system path
- * @return \Interop\Async\Awaitable<bool>
+ * @return \Interop\Async\Promise<bool>
  */
-function exists(string $path): Awaitable {
+function exists(string $path): Promise {
     return filesystem()->exists($path);
 }
 
@@ -90,9 +90,9 @@ function exists(string $path): Awaitable {
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file
- * @return \Interop\Async\Awaitable<int>
+ * @return \Interop\Async\Promise<int>
  */
-function size(string $path): Awaitable {
+function size(string $path): Promise {
     return filesystem()->size($path);
 }
 
@@ -103,9 +103,9 @@ function size(string $path): Awaitable {
  * to FALSE and will not reject with an error.
  *
  * @param string $path An absolute file system path
- * @return \Interop\Async\Awaitable<bool>
+ * @return \Interop\Async\Promise<bool>
  */
-function isdir(string $path): Awaitable {
+function isdir(string $path): Promise {
     return filesystem()->isdir($path);
 }
 
@@ -116,9 +116,9 @@ function isdir(string $path): Awaitable {
  * to FALSE and will not reject with an error.
  *
  * @param string $path An absolute file system path
- * @return \Interop\Async\Awaitable<bool>
+ * @return \Interop\Async\Promise<bool>
  */
-function isfile(string $path): Awaitable {
+function isfile(string $path): Promise {
     return filesystem()->isfile($path);
 }
 
@@ -127,9 +127,9 @@ function isfile(string $path): Awaitable {
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
- * @return \Interop\Async\Awaitable<int>
+ * @return \Interop\Async\Promise<int>
  */
-function mtime(string $path): Awaitable {
+function mtime(string $path): Promise {
     return filesystem()->mtime($path);
 }
 
@@ -138,7 +138,7 @@ function mtime(string $path): Awaitable {
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
- * @return \Interop\Async\Awaitable<int>
+ * @return \Interop\Async\Promise<int>
  */
 function atime($path) {
     return filesystem()->atime($path);
@@ -149,9 +149,9 @@ function atime($path) {
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
- * @return \Interop\Async\Awaitable<int>
+ * @return \Interop\Async\Promise<int>
  */
-function ctime(string $path): Awaitable {
+function ctime(string $path): Promise {
     return filesystem()->ctime($path);
 }
 
@@ -162,9 +162,9 @@ function ctime(string $path): Awaitable {
  * The returned Promise whould never resolve as a failure.
  *
  * @param string $path An absolute file system path
- * @return \Interop\Async\Awaitable<array|null>
+ * @return \Interop\Async\Promise<array|null>
  */
-function lstat(string $path): Awaitable {
+function lstat(string $path): Promise {
     return filesystem()->lstat($path);
 }
 
@@ -174,9 +174,9 @@ function lstat(string $path): Awaitable {
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function symlink(string $original, string $link): Awaitable {
+function symlink(string $original, string $link): Promise {
     return filesystem()->symlink($original, $link);
 }
 
@@ -186,9 +186,9 @@ function symlink(string $original, string $link): Awaitable {
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function link(string $original, string $link): Awaitable {
+function link(string $original, string $link): Promise {
     return filesystem()->symlink($original, $link);
 }
 
@@ -198,9 +198,9 @@ function link(string $original, string $link): Awaitable {
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function readlink(string $path): Awaitable {
+function readlink(string $path): Promise {
     return filesystem()->readlink($path);
 }
 
@@ -210,9 +210,9 @@ function readlink(string $path): Awaitable {
  * @param string $from
  * @param string $to
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function rename(string $from, string $to): Awaitable {
+function rename(string $from, string $to): Promise {
     return filesystem()->rename($from, $to);
 }
 
@@ -220,9 +220,9 @@ function rename(string $from, string $to): Awaitable {
  * Delete a file
  *
  * @param string $path
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function unlink(string $path): Awaitable {
+function unlink(string $path): Promise {
     return filesystem()->unlink($path);
 }
 
@@ -231,9 +231,9 @@ function unlink(string $path): Awaitable {
  *
  * @param string $path
  * @param int $mode
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function mkdir(string $path, int $mode = 0644): Awaitable {
+function mkdir(string $path, int $mode = 0644): Promise {
     return filesystem()->mkdir($path, $mode);
 }
 
@@ -241,9 +241,9 @@ function mkdir(string $path, int $mode = 0644): Awaitable {
  * Delete a directory
  *
  * @param string $path
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function rmdir(string $path): Awaitable {
+function rmdir(string $path): Promise {
     return filesystem()->rmdir($path);
 }
 
@@ -253,9 +253,9 @@ function rmdir(string $path): Awaitable {
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
  * @param string $path
- * @return \Interop\Async\Awaitable<array>
+ * @return \Interop\Async\Promise<array>
  */
-function scandir(string $path): Awaitable {
+function scandir(string $path): Promise {
     return filesystem()->scandir($path);
 }
 
@@ -264,9 +264,9 @@ function scandir(string $path): Awaitable {
  *
  * @param string $path
  * @param int $mode
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function chmod(string $path, int $mode): Awaitable {
+function chmod(string $path, int $mode): Promise {
     return filesystem()->chmod($path, $mode);
 }
 
@@ -276,9 +276,9 @@ function chmod(string $path, int $mode): Awaitable {
  * @param string $path
  * @param int $uid -1 to ignore
  * @param int $gid -1 to ignore
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function chown(string $path, int $uid, int $gid = -1): Awaitable {
+function chown(string $path, int $uid, int $gid = -1): Promise {
     return filesystem()->chown($path, $uid, $gid);
 }
 
@@ -288,9 +288,9 @@ function chown(string $path, int $uid, int $gid = -1): Awaitable {
  * If the file does not exist it will be created automatically.
  *
  * @param string $path
- * @return \Interop\Async\Awaitable<null>
+ * @return \Interop\Async\Promise<null>
  */
-function touch(string $path): Awaitable {
+function touch(string $path): Promise {
     return filesystem()->touch($path);
 }
 
@@ -298,9 +298,9 @@ function touch(string $path): Awaitable {
  * Buffer the specified file's contents
  *
  * @param string $path The file path from which to buffer contents
- * @return \Interop\Async\Awaitable<string>
+ * @return \Interop\Async\Promise<string>
  */
-function get(string $path): Awaitable {
+function get(string $path): Promise {
     return filesystem()->get($path);
 }
 
@@ -309,8 +309,8 @@ function get(string $path): Awaitable {
  *
  * @param string $path The file path to which to $contents should be written
  * @param string $contents The data to write to the specified $path
- * @return \Interop\Async\Awaitable A promise resolving to the integer length written upon success
+ * @return \Interop\Async\Promise A promise resolving to the integer length written upon success
  */
-function put(string $path, string $contents): Awaitable {
+function put(string $path, string $contents): Promise {
     return filesystem()->put($path, $contents);
 }
