@@ -3,7 +3,6 @@
 namespace Amp\File\Test;
 
 use Amp\File as file;
-use AsyncInterop\Loop;
 
 abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     private static $fixtureId;
@@ -252,11 +251,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
         $this->lRun(function () {
             $fixtureDir = self::getFixturePath();
             $toUnlink = "{$fixtureDir}/unlink";
-            $mask = umask(062);
             yield file\put($toUnlink, "unlink me");
-            umask($mask);
-            $stat = (yield file\stat($toUnlink));
-            $this->assertTrue(($stat["mode"] & 0777) == 0604);
             yield file\unlink($toUnlink);
             $this->assertNull(yield file\stat($toUnlink));
         });
