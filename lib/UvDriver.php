@@ -336,13 +336,45 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644): Promise {
+    public function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
-        \uv_fs_mkdir($this->loop, $path, $mode, function($fh) use ($deferred) {
-            $this->driver->unreference($this->busy);
-            $deferred->resolve((bool)$fh);
-        });
+
+        if ($recursive) {
+            $path = str_replace("/", DIRECTORY_SEPARATOR,  $path);
+            $arrayPath = array_filter(explode(DIRECTORY_SEPARATOR, $path));
+            $tmpPath = "";
+
+            $callback = function() use (
+                &$callback, &$arrayPath, &$tmpPath, $mode, $deferred
+            ) {
+                $tmpPath .= DIRECTORY_SEPARATOR . array_shift($arrayPath);
+
+                if (empty($arrayPath)) {
+                    \uv_fs_mkdir($this->loop, $tmpPath, $mode, function($fh) use ($deferred) {
+                        $this->driver->unreference($this->busy);
+                        $deferred->resolve((bool) $fh);
+                    });
+                } else {
+                    $this->isdir($tmpPath)->when(function ($error, $result) use (
+                        $callback, $tmpPath, $mode
+                    ) {
+                        if ($result) {
+                            $callback();
+                        } else {
+                            \uv_fs_mkdir($this->loop, $tmpPath, $mode, $callback);
+                        }
+                    });
+                }
+            };
+
+            $callback();
+        } else {
+            \uv_fs_mkdir($this->loop, $path, $mode, function($fh) use ($deferred) {
+                $this->driver->unreference($this->busy);
+                $deferred->resolve((bool) $fh);
+            });
+        }
 
         return $deferred->promise();
     }

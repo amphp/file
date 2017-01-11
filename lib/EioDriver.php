@@ -378,11 +378,40 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644): Promise {
+    public function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise {
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
-        \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
+
+        if ($recursive) {
+            $path = str_replace("/", DIRECTORY_SEPARATOR,  $path);
+            $arrayPath = array_filter(explode(DIRECTORY_SEPARATOR, $path));
+            $tmpPath = "";
+
+            $callback = function() use (
+                &$callback, &$arrayPath, &$tmpPath, $mode, $priority, $deferred
+            ) {
+                $tmpPath .= DIRECTORY_SEPARATOR . array_shift($arrayPath);
+
+                if (empty($arrayPath)) {
+                    \eio_mkdir($tmpPath, $mode, $priority, [$this, "onGenericResult"], $deferred);
+                } else {
+                    $this->isdir($tmpPath)->when(function ($error, $result) use (
+                        $callback, $tmpPath, $mode, $priority
+                    ) {
+                        if ($result) {
+                            $callback();
+                        } else {
+                            \eio_mkdir($tmpPath, $mode, $priority, $callback);
+                        }
+                    });
+                }
+            };
+
+            $callback();
+        } else {
+            \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
+        }
 
         return $deferred->promise();
     }

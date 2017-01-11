@@ -148,9 +148,10 @@ interface Driver {
      *
      * @param string $path
      * @param int $mode
+     * @param bool $recursive
      * @return \Interop\Async\Promise
      */
-    public function mkdir(string $path, int $mode = 0644): Promise;
+    public function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise;
 
     /**
      * Delete a directory

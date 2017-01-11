@@ -231,10 +231,11 @@ function unlink(string $path): Promise {
  *
  * @param string $path
  * @param int $mode
+ * @param bool $recursive
  * @return \Interop\Async\Promise<null>
  */
-function mkdir(string $path, int $mode = 0644): Promise {
-    return filesystem()->mkdir($path, $mode);
+function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise {
+    return filesystem()->mkdir($path, $mode, $recursive);
 }
 
 /**

@@ -233,8 +233,8 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644): Promise {
-        return new Success((bool) @\mkdir($path, $mode));
+    public function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise {
+        return new Success((bool) @\mkdir($path, $mode, $recursive));
     }
 
     /**
