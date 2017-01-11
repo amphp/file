@@ -6,30 +6,30 @@ use Amp\{ Coroutine, Success };
 use Amp\Parallel\{
     TaskException, Worker\Worker, WorkerException
 };
-use Interop\Async\Promise;
+use AsyncInterop\Promise;
 
 class ParallelHandle implements Handle {
     /** @var \Amp\Parallel\Worker\Worker */
     private $worker;
-    
+
     /** @var int|null */
     private $id;
-    
+
     /** @var string */
     private $path;
-    
+
     /** @var int */
     private $position;
-    
+
     /** @var int */
     private $size;
-    
+
     /** @var string */
     private $mode;
-    
+
     /** @var int Number of pending write operations. */
     private $pendingWrites = 0;
-    
+
     /**
      * @param \Amp\Parallel\Worker\Worker $worker
      * @param int $id
@@ -45,50 +45,50 @@ class ParallelHandle implements Handle {
         $this->mode = $mode;
         $this->position = $this->mode[0] === 'a' ? $this->size : 0;
     }
-    
+
     public function __destruct() {
         if ($this->id !== null) {
             $this->close();
         }
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function path(): string {
         return $this->path;
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function close(): Promise {
         $this->open = false;
-        
+
         if ($this->worker->isRunning()) {
             $promise = $this->worker->enqueue(new Internal\FileTask('fclose', [], $this->id));
             $this->id = null;
             return $promise;
         }
-        
+
         return new Success;
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function eof(): bool {
         return ($this->pendingWrites > 0) ? false : ($this->size <= $this->position);
     }
-    
+
     public function read(int $length): Promise {
         if ($this->id === null) {
             throw new \Error("The file has been closed");
         }
-        
+
         return new Coroutine($this->doRead($length));
     }
-    
+
     private function doRead(int $length): \Generator {
         try {
             $data = yield $this->worker->enqueue(new Internal\FileTask('fread', [$length], $this->id));
@@ -97,12 +97,12 @@ class ParallelHandle implements Handle {
         } catch (WorkerException $exception) {
             throw new FilesystemException("Sending the task to the worker failed", $exception);
         }
-        
+
         $this->position += \strlen($data);
-        
+
         return $data;
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -110,13 +110,13 @@ class ParallelHandle implements Handle {
         if ($this->id === null) {
             throw new \Error("The file has been closed");
         }
-    
+
         return new Coroutine($this->doWrite($data));
     }
-    
+
     private function doWrite(string $data): \Generator {
         ++$this->pendingWrites;
-        
+
         try {
             $length = yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
         } catch (TaskException $exception) {
@@ -126,12 +126,12 @@ class ParallelHandle implements Handle {
         } finally {
             --$this->pendingWrites;
         }
-        
+
         $this->position += $length;
-        
+
         return $length;
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -139,10 +139,10 @@ class ParallelHandle implements Handle {
         if ($this->id === null) {
             throw new \Error("The file has been closed");
         }
-    
+
         return new Coroutine($this->doSeek($offset, $whence));
     }
-    
+
     private function doSeek(int $offset, int $whence) {
         switch ($whence) {
             case \SEEK_SET:
@@ -157,32 +157,32 @@ class ParallelHandle implements Handle {
                 } catch (WorkerException $exception) {
                     throw new FilesystemException("Sending the task to the worker failed", $exception);
                 }
-    
+
                 if ($this->position > $this->size) {
                     $this->size = $this->position;
                 }
-    
+
                 return $this->position;
-            
+
             default:
                 throw new \Error('Invalid whence value. Use SEEK_SET, SEEK_CUR, or SEEK_END.');
         }
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function tell(): int {
         return $this->position;
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function size(): int {
         return $this->size;
     }
-    
+
     /**
      * {@inheritdoc}
      */

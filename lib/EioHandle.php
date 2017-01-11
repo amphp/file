@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Deferred, Success };
-use Interop\Async\Promise;
+use AsyncInterop\Promise;
 
 class EioHandle implements Handle {
     const OP_READ = 1;
@@ -169,7 +169,7 @@ class EioHandle implements Handle {
                     "Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"
                 );
         }
-        
+
         return new Success($this->position);
     }
 
