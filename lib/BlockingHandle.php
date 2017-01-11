@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Success, Failure };
-use Interop\Async\Promise;
+use AsyncInterop\Promise;
 
 class BlockingHandle implements Handle {
     private $fh;
@@ -20,13 +20,13 @@ class BlockingHandle implements Handle {
         $this->path = $path;
         $this->mode = $mode;
     }
-    
+
     public function __destruct() {
         if ($this->fh !== null) {
             \fclose($this->fh);
         }
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -34,7 +34,7 @@ class BlockingHandle implements Handle {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }
-        
+
         $data = \fread($this->fh, $length);
         if ($data !== false) {
             return new Success($data);
@@ -52,7 +52,7 @@ class BlockingHandle implements Handle {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }
-        
+
         $len = \fwrite($this->fh, $data);
         if ($len !== false) {
             return new Success($len);
@@ -70,10 +70,10 @@ class BlockingHandle implements Handle {
         if ($this->fh === null) {
             throw new \Error("The file has already been closed");
         }
-        
+
         $fh = $this->fh;
         $this->fh = null;
-        
+
         if (\fclose($fh)) {
             return new Success;
         } else {
@@ -90,7 +90,7 @@ class BlockingHandle implements Handle {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }
-        
+
         switch ($whence) {
             case \SEEK_SET:
             case \SEEK_CUR:
@@ -113,7 +113,7 @@ class BlockingHandle implements Handle {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }
-        
+
         return \ftell($this->fh);
     }
 
@@ -124,7 +124,7 @@ class BlockingHandle implements Handle {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }
-        
+
         return \feof($this->fh);
     }
 

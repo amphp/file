@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Coroutine, Deferred, Failure, Success };
-use Interop\Async\Promise;
+use AsyncInterop\Promise;
 
 class UvDriver implements Driver {
     private $driver;
@@ -11,18 +11,18 @@ class UvDriver implements Driver {
     private $busy;
 
     /**
-     * @param \Interop\Async\Loop\Driver $driver
+     * @param \AsyncInterop\Loop\Driver $driver
      */
-    public function __construct(\Interop\Async\Loop\Driver $driver) {
+    public function __construct(\AsyncInterop\Loop\Driver $driver) {
         $loop = $driver->getHandle();
         if (!is_resource($loop) || get_resource_type($loop) != "uv_loop") {
             throw new \InvalidArgumentException("Expected a driver whose underlying loop is an uv_loop");
         }
-        
+
         $this->driver = $driver;
         $this->loop = $loop;
-        
-        // dummy handle to be able to tell the loop that there is work being done and it shouldn't abort if there are no other watchers at a given moment 
+
+        // dummy handle to be able to tell the loop that there is work being done and it shouldn't abort if there are no other watchers at a given moment
         $this->busy = $driver->repeat(PHP_INT_MAX, function(){ });
         $driver->unreference($this->busy);
     }
@@ -274,7 +274,7 @@ class UvDriver implements Driver {
 
         return $deferred->promise();
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -285,10 +285,10 @@ class UvDriver implements Driver {
             $this->driver->unreference($this->busy);
             $deferred->resolve((bool)$fh);
         });
-        
+
         return $deferred->promise();
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -299,10 +299,10 @@ class UvDriver implements Driver {
             $this->driver->unreference($this->busy);
             $deferred->resolve((bool)$fh);
         });
-        
+
         return $deferred->promise();
     }
-    
+
     /**
      * {@inheritdoc}
      */

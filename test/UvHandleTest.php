@@ -9,7 +9,7 @@ class UvHandleTest extends HandleTest {
     protected function lRun(callable $cb) {
         if (\extension_loaded("uv")) {
             $loop = new \Amp\Loop\UvLoop;
-            \Interop\Async\Loop::execute(function() use ($cb, $loop) {
+            \AsyncInterop\Loop::execute(function() use ($cb, $loop) {
                 \Amp\File\filesystem(new \Amp\File\UvDriver($loop));
                 \Amp\rethrow(new \Amp\Coroutine($cb()));
             }, $loop);

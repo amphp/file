@@ -8,7 +8,7 @@ use Amp\File as file;
 class EioHandleTest extends HandleTest {
     protected function lRun(callable $cb) {
         if (\extension_loaded("eio")) {
-            \Interop\Async\Loop::execute(function() use ($cb) {
+            \AsyncInterop\Loop::execute(function() use ($cb) {
                 \Amp\File\filesystem(new \Amp\File\EioDriver);
                 \Amp\rethrow(new \Amp\Coroutine($cb()));
             });

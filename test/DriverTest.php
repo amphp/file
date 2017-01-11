@@ -3,7 +3,7 @@
 namespace Amp\File\Test;
 
 use Amp\File as file;
-use Interop\Async\Loop;
+use AsyncInterop\Loop;
 
 abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     private static $fixtureId;
@@ -61,7 +61,7 @@ abstract class DriverTest extends \PHPUnit_Framework_TestCase {
     protected function setUp() {
         file\StatCache::clear();
     }
-    
+
     abstract protected function lRun(callable $cb);
 
     public function testScandir() {

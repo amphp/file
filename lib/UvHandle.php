@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Deferred, Success };
-use Interop\Async\{ Promise, Loop\Driver };
+use AsyncInterop\{ Promise, Loop\Driver };
 
 class UvHandle implements Handle {
     const OP_READ = 1;
@@ -149,7 +149,7 @@ class UvHandle implements Handle {
                     "Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"
                 );
         }
-        
+
         return new Success($this->position);
     }
 

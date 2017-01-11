@@ -3,7 +3,7 @@
 namespace Amp\File;
 
 use Amp\{ Deferred, Failure, Success };
-use Interop\Async\{ Loop, Promise };
+use AsyncInterop\{ Loop, Promise };
 
 class EioDriver implements Driver {
     private $watcher;
@@ -302,7 +302,7 @@ class EioDriver implements Driver {
 
         return $deferred->promise();
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -311,10 +311,10 @@ class EioDriver implements Driver {
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_link($target, $link, $priority, [$this, "onGenericResult"], $deferred);
-    
+
         return $deferred->promise();
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -323,7 +323,7 @@ class EioDriver implements Driver {
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
         \eio_readlink($path, $priority, [$this, "onGenericResult"], $deferred);
-        
+
         return $deferred->promise();
     }
     private function onGenericResult($deferred, $result, $req) {
@@ -495,7 +495,7 @@ class EioDriver implements Driver {
      */
     public function touch(string $path): Promise {
         $atime = $mtime = \time();
-        
+
         ($this->incrementor)(1);
         $deferred = new Deferred;
         $priority = \EIO_PRI_DEFAULT;
