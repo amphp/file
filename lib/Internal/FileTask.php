@@ -4,6 +4,11 @@ namespace Amp\File\Internal;
 use Amp\File\{ BlockingDriver, BlockingHandle, FilesystemException };
 use Amp\Parallel\Worker\{ Environment, Task };
 
+/**
+ * @codeCoverageIgnore
+ *
+ * @internal
+ */
 class FileTask extends BlockingDriver implements Task {
     const ENV_PREFIX = self::class . '_';
     
@@ -91,6 +96,7 @@ class FileTask extends BlockingDriver implements Task {
                 throw new FilesystemException("No file handle with the given ID has been opened on the worker");
             }
 
+            /** @var \Amp\File\BlockingHandle $file */
             if (!($file = $environment->get($this->id)) instanceof BlockingHandle) {
                 throw new FilesystemException("File storage found in inconsistent state");
             }
@@ -102,6 +108,7 @@ class FileTask extends BlockingDriver implements Task {
                     return [$file, \substr($this->operation, 1)](...$this->args);
 
                 case "fclose":
+                    $file->close();
                     $environment->delete($this->id);
                     return true;
 

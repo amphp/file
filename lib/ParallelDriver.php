@@ -2,10 +2,9 @@
 
 namespace Amp\File;
 
-use Amp\{ Coroutine, Deferred };
+use Amp\{ Coroutine, Deferred, Promise };
 use Amp\Parallel\{ TaskException, Worker, WorkerException };
 use Amp\Parallel\Worker\Pool;
-use AsyncInterop\Promise;
 
 class ParallelDriver implements Driver {
     /**

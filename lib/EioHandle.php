@@ -2,8 +2,7 @@
 
 namespace Amp\File;
 
-use Amp\{ Deferred, Success };
-use AsyncInterop\Promise;
+use Amp\{ Deferred, Promise, Success };
 
 class EioHandle implements Handle {
     const OP_READ = 1;

@@ -2,8 +2,7 @@
 
 namespace Amp\File;
 
-use Amp\{ Success, Failure };
-use AsyncInterop\Promise;
+use Amp\{ Success, Failure, Promise };
 
 class BlockingHandle implements Handle {
     private $fh;

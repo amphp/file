@@ -2,8 +2,7 @@
 
 namespace Amp\File;
 
-use Amp\{ Deferred, Failure, Success };
-use AsyncInterop\{ Loop, Promise };
+use Amp\{ Deferred, Failure, Loop, Promise, Success };
 
 class EioDriver implements Driver {
     private $watcher;

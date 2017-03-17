@@ -2,7 +2,7 @@
 
 namespace Amp\File;
 
-use AsyncInterop\Loop;
+use Amp\Loop;
 
 class StatCache {
     private static $cache = [];

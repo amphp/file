@@ -2,15 +2,14 @@
 
 namespace Amp\File\Test;
 
-use Amp as amp;
 use Amp\File as file;
 
 class EioHandleTest extends HandleTest {
     protected function lRun(callable $cb) {
         if (\extension_loaded("eio")) {
-            \AsyncInterop\Loop::execute(function() use ($cb) {
+            \Amp\Loop::run(function() use ($cb) {
                 \Amp\File\filesystem(new \Amp\File\EioDriver);
-                \Amp\rethrow(new \Amp\Coroutine($cb()));
+                \Amp\Promise\rethrow(new \Amp\Coroutine($cb()));
             });
         } else {
             $this->markTestSkipped(
@@ -28,7 +27,7 @@ class EioHandleTest extends HandleTest {
             $write1 = $handle->write("foo");
             $write2 = $handle->write("bar");
 
-            yield amp\all([$write1, $write2]);
+            yield \Amp\Promise\all([$write1, $write2]);
 
             $handle->seek(0);
             $contents = (yield $handle->read(8192));

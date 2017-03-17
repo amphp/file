@@ -2,11 +2,10 @@
 
 namespace Amp\File;
 
-use Amp\{ Coroutine, Deferred, Failure, Success };
-use AsyncInterop\{ Loop\Driver as LoopDriver, Promise };
+use Amp\{ Coroutine, Deferred, Failure, Loop, Promise, Success };
 
 class UvDriver implements Driver {
-    /** @var \AsyncInterop\Loop\Driver */
+    /** @var \Amp\Loop\Driver */
     private $driver;
 
     /** @var resource Loop resource of type uv_loop. */
@@ -16,9 +15,9 @@ class UvDriver implements Driver {
     private $busy;
 
     /**
-     * @param \AsyncInterop\Loop\Driver $driver
+     * @param \Amp\Loop\Driver $driver
      */
-    public function __construct(LoopDriver $driver) {
+    public function __construct(Loop\Driver $driver) {
         $loop = $driver->getHandle();
         if (!is_resource($loop) || get_resource_type($loop) != "uv_loop") {
             throw new \InvalidArgumentException("Expected a driver whose underlying loop is an uv_loop");

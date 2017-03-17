@@ -2,8 +2,7 @@
 
 namespace Amp\File;
 
-use Amp\{ Deferred, Success };
-use AsyncInterop\{ Promise, Loop\Driver };
+use Amp\{ Deferred, Loop, Promise, Success };
 
 class UvHandle implements Handle {
     const OP_READ = 1;
@@ -22,7 +21,7 @@ class UvHandle implements Handle {
     private $isActive = false;
     private $isCloseInitialized = false;
 
-    public function __construct(Driver $driver, $busy, $fh, $path, $mode, $size) {
+    public function __construct(Loop\Driver $driver, $busy, $fh, $path, $mode, $size) {
         $loop = $driver->getHandle();
         if (!is_resource($loop) || get_resource_type($loop) != "uv_loop") {
             throw new \InvalidArgumentException("Expected a driver whose underlying loop is an uv_loop");

@@ -26,13 +26,10 @@
         }
     ],
     "require": {
-        "amphp/amp": "dev-master as 2.0",
-        "async-interop/event-loop": "^0.5",
-        "async-interop/promise": "^0.4"
+        "amphp/amp": "dev-master as 2.0"
     },
     "minimum-stability": "dev",
     "require-dev": {
-        "amphp/loop": "dev-master",
         "amphp/parallel": "dev-master as 0.1",
         "phpunit/phpunit": "^5.0",
         "friendsofphp/php-cs-fixer": "~1.9"

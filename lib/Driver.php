@@ -2,7 +2,7 @@
 
 namespace Amp\File;
 
-use AsyncInterop\Promise;
+use Amp\Promise;
 
 interface Driver {
     /**
@@ -10,7 +10,7 @@ interface Driver {
      *
      * @param string $path
      * @param string $mode
-     * @return \AsyncInterop\Promise<\Amp\File\Handle>
+     * @return \Amp\Promise<\Amp\File\Handle>
      */
     public function open(string $path, string $mode): Promise;
 
@@ -20,7 +20,7 @@ interface Driver {
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *
      * @param string $path The file system path to stat
-     * @return \AsyncInterop\Promise<array|null>
+     * @return \Amp\Promise<array|null>
      */
     public function stat(string $path): Promise;
 
@@ -31,7 +31,7 @@ interface Driver {
      * indicating the existence of the specified path.
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<bool>
+     * @return \Amp\Promise<bool>
      */
     public function exists(string $path): Promise;
 
@@ -42,7 +42,7 @@ interface Driver {
      * function's returned Promise WILL resolve as a failure.
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<int>
+     * @return \Amp\Promise<int>
      */
     public function size(string $path): Promise;
 
@@ -53,7 +53,7 @@ interface Driver {
      * to FALSE and will not reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<bool>
+     * @return \Amp\Promise<bool>
      */
     public function isdir(string $path): Promise;
 
@@ -64,7 +64,7 @@ interface Driver {
      * to FALSE and will not reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<bool>
+     * @return \Amp\Promise<bool>
      */
     public function isfile(string $path): Promise;
 
@@ -72,7 +72,7 @@ interface Driver {
      * Retrieve the path's last modification time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<int>
+     * @return \Amp\Promise<int>
      */
     public function mtime(string $path): Promise;
 
@@ -80,7 +80,7 @@ interface Driver {
      * Retrieve the path's last access time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<int>
+     * @return \Amp\Promise<int>
      */
     public function atime(string $path): Promise;
 
@@ -88,7 +88,7 @@ interface Driver {
      * Retrieve the path's creation time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<int>
+     * @return \Amp\Promise<int>
      */
     public function ctime(string $path): Promise;
 
@@ -96,7 +96,7 @@ interface Driver {
      * Same as stat() except if the path is a link then the link's data is returned
      *
      * @param string $path The file system path to stat
-     * @return \AsyncInterop\Promise A promise resolving to an associative array upon successful resolution
+     * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
      */
     public function lstat(string $path): Promise;
 
@@ -105,7 +105,7 @@ interface Driver {
      *
      * @param string $target
      * @param string $link
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function symlink(string $target, string $link): Promise;
 
@@ -114,7 +114,7 @@ interface Driver {
      *
      * @param string $target
      * @param string $link
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function link(string $target, string $link): Promise;
 
@@ -122,7 +122,7 @@ interface Driver {
      * Read the symlink at $path.
      *
      * @param string $target
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function readlink(string $target): Promise;
 
@@ -131,7 +131,7 @@ interface Driver {
      *
      * @param string $from
      * @param string $to
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function rename(string $from, string $to): Promise;
 
@@ -139,7 +139,7 @@ interface Driver {
      * Delete a file
      *
      * @param string $path
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function unlink(string $path): Promise;
 
@@ -149,7 +149,7 @@ interface Driver {
      * @param string $path
      * @param int $mode
      * @param bool $recursive
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise;
 
@@ -157,7 +157,7 @@ interface Driver {
      * Delete a directory
      *
      * @param string $path
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function rmdir(string $path): Promise;
 
@@ -167,7 +167,7 @@ interface Driver {
      * Dot entries are not included in the resulting array (i.e. "." and "..").
      *
      * @param string $path
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function scandir(string $path): Promise;
 
@@ -176,7 +176,7 @@ interface Driver {
      *
      * @param string $path
      * @param int $mode
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function chmod(string $path, int $mode): Promise;
 
@@ -186,7 +186,7 @@ interface Driver {
      * @param string $path
      * @param int $uid
      * @param int $gid
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function chown(string $path, int $uid, int $gid): Promise;
 
@@ -196,7 +196,7 @@ interface Driver {
      * If the file does not exist it will be created automatically.
      *
      * @param string $path
-     * @return \AsyncInterop\Promise
+     * @return \Amp\Promise
      */
     public function touch(string $path): Promise;
 
@@ -204,7 +204,7 @@ interface Driver {
      * Buffer the specified file's contents
      *
      * @param string $path The file path from which to buffer contents
-     * @return \AsyncInterop\Promise A promise resolving to a string upon successful resolution
+     * @return \Amp\Promise A promise resolving to a string upon successful resolution
      */
     public function get(string $path): Promise;
 
@@ -213,7 +213,7 @@ interface Driver {
      *
      * @param string $path The file path to which to $contents should be written
      * @param string $contents The data to write to the specified $path
-     * @return \AsyncInterop\Promise A promise resolving to the integer length written upon success
+     * @return \Amp\Promise A promise resolving to the integer length written upon success
      */
     public function put(string $path, string $contents): Promise;
 }

@@ -5,9 +5,9 @@ namespace Amp\File\Test;
 class EioDriverTest extends DriverTest {
     protected function lRun(callable $cb) {
         if (\extension_loaded("eio")) {
-            \AsyncInterop\Loop::execute(function() use ($cb) {
+            \Amp\Loop::run(function() use ($cb) {
                 \Amp\File\filesystem(new \Amp\File\EioDriver);
-                \Amp\rethrow(new \Amp\Coroutine($cb()));
+                \Amp\Promise\rethrow(new \Amp\Coroutine($cb()));
             });
         } else {
             $this->markTestSkipped(

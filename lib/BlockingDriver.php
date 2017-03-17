@@ -2,8 +2,7 @@
 
 namespace Amp\File;
 
-use Amp\{ Success, Failure };
-use AsyncInterop\Promise;
+use Amp\{ Success, Failure, Promise };
 
 class BlockingDriver implements Driver {
     /**
@@ -52,7 +51,7 @@ class BlockingDriver implements Driver {
      * function's returned Promise WILL resolve as a failure.
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<int>
+     * @return \Amp\Promise<int>
      */
     public function size(string $path): Promise {
         if (!@\file_exists($path)) {
@@ -80,7 +79,7 @@ class BlockingDriver implements Driver {
      * to FALSE. It will NOT reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<bool>
+     * @return \Amp\Promise<bool>
      */
     public function isdir(string $path): Promise {
         if (!@\file_exists($path)) {
@@ -99,7 +98,7 @@ class BlockingDriver implements Driver {
      * to FALSE. It will NOT reject with an error.
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<bool>
+     * @return \Amp\Promise<bool>
      */
     public function isfile(string $path): Promise {
         if (!@\file_exists($path)) {
@@ -115,7 +114,7 @@ class BlockingDriver implements Driver {
      * Retrieve the path's last modification time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<int>
+     * @return \Amp\Promise<int>
      */
     public function mtime(string $path): Promise {
         if (!@\file_exists($path)) {
@@ -133,7 +132,7 @@ class BlockingDriver implements Driver {
      * Retrieve the path's last access time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<int>
+     * @return \Amp\Promise<int>
      */
     public function atime(string $path): Promise {
         if (!@\file_exists($path)) {
@@ -151,7 +150,7 @@ class BlockingDriver implements Driver {
      * Retrieve the path's creation time as a unix timestamp
      *
      * @param string $path An absolute file system path
-     * @return \AsyncInterop\Promise<int>
+     * @return \Amp\Promise<int>
      */
     public function ctime(string $path): Promise {
         if (!@\file_exists($path)) {
