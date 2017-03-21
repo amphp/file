@@ -133,7 +133,7 @@ class UvDriver implements Driver {
      */
     public function exists(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             $deferred->resolve((bool) $result);
         });
 
@@ -145,7 +145,7 @@ class UvDriver implements Driver {
      */
     public function isdir(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve(!($result["mode"] & \UV::S_IFREG));
             } else {
@@ -161,7 +161,7 @@ class UvDriver implements Driver {
      */
     public function isfile(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve((bool) ($result["mode"] & \UV::S_IFREG));
             } else {
@@ -177,7 +177,7 @@ class UvDriver implements Driver {
      */
     public function size(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if (empty($result)) {
                 $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
@@ -199,7 +199,7 @@ class UvDriver implements Driver {
      */
     public function mtime(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve($result["mtime"]);
             } else {
@@ -217,7 +217,7 @@ class UvDriver implements Driver {
      */
     public function atime(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve($result["atime"]);
             } else {
@@ -235,7 +235,7 @@ class UvDriver implements Driver {
      */
     public function ctime(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve($result["ctime"]);
             } else {
@@ -360,7 +360,7 @@ class UvDriver implements Driver {
                         $deferred->resolve((bool) $fh);
                     });
                 } else {
-                    $this->isdir($tmpPath)->when(function ($error, $result) use (
+                    $this->isdir($tmpPath)->onResolve(function ($error, $result) use (
                         $callback, $tmpPath, $mode
                     ) {
                         if ($result) {

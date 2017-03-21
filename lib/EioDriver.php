@@ -154,7 +154,7 @@ class EioDriver implements Driver {
      */
     public function exists(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             $deferred->resolve((bool) $result);
         });
 
@@ -166,7 +166,7 @@ class EioDriver implements Driver {
      */
     public function isdir(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve(!($result["mode"] & \EIO_S_IFREG));
             } else {
@@ -182,7 +182,7 @@ class EioDriver implements Driver {
      */
     public function isfile(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve((bool) ($result["mode"] & \EIO_S_IFREG));
             } else {
@@ -198,7 +198,7 @@ class EioDriver implements Driver {
      */
     public function size(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if (empty($result)) {
                 $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
@@ -220,7 +220,7 @@ class EioDriver implements Driver {
      */
     public function mtime(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve($result["mtime"]);
             } else {
@@ -238,7 +238,7 @@ class EioDriver implements Driver {
      */
     public function atime(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve($result["atime"]);
             } else {
@@ -256,7 +256,7 @@ class EioDriver implements Driver {
      */
     public function ctime(string $path): Promise {
         $deferred = new Deferred;
-        $this->stat($path)->when(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
             if ($result) {
                 $deferred->resolve($result["ctime"]);
             } else {
@@ -395,7 +395,7 @@ class EioDriver implements Driver {
                 if (empty($arrayPath)) {
                     \eio_mkdir($tmpPath, $mode, $priority, [$this, "onGenericResult"], $deferred);
                 } else {
-                    $this->isdir($tmpPath)->when(function ($error, $result) use (
+                    $this->isdir($tmpPath)->onResolve(function ($error, $result) use (
                         $callback, $tmpPath, $mode, $priority
                     ) {
                         if ($result) {

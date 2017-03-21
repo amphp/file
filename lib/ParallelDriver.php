@@ -32,7 +32,7 @@ class ParallelDriver implements Driver {
 
         $deferred = new Deferred;
         $promise = $worker->enqueue($task);
-        $promise->when(static function ($exception, array $result = null) use ($worker, $deferred, $path) {
+        $promise->onResolve(static function ($exception, array $result = null) use ($worker, $deferred, $path) {
             if ($exception) {
                 $deferred->fail($exception);
                 return;
