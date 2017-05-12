@@ -26,7 +26,8 @@
         }
     ],
     "require": {
-        "amphp/amp": "dev-master as 2.0"
+        "amphp/amp": "^2.0",
+        "amphp/byte-stream": "dev-master as 0.1"
     },
     "minimum-stability": "dev",
     "require-dev": {

@@ -80,7 +80,7 @@ class ParallelHandle implements Handle {
         return ($this->pendingWrites > 0) ? false : ($this->size <= $this->position);
     }
 
-    public function read(int $length): Promise {
+    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
         if ($this->id === null) {
             throw new \Error("The file has been closed");
         }
@@ -111,6 +111,15 @@ class ParallelHandle implements Handle {
         }
 
         return new Coroutine($this->doWrite($data));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function end(string $data = ""): Promise {
+        $promise = $this->write($data);
+        $promise->onResolve([$this, "close"]);
+        return $promise;
     }
 
     private function doWrite(string $data): \Generator {

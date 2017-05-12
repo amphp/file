@@ -29,14 +29,14 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read(int $length): Promise {
+    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
         if ($this->fh === null) {
             throw new \Error("The file has been closed");
         }
 
         $data = \fread($this->fh, $length);
         if ($data !== false) {
-            return new Success($data);
+            return new Success(\strlen($data) ? $data : null);
         } else {
             return new Failure(new FilesystemException(
                 "Failed reading from file handle"
@@ -60,6 +60,15 @@ class BlockingHandle implements Handle {
                 "Failed writing to file handle"
             ));
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function end(string $data = ""): Promise {
+        $promise = $this->write($data);
+        $promise->onResolve([$this, "close"]);
+        return $promise;
     }
 
     /**

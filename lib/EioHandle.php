@@ -30,7 +30,7 @@ class EioHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read(int $length): Promise {
+    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
         $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_READ;
@@ -74,8 +74,9 @@ class EioHandle implements Handle {
                 \eio_get_last_error($req)
             ));
         } else {
-            $this->position = $op->position + \strlen($result);
-            $op->deferred->resolve($result);
+            $length = \strlen($result);
+            $this->position = $op->position + $length;
+            $op->deferred->resolve($length ? $result : null);
         }
         if ($this->queue) {
             $this->dequeue();
@@ -102,6 +103,15 @@ class EioHandle implements Handle {
         }
 
         return $deferred->promise();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function end(string $data = ""): Promise {
+        $promise = $this->write($data);
+        $promise->onResolve([$this, "close"]);
+        return $promise;
     }
 
     private function onWrite($op, $result, $req) {
