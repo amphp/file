@@ -54,21 +54,12 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function open(string $path, string $mode): Promise {
-        switch ($mode) {
-            case "r":   $flags = \EIO_O_RDONLY; break;
-            case "r+":  $flags = \EIO_O_RDWR; break;
-            case "w":   $flags = \EIO_O_WRONLY | \EIO_O_CREAT; break;
-            case "w+":  $flags = \EIO_O_RDWR | \EIO_O_CREAT; break;
-            case "a":   $flags = \EIO_O_WRONLY | \EIO_O_CREAT | \EIO_O_APPEND; break;
-            case "a+":  $flags = \EIO_O_RDWR | \EIO_O_CREAT | \EIO_O_APPEND; break;
-            case "x":   $flags = \EIO_O_WRONLY | \EIO_O_CREAT | \EIO_O_EXCL; break;
-            case "x+":  $flags = \EIO_O_RDWR | \EIO_O_CREAT | \EIO_O_EXCL; break;
-            case "c":   $flags = \EIO_O_WRONLY | \EIO_O_CREAT; break;
-            case "c+":  $flags = \EIO_O_RDWR | \EIO_O_CREAT; break;
-            default: return new Failure(new FilesystemException(
-                "Invalid open mode"
-            ));
+        try {
+            $flags = $this->parseMode($mode);
+        } catch (\Throwable $exception) {
+            return new Failure($exception);
         }
+
         $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
         ($this->incrementor)(1);
         $deferred = new Deferred;
@@ -76,6 +67,26 @@ class EioDriver implements Driver {
         \eio_open($path, $flags, $chmod, \EIO_PRI_DEFAULT, [$this, "onOpenHandle"], $openArr);
 
         return $deferred->promise();
+    }
+
+    private function parseMode(string $mode): int {
+        $mode = \str_replace(['b', 't'], '', $mode);
+
+        switch ($mode) {
+            case 'r':  return \EIO_O_RDONLY;
+            case 'r+': return \EIO_O_RDWR;
+            case 'w':  return \EIO_O_WRONLY | \EIO_O_TRUNC | \EIO_O_CREAT;
+            case 'w+': return \EIO_O_RDWR | \EIO_O_TRUNC | \EIO_O_CREAT;
+            case 'a':  return \EIO_O_WRONLY | \EIO_O_APPEND | \EIO_O_CREAT;
+            case 'a+': return \EIO_O_RDWR | \EIO_O_APPEND | \EIO_O_CREAT;
+            case 'x':  return \EIO_O_WRONLY | \EIO_O_CREAT | \EIO_O_EXCL;
+            case 'x+': return \EIO_O_RDWR | \EIO_O_CREAT | \EIO_O_EXCL;
+            case 'c':  return \EIO_O_WRONLY | \EIO_O_CREAT;
+            case 'c+': return \EIO_O_RDWR | \EIO_O_CREAT;
+
+            default:
+                throw new FilesystemException('Invalid file mode');
+        }
     }
 
     private function onOpenHandle($openArr, $result, $req) {
