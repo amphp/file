@@ -105,7 +105,7 @@ class FileTask extends BlockingDriver implements Task {
                 case "fread":
                 case "fwrite":
                 case "fseek":
-                    return [$file, \substr($this->operation, 1)](...$this->args);
+                    return ([$file, \substr($this->operation, 1)])(...$this->args);
 
                 case "fclose":
                     $file->close();
@@ -140,7 +140,7 @@ class FileTask extends BlockingDriver implements Task {
             case "ctime":
             case "get":
             case "put":
-                return [$this, $this->operation](...$this->args);
+                return ([$this, $this->operation])(...$this->args);
 
             default:
                 throw new \Error("Invalid operation");

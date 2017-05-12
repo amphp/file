@@ -30,7 +30,6 @@
     },
     "minimum-stability": "dev",
     "require-dev": {
-        "amphp/byte-stream": "dev-master as 0.1",
         "amphp/parallel": "dev-master as 0.1",
         "phpunit/phpunit": "^5.0",
         "friendsofphp/php-cs-fixer": "~1.9"
