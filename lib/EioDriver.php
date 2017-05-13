@@ -54,11 +54,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function open(string $path, string $mode): Promise {
-        try {
-            $flags = $this->parseMode($mode);
-        } catch (\Throwable $exception) {
-            return new Failure($exception);
-        }
+        $flags = $this->parseMode($mode);
 
         $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
         ($this->incrementor)(1);
@@ -85,7 +81,7 @@ class EioDriver implements Driver {
             case 'c+': return \EIO_O_RDWR | \EIO_O_CREAT;
 
             default:
-                throw new FilesystemException('Invalid file mode');
+                throw new \Error('Invalid file mode');
         }
     }
 
