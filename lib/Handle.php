@@ -2,16 +2,20 @@
 
 namespace Amp\File;
 
+use Amp\ByteStream\InputStream;
+use Amp\ByteStream\OutputStream;
 use Amp\Promise;
 
-interface Handle {
+interface Handle extends InputStream, OutputStream {
+    const DEFAULT_READ_LENGTH = 8192;
+
     /**
      * Read $len bytes from the open file handle starting at $offset
      *
      * @param int $length
-     * @return \Amp\Promise<string>
+     * @return \Amp\Promise<string|null>
      */
-    public function read(int $length): Promise;
+    public function read(int $length = 8192): Promise;
 
     /**
      * Write $data to the open file handle starting at $offset
@@ -20,6 +24,15 @@ interface Handle {
      * @return \Amp\Promise<int>
      */
     public function write(string $data): Promise;
+
+    /**
+     * Write $data to the open file handle and close the handle once the write completes.
+     *
+     * @param string $data
+     *
+     * @return \Amp\Promise<int>
+     */
+    public function end(string $data = ""): Promise;
 
     /**
      * Close the file handle

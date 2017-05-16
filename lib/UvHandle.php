@@ -40,7 +40,7 @@ class UvHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read(int $readLen): Promise {
+    public function read(int $readLen = self::DEFAULT_READ_LENGTH): Promise {
         $deferred = new Deferred;
         $op = new \StdClass;
         $op->type = self::OP_READ;
@@ -78,6 +78,15 @@ class UvHandle implements Handle {
         return $deferred->promise();
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function end(string $data = ""): Promise {
+        $promise = $this->write($data);
+        $promise->onResolve([$this, "close"]);
+        return $promise;
+    }
+
     private function doRead($op) {
         $this->driver->reference($this->busy);
         $onRead = function ($fh, $result, $buffer) use ($op) {
@@ -88,8 +97,9 @@ class UvHandle implements Handle {
                     \uv_strerror($result)
                 ));
             } else {
-                $this->position = $op->position + strlen($buffer);
-                $op->promisor->resolve($buffer);
+                $length = strlen($buffer);
+                $this->position = $op->position + $length;
+                $op->promisor->resolve($length ? $buffer : null);
             }
             if ($this->queue) {
                 $this->dequeue();
