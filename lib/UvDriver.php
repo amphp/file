@@ -2,29 +2,24 @@
 
 namespace Amp\File;
 
-use Amp\{ Coroutine, Deferred, Failure, Loop, Promise, Success };
+use Amp\{ Coroutine, Deferred, Loop, Promise, Success };
 
 class UvDriver implements Driver {
     /** @var \Amp\Loop\Driver */
     private $driver;
 
-    /** @var resource Loop resource of type uv_loop. */
+    /** @var \UVLoop|resource Loop resource of type uv_loop or instance of \UVLoop. */
     private $loop;
 
     /** @var string Loop onReadable watcher. */
     private $busy;
 
     /**
-     * @param \Amp\Loop\Driver $driver
+     * @param \Amp\Loop\UvDriver $driver
      */
-    public function __construct(Loop\Driver $driver) {
-        $loop = $driver->getHandle();
-        if (!is_resource($loop) || get_resource_type($loop) != "uv_loop") {
-            throw new \InvalidArgumentException("Expected a driver whose underlying loop is an uv_loop");
-        }
-
+    public function __construct(Loop\UvDriver $driver) {
         $this->driver = $driver;
-        $this->loop = $loop;
+        $this->loop = $driver->getHandle();
 
         // dummy handle to be able to tell the loop that there is work being done and it shouldn't abort if there are no other watchers at a given moment
         $this->busy = $driver->repeat(PHP_INT_MAX, function(){ });

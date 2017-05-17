@@ -21,12 +21,15 @@ class UvHandle implements Handle {
     private $isActive = false;
     private $isCloseInitialized = false;
 
-    public function __construct(Loop\Driver $driver, $busy, $fh, $path, $mode, $size) {
-        $loop = $driver->getHandle();
-        if (!is_resource($loop) || get_resource_type($loop) != "uv_loop") {
-            throw new \InvalidArgumentException("Expected a driver whose underlying loop is an uv_loop");
-        }
-
+    /**
+     * @param \Amp\Loop\UvDriver $driver
+     * @param string $busy Watcher ID.
+     * @param resource $fh File handle.
+     * @param string $path
+     * @param string $mode
+     * @param int $size
+     */
+    public function __construct(Loop\UvDriver $driver, string $busy, $fh, string $path, string $mode, int $size) {
         $this->driver = $driver;
         $this->busy = $busy;
         $this->fh = $fh;
