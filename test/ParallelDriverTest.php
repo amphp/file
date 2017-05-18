@@ -2,28 +2,21 @@
 
 namespace Amp\File\Test;
 
+use Amp\File;
 use Amp\Loop;
 use Amp\Parallel\Worker\DefaultPool;
+use function Amp\call;
 
 class ParallelDriverTest extends DriverTest {
-    /** @var \Amp\Parallel\Worker\Pool */
-    private $pool;
-
-    public function setUp() {
-        $this->pool = new DefaultPool;
-        $this->pool->start();
-    }
-
-    public function tearDown() {
-        Loop::run(function () {
-            yield $this->pool->shutdown();
-        });
-    }
-
     protected function lRun(callable $cb) {
-        \Amp\Loop::run(function() use ($cb) {
-            \Amp\File\filesystem(new \Amp\File\ParallelDriver($this->pool));
-            \Amp\Promise\rethrow(new \Amp\Coroutine($cb()));
+        Loop::run(function() use ($cb) {
+            $pool = new DefaultPool;
+            $pool->start();
+
+            File\filesystem(new File\ParallelDriver($pool));
+            yield call($cb);
+
+            yield $pool->shutdown();
         });
     }
 }

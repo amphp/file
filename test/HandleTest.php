@@ -56,6 +56,8 @@ abstract class HandleTest extends TestCase {
             }
 
             $this->assertSame((yield file\get(__FILE__)), $contents);
+
+            yield $handle->close();
         });
     }
 
@@ -73,6 +75,8 @@ abstract class HandleTest extends TestCase {
 
             $expected = \substr((yield file\get(__FILE__)), 0, 20);
             $this->assertSame($expected, $contents);
+
+            yield $handle->close();
         });
     }
 
@@ -86,6 +90,8 @@ abstract class HandleTest extends TestCase {
             $this->assertSame(100, $handle->tell());
             $expected = \substr((yield file\get(__FILE__)), 10, 90);
             $this->assertSame($expected, $chunk);
+
+            yield $handle->close();
         });
     }
 
@@ -94,8 +100,12 @@ abstract class HandleTest extends TestCase {
      */
     public function testSeekThrowsOnInvalidWhence() {
         $this->lRun(function () {
-            $handle = (yield file\open(__FILE__, "r"));
-            yield $handle->seek(0, 99999);
+            try {
+                $handle = (yield file\open(__FILE__, "r"));
+                yield $handle->seek(0, 99999);
+            } finally {
+                yield $handle->close();
+            }
         });
     }
 
@@ -107,6 +117,7 @@ abstract class HandleTest extends TestCase {
             $this->assertSame(10, $handle->tell());
             yield $handle->seek(-10, \SEEK_CUR);
             $this->assertSame(0, $handle->tell());
+            yield $handle->close();
         });
     }
 
@@ -117,6 +128,7 @@ abstract class HandleTest extends TestCase {
             $this->assertSame(0, $handle->tell());
             yield $handle->seek(-10, \SEEK_END);
             $this->assertSame($size - 10, $handle->tell());
+            yield $handle->close();
         });
     }
 
@@ -124,6 +136,7 @@ abstract class HandleTest extends TestCase {
         $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame(__FILE__, $handle->path());
+            yield $handle->close();
         });
     }
 
@@ -131,6 +144,7 @@ abstract class HandleTest extends TestCase {
         $this->lRun(function () {
             $handle = (yield file\open(__FILE__, "r"));
             $this->assertSame("r", $handle->mode());
+            yield $handle->close();
         });
     }
 
