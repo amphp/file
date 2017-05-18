@@ -3,8 +3,9 @@
 namespace Amp\File\Test;
 
 use Amp\File as file;
+use Amp\PHPUnit\TestCase;
 
-abstract class HandleTest extends \PHPUnit_Framework_TestCase {
+abstract class HandleTest extends TestCase {
     public static function setUpBeforeClass() {
         Fixture::init();
     }

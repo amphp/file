@@ -3,8 +3,9 @@
 namespace Amp\File\Test;
 
 use Amp\File as file;
+use Amp\PHPUnit\TestCase;
 
-abstract class DriverTest extends \PHPUnit_Framework_TestCase {
+abstract class DriverTest extends TestCase {
     private static $fixtureId;
     private static $umask;
 
