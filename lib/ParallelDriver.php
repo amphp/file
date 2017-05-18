@@ -3,8 +3,8 @@
 namespace Amp\File;
 
 use Amp\{ Coroutine, Deferred, Promise };
-use Amp\Parallel\{ TaskException, Worker, WorkerException };
-use Amp\Parallel\Worker\Pool;
+use Amp\Parallel\Worker;
+use Amp\Parallel\Worker\{ Pool, TaskException, WorkerException };
 
 class ParallelDriver implements Driver {
     /**
