@@ -30,21 +30,8 @@ class UvDriver implements Driver {
      * {@inheritdoc}
      */
     public function open(string $path, string $mode): Promise {
-        switch ($mode) {
-            case "r":   $flags = \UV::O_RDONLY; break;
-            case "r+":  $flags = \UV::O_RDWR; break;
-            case "w":   $flags = \UV::O_WRONLY | \UV::O_CREAT; break;
-            case "w+":  $flags = \UV::O_RDWR | \UV::O_CREAT; break;
-            case "a":   $flags = \UV::O_WRONLY | \UV::O_CREAT | \UV::O_APPEND; break;
-            case "a+":  $flags = \UV::O_RDWR | \UV::O_CREAT | \UV::O_APPEND; break;
-            case "x":   $flags = \UV::O_WRONLY | \UV::O_CREAT | \UV::O_EXCL; break;
-            case "x+":  $flags = \UV::O_RDWR | \UV::O_CREAT | \UV::O_EXCL; break;
-            case "c":   $flags = \UV::O_WRONLY | \UV::O_CREAT; break;
-            case "c+":  $flags = \UV::O_RDWR | \UV::O_CREAT; break;
-            default: return new Failure(new FilesystemException(
-                "Invalid open mode"
-            ));
-        }
+        $flags = $this->parseMode($mode);
+
         $chmod = ($flags & \UV::O_CREAT) ? 0644 : 0;
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
@@ -62,6 +49,26 @@ class UvDriver implements Driver {
         });
 
         return $deferred->promise();
+    }
+
+    private function parseMode(string $mode): int {
+        $mode = \str_replace(['b', 't'], '', $mode);
+
+        switch ($mode) {
+            case "r":  return \UV::O_RDONLY;
+            case "r+": return \UV::O_RDWR;
+            case "w":  return \UV::O_WRONLY | \UV::O_CREAT;
+            case "w+": return \UV::O_RDWR | \UV::O_CREAT;
+            case "a":  return \UV::O_WRONLY | \UV::O_CREAT | \UV::O_APPEND;
+            case "a+": return \UV::O_RDWR | \UV::O_CREAT | \UV::O_APPEND;
+            case "x":  return \UV::O_WRONLY | \UV::O_CREAT | \UV::O_EXCL;
+            case "x+": return \UV::O_RDWR | \UV::O_CREAT | \UV::O_EXCL;
+            case "c":  return \UV::O_WRONLY | \UV::O_CREAT;
+            case "c+": return \UV::O_RDWR | \UV::O_CREAT;
+
+            default:
+                throw new \Error('Invalid file mode');
+        }
     }
 
     private function onOpenHandle($fh, array $openArr) {
