@@ -1,7 +1,7 @@
 {
     "name": "amphp/file",
     "homepage": "https://github.com/amphp/file",
-    "description": "An async filesystem library built on the amp concurrency framework",
+    "description": "An async filesystem library for Amp.",
     "support": {
         "issues": "https://github.com/amphp/file/issues"
     },
@@ -12,7 +12,9 @@
         "async",
         "non-blocking",
         "amp",
-        "amphp"
+        "amphp",
+        "io",
+        "filesystem"
     ],
     "license": "MIT",
     "authors": [
@@ -26,14 +28,14 @@
         }
     ],
     "require": {
-        "amphp/amp": "^2.0",
-        "amphp/byte-stream": "dev-master as 0.1"
+        "amphp/amp": "^2",
+        "amphp/byte-stream": "^1"
     },
     "minimum-stability": "dev",
     "require-dev": {
-        "amphp/phpunit-util": "dev-master",
-        "amphp/parallel": "dev-master as 0.1",
-        "phpunit/phpunit": "^6.0",
+        "amphp/phpunit-util": "^1",
+        "amphp/parallel": "^1",
+        "phpunit/phpunit": "^6",
         "friendsofphp/php-cs-fixer": "^2.3"
     },
     "suggest": {
@@ -47,7 +49,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Amp\\File\\Test\\": "test/"
+            "Amp\\File\\Test\\": "test"
         }
     },
     "extra": {
