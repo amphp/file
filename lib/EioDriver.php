@@ -2,7 +2,7 @@
 
 namespace Amp\File;
 
-use Amp\{ Deferred, Failure, Loop, Promise, Success };
+use Amp\{ Deferred, Loop, Promise, Success };
 
 class EioDriver implements Driver {
     private $watcher;
@@ -54,7 +54,7 @@ class EioDriver implements Driver {
      * {@inheritdoc}
      */
     public function open(string $path, string $mode): Promise {
-        $flags = $this->parseMode($mode);
+        $flags = \EIO_O_NONBLOCK | \EIO_O_FSYNC | $this->parseMode($mode);
 
         $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
         ($this->incrementor)(1);
