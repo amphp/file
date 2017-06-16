@@ -5,7 +5,7 @@ namespace Amp\File\Test;
 use Amp\File as file;
 
 class EioHandleTest extends HandleTest {
-    protected function lRun(callable $cb) {
+    protected function execute(callable $cb) {
         if (\extension_loaded("eio")) {
             \Amp\Loop::run(function() use ($cb) {
                 \Amp\File\filesystem(new \Amp\File\EioDriver);
@@ -19,7 +19,7 @@ class EioHandleTest extends HandleTest {
     }
 
     public function testQueuedWritesOverrideEachOtherIfNotWaitedUpon() {
-        $this->lRun(function () {
+        $this->execute(function () {
             $path = Fixture::path() . "/write";
             $handle = (yield file\open($path, "c+"));
             $this->assertSame(0, $handle->tell());

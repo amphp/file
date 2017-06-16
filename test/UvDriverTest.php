@@ -5,7 +5,7 @@ namespace Amp\File\Test;
 use Amp\Loop;
 
 class UvDriverTest extends DriverTest {
-    protected function lRun(callable $cb) {
+    protected function execute(callable $cb) {
         if (\extension_loaded("uv")) {
             $loop = new Loop\UvDriver;
             Loop::set($loop);

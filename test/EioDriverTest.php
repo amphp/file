@@ -3,7 +3,7 @@
 namespace Amp\File\Test;
 
 class EioDriverTest extends DriverTest {
-    protected function lRun(callable $cb) {
+    protected function execute(callable $cb) {
         if (\extension_loaded("eio")) {
             \Amp\Loop::run(function() use ($cb) {
                 \Amp\File\filesystem(new \Amp\File\EioDriver);

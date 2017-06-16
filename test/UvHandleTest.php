@@ -6,7 +6,7 @@ use Amp\Loop;
 use Amp\File as file;
 
 class UvHandleTest extends HandleTest {
-    protected function lRun(callable $cb) {
+    protected function execute(callable $cb) {
         if (\extension_loaded("uv")) {
             $loop = new Loop\UvDriver;
             Loop::set($loop);
@@ -22,7 +22,7 @@ class UvHandleTest extends HandleTest {
     }
 
     public function testQueuedWritesOverrideEachOtherIfNotWaitedUpon() {
-        $this->lRun(function () {
+        $this->execute(function () {
             $path = Fixture::path() . "/write";
             $handle = (yield file\open($path, "c+"));
             $this->assertSame(0, $handle->tell());
