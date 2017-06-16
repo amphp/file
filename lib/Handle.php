@@ -15,7 +15,7 @@ interface Handle extends InputStream, OutputStream {
      * @param int $length
      * @return \Amp\Promise<string|null>
      */
-    public function read(int $length = 8192): Promise;
+    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise;
 
     /**
      * Write $data to the open file handle starting at $offset
