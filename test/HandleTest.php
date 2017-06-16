@@ -144,10 +144,14 @@ abstract class HandleTest extends TestCase {
         });
     }
 
+    /**
+     * @expectedException \Amp\File\FilesystemException
+     */
     public function testClose() {
         $this->execute(function () {
             $handle = yield File\open(__FILE__, "r");
             yield $handle->close();
+            yield $handle->read();
         });
     }
 }

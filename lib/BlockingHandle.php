@@ -31,7 +31,7 @@ class BlockingHandle implements Handle {
      */
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
         if ($this->fh === null) {
-            throw new \Error("The file has been closed");
+            throw new FilesystemException("The file has been closed");
         }
 
         $data = \fread($this->fh, $length);
@@ -49,7 +49,7 @@ class BlockingHandle implements Handle {
      */
     public function write(string $data): Promise {
         if ($this->fh === null) {
-            throw new \Error("The file has been closed");
+            throw new FilesystemException("The file has been closed");
         }
 
         $len = \fwrite($this->fh, $data);
@@ -76,13 +76,13 @@ class BlockingHandle implements Handle {
      */
     public function close(): Promise {
         if ($this->fh === null) {
-            throw new \Error("The file has already been closed");
+            throw new FilesystemException("The file has already been closed");
         }
 
         $fh = $this->fh;
         $this->fh = null;
 
-        if (\fclose($fh)) {
+        if (@\fclose($fh)) {
             return new Success;
         } else {
             return new Failure(new FilesystemException(
@@ -96,7 +96,7 @@ class BlockingHandle implements Handle {
      */
     public function seek(int $position, int $whence = \SEEK_SET): Promise {
         if ($this->fh === null) {
-            throw new \Error("The file has been closed");
+            throw new FilesystemException("The file has been closed");
         }
 
         switch ($whence) {
@@ -119,7 +119,7 @@ class BlockingHandle implements Handle {
      */
     public function tell(): int {
         if ($this->fh === null) {
-            throw new \Error("The file has been closed");
+            throw new FilesystemException("The file has been closed");
         }
 
         return \ftell($this->fh);
@@ -130,7 +130,7 @@ class BlockingHandle implements Handle {
      */
     public function eof(): bool {
         if ($this->fh === null) {
-            throw new \Error("The file has been closed");
+            throw new FilesystemException("The file has been closed");
         }
 
         return \feof($this->fh);

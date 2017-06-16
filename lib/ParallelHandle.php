@@ -80,7 +80,7 @@ class ParallelHandle implements Handle {
 
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
         if ($this->id === null) {
-            throw new \Error("The file has been closed");
+            throw new FilesystemException("The file has been closed");
         }
 
         return new Coroutine($this->doRead($length));
@@ -105,7 +105,7 @@ class ParallelHandle implements Handle {
      */
     public function write(string $data): Promise {
         if ($this->id === null) {
-            throw new \Error("The file has been closed");
+            throw new FilesystemException("The file has been closed");
         }
 
         return new Coroutine($this->doWrite($data));
@@ -143,7 +143,7 @@ class ParallelHandle implements Handle {
      */
     public function seek(int $offset, int $whence = SEEK_SET): Promise {
         if ($this->id === null) {
-            throw new \Error("The file has been closed");
+            throw new FilesystemException("The file has been closed");
         }
 
         return new Coroutine($this->doSeek($offset, $whence));
