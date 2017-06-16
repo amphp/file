@@ -13,7 +13,6 @@ matrix:
   fast_finish: true
 
 install:
-  - composer self-update
   - composer install
   - travis/install-eio.sh
   - travis/install-uv.sh
