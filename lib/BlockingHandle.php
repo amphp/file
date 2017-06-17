@@ -2,7 +2,9 @@
 
 namespace Amp\File;
 
-use Amp\{ Success, Failure, Promise };
+use Amp\Failure;
+use Amp\Promise;
+use Amp\Success;
 
 class BlockingHandle implements Handle {
     private $fh;
@@ -35,13 +37,14 @@ class BlockingHandle implements Handle {
         }
 
         $data = \fread($this->fh, $length);
+
         if ($data !== false) {
             return new Success(\strlen($data) ? $data : null);
-        } else {
-            return new Failure(new FilesystemException(
-                "Failed reading from file handle"
-            ));
         }
+
+        return new Failure(new FilesystemException(
+            "Failed reading from file handle"
+        ));
     }
 
     /**
@@ -53,13 +56,14 @@ class BlockingHandle implements Handle {
         }
 
         $len = \fwrite($this->fh, $data);
+
         if ($len !== false) {
             return new Success($len);
-        } else {
-            return new Failure(new FilesystemException(
-                "Failed writing to file handle"
-            ));
         }
+
+        return new Failure(new FilesystemException(
+            "Failed writing to file handle"
+        ));
     }
 
     /**
@@ -84,11 +88,11 @@ class BlockingHandle implements Handle {
 
         if (@\fclose($fh)) {
             return new Success;
-        } else {
-            return new Failure(new FilesystemException(
-                "Failed closing file handle"
-            ));
         }
+
+        return new Failure(new FilesystemException(
+            "Failed closing file handle"
+        ));
     }
 
     /**

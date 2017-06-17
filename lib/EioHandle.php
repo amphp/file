@@ -2,7 +2,9 @@
 
 namespace Amp\File;
 
-use Amp\{ Deferred, Promise, Success };
+use Amp\Deferred;
+use Amp\Promise;
+use Amp\Success;
 
 class EioHandle implements Handle {
     const OP_READ = 1;

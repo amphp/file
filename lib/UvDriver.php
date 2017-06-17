@@ -2,7 +2,11 @@
 
 namespace Amp\File;
 
-use Amp\{ Coroutine, Deferred, Loop, Promise, Success };
+use Amp\Coroutine;
+use Amp\Deferred;
+use Amp\Loop;
+use Amp\Promise;
+use Amp\Success;
 
 class UvDriver implements Driver {
     /** @var \Amp\Loop\Driver */
@@ -22,7 +26,7 @@ class UvDriver implements Driver {
         $this->loop = $driver->getHandle();
 
         // dummy handle to be able to tell the loop that there is work being done and it shouldn't abort if there are no other watchers at a given moment
-        $this->busy = $driver->repeat(PHP_INT_MAX, function(){ });
+        $this->busy = $driver->repeat(PHP_INT_MAX, function () { });
         $driver->unreference($this->busy);
     }
 
@@ -41,7 +45,7 @@ class UvDriver implements Driver {
                 $this->onOpenHandle($fh, $openArr);
             } else {
                 $this->driver->unreference($this->busy);
-                list( , $path, $deferred) = $openArr;
+                list(, $path, $deferred) = $openArr;
                 $deferred->fail(new FilesystemException(
                     "Failed opening file handle to $path"
                 ));
@@ -79,20 +83,20 @@ class UvDriver implements Driver {
                 if ($fh) {
                     $this->finalizeHandle($fh, $size = 0, $openArr);
                 } else {
-                    list( , $path, $deferred) = $openArr;
+                    list(, $path, $deferred) = $openArr;
                     $deferred->fail(new FilesystemException(
                         "Failed truncating file $path"
                     ));
                 }
             });
         } else {
-            \uv_fs_fstat($this->loop, $fh, function($fh, $stat) use ($openArr) {
+            \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($openArr) {
                 $this->driver->unreference($this->busy);
                 if ($fh) {
                     StatCache::set($openArr[1], $stat);
                     $this->finalizeHandle($fh, $stat["size"], $openArr);
                 } else {
-                    list( , $path, $deferred) = $openArr;
+                    list(, $path, $deferred) = $openArr;
                     $deferred->fail(new FilesystemException(
                         "Failed reading file size from open handle pointing to $path"
                     ));
@@ -117,7 +121,7 @@ class UvDriver implements Driver {
 
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
-        \uv_fs_stat($this->loop, $path, function($fh, $stat) use ($deferred, $path) {
+        \uv_fs_stat($this->loop, $path, function ($fh, $stat) use ($deferred, $path) {
             if (empty($fh)) {
                 $stat = null;
             } else {
@@ -256,7 +260,7 @@ class UvDriver implements Driver {
     public function lstat(string $path): Promise {
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
-        \uv_fs_lstat($this->loop, $path, function($fh, $stat) use ($deferred) {
+        \uv_fs_lstat($this->loop, $path, function ($fh, $stat) use ($deferred) {
             if (empty($fh)) {
                 $stat = null;
             }
@@ -347,7 +351,7 @@ class UvDriver implements Driver {
         $deferred = new Deferred;
 
         if ($recursive) {
-            $path = str_replace("/", DIRECTORY_SEPARATOR,  $path);
+            $path = str_replace("/", DIRECTORY_SEPARATOR, $path);
             $arrayPath = array_filter(explode(DIRECTORY_SEPARATOR, $path));
             $tmpPath = "";
 
@@ -498,7 +502,7 @@ class UvDriver implements Driver {
             });
         } else {
             $buffer = (yield $this->doFsRead($fh, $offset = 0, $stat["size"]));
-            if ($buffer === false ) {
+            if ($buffer === false) {
                 \uv_fs_close($this->loop, $fh, function () use ($deferred) {
                     $this->driver->unreference($this->busy);
                     $deferred->fail(new FilesystemException(
@@ -571,7 +575,7 @@ class UvDriver implements Driver {
         $deferred = new Deferred;
         $len = strlen($contents);
         \uv_fs_write($this->loop, $fh, $contents, $offset = 0, function ($fh, $result) use ($deferred, $len) {
-            \uv_fs_close($this->loop, $fh, function() use ($deferred, $result, $len) {
+            \uv_fs_close($this->loop, $fh, function () use ($deferred, $result, $len) {
                 $this->driver->unreference($this->busy);
                 if ($result < 0) {
                     $deferred->fail(new FilesystemException(

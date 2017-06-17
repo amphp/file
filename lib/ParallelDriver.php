@@ -2,9 +2,13 @@
 
 namespace Amp\File;
 
-use Amp\{ Coroutine, Deferred, Promise };
+use Amp\Coroutine;
+use Amp\Deferred;
 use Amp\Parallel\Worker;
-use Amp\Parallel\Worker\{ Pool, TaskException, WorkerException };
+use Amp\Parallel\Worker\Pool;
+use Amp\Parallel\Worker\TaskException;
+use Amp\Parallel\Worker\WorkerException;
+use Amp\Promise;
 
 class ParallelDriver implements Driver {
     /**
@@ -211,4 +215,5 @@ class ParallelDriver implements Driver {
      */
     public function put(string $path, string $contents): Promise {
         return new Coroutine($this->runFileTask(new Internal\FileTask("put", [$path, $contents])));
-}}
+    }
+}

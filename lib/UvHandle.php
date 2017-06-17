@@ -2,7 +2,10 @@
 
 namespace Amp\File;
 
-use Amp\{ Deferred, Loop, Promise, Success };
+use Amp\Deferred;
+use Amp\Loop;
+use Amp\Promise;
+use Amp\Success;
 
 class UvHandle implements Handle {
     const OP_READ = 1;
@@ -205,7 +208,7 @@ class UvHandle implements Handle {
         $this->isCloseInitialized = true;
         $this->driver->reference($this->busy);
         $deferred = new Deferred;
-        \uv_fs_close($this->loop, $this->fh, function($fh) use ($deferred) {
+        \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred) {
             $this->driver->unreference($this->busy);
             $deferred->resolve();
         });

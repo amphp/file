@@ -2,13 +2,14 @@
 
 namespace Amp\File;
 
-use Amp\{ Loop, Promise };
+use Amp\Loop;
 use Amp\Parallel\Worker\Worker;
+use Amp\Promise;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
 /**
- * Retrieve the application-wide filesystem instance
+ * Retrieve the application-wide filesystem instance.
  *
  * @param \Amp\File\Driver $driver Use the specified object as the application-wide filesystem instance
  * @return \Amp\File\Driver
@@ -27,26 +28,26 @@ function filesystem(Driver $driver = null): Driver {
 }
 
 /**
- * Create a new filesystem driver best-suited for the current environment
+ * Create a new filesystem driver best-suited for the current environment.
  *
  * @return \Amp\File\Driver
  */
 function driver(): Driver {
     $driver = Loop::get();
-    $loop = $driver->getHandle();
-    if (\is_resource($loop) && \get_resource_type($loop) == "uv_loop") {
+
+    if ($driver instanceof Loop\UvDriver) {
         return new UvDriver($driver);
-    } elseif (\extension_loaded("eio")) {
-        return new EioDriver;
-    } elseif (\interface_exists(Worker::class)) {
-        return new ParallelDriver;
-    } else {
-        return new BlockingDriver;
     }
+
+    if (\extension_loaded("eio")) {
+        return new EioDriver;
+    }
+
+    return new ParallelDriver;
 }
 
 /**
- * Open a handle for the specified path
+ * Open a handle for the specified path.
  *
  * @param string $path
  * @param string $mode
@@ -57,7 +58,7 @@ function open(string $path, string $mode): Promise {
 }
 
 /**
- * Execute a file stat operation
+ * Execute a file stat operation.
  *
  * If the requested path does not exist the resulting Promise will resolve to NULL.
  * The returned Promise whould never resolve as a failure.
@@ -123,7 +124,7 @@ function isfile(string $path): Promise {
 }
 
 /**
- * Retrieve the path's last modification time as a unix timestamp
+ * Retrieve the path's last modification time as a unix timestamp.
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
@@ -134,7 +135,7 @@ function mtime(string $path): Promise {
 }
 
 /**
- * Retrieve the path's last access time as a unix timestamp
+ * Retrieve the path's last access time as a unix timestamp.
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
@@ -145,7 +146,7 @@ function atime($path) {
 }
 
 /**
- * Retrieve the path's creation time as a unix timestamp
+ * Retrieve the path's creation time as a unix timestamp.
  *
  * @param string $path An absolute file system path
  * @fails \Amp\Files\FilesystemException If the path does not exist
@@ -156,7 +157,7 @@ function ctime(string $path): Promise {
 }
 
 /**
- * Same as stat() except if the path is a link then the link's data is returned
+ * Same as stat() except if the path is a link then the link's data is returned.
  *
  * If the requested path does not exist the resulting Promise will resolve to NULL.
  * The returned Promise whould never resolve as a failure.
@@ -169,7 +170,7 @@ function lstat(string $path): Promise {
 }
 
 /**
- * Create a symlink $link pointing to the file/directory located at $original
+ * Create a symlink $link pointing to the file/directory located at $original.
  *
  * @param string $original
  * @param string $link
@@ -181,7 +182,7 @@ function symlink(string $original, string $link): Promise {
 }
 
 /**
- * Create a hard link $link pointing to the file/directory located at $original
+ * Create a hard link $link pointing to the file/directory located at $original.
  *
  * @param string $original
  * @param string $link
@@ -193,7 +194,7 @@ function link(string $original, string $link): Promise {
 }
 
 /**
- * Read the symlink at $path
+ * Read the symlink at $path.
  *
  * @param string $original
  * @param string $link
@@ -205,7 +206,7 @@ function readlink(string $path): Promise {
 }
 
 /**
- * Rename a file or directory
+ * Rename a file or directory.
  *
  * @param string $from
  * @param string $to
@@ -217,7 +218,7 @@ function rename(string $from, string $to): Promise {
 }
 
 /**
- * Delete a file
+ * Delete a file.
  *
  * @param string $path
  * @return \Amp\Promise<null>
@@ -227,7 +228,7 @@ function unlink(string $path): Promise {
 }
 
 /**
- * Create a director
+ * Create a director.
  *
  * @param string $path
  * @param int $mode
@@ -239,7 +240,7 @@ function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise
 }
 
 /**
- * Delete a directory
+ * Delete a directory.
  *
  * @param string $path
  * @return \Amp\Promise<null>
@@ -249,7 +250,7 @@ function rmdir(string $path): Promise {
 }
 
 /**
- * Retrieve an array of files and directories inside the specified path
+ * Retrieve an array of files and directories inside the specified path.
  *
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
@@ -261,7 +262,7 @@ function scandir(string $path): Promise {
 }
 
 /**
- * chmod a file or directory
+ * chmod a file or directory.
  *
  * @param string $path
  * @param int $mode
@@ -272,7 +273,7 @@ function chmod(string $path, int $mode): Promise {
 }
 
 /**
- * chown a file or directory
+ * chown a file or directory.
  *
  * @param string $path
  * @param int $uid -1 to ignore
@@ -284,7 +285,7 @@ function chown(string $path, int $uid, int $gid = -1): Promise {
 }
 
 /**
- * Update the access and modification time of the specified path
+ * Update the access and modification time of the specified path.
  *
  * If the file does not exist it will be created automatically.
  *
@@ -296,7 +297,7 @@ function touch(string $path): Promise {
 }
 
 /**
- * Buffer the specified file's contents
+ * Buffer the specified file's contents.
  *
  * @param string $path The file path from which to buffer contents
  * @return \Amp\Promise<string>

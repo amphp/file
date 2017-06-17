@@ -2,7 +2,9 @@
 
 namespace Amp\File;
 
-use Amp\{ Success, Failure, Promise };
+use Amp\Failure;
+use Amp\Promise;
+use Amp\Success;
 
 class BlockingDriver implements Driver {
     /**
@@ -41,6 +43,7 @@ class BlockingDriver implements Driver {
         if ($exists = @\file_exists($path)) {
             \clearstatcache(true, $path);
         }
+
         return new Success($exists);
     }
 
@@ -58,18 +61,22 @@ class BlockingDriver implements Driver {
             return new Failure(new FilesystemException(
                 "Path does not exist"
             ));
-        } elseif (!@\is_file($path)) {
+        }
+
+        if (!@\is_file($path)) {
             return new Failure(new FilesystemException(
                 "Path is not a regular file"
             ));
-        } elseif (($size = @\filesize($path)) === false) {
+        }
+
+        if (($size = @\filesize($path)) === false) {
             return new Failure(new FilesystemException(
                 \error_get_last()["message"]
             ));
-        } else {
-            \clearstatcache(true, $path);
-            return new Success($size);
         }
+
+        \clearstatcache(true, $path);
+        return new Success($size);
     }
 
     /**
@@ -85,6 +92,7 @@ class BlockingDriver implements Driver {
         if (!@\file_exists($path)) {
             return new Success(false);
         }
+
         $isDir = @\is_dir($path);
         \clearstatcache(true, $path);
 
@@ -104,6 +112,7 @@ class BlockingDriver implements Driver {
         if (!@\file_exists($path)) {
             return new Success(false);
         }
+
         $isFile = @\is_file($path);
         \clearstatcache(true, $path);
 
@@ -111,7 +120,7 @@ class BlockingDriver implements Driver {
     }
 
     /**
-     * Retrieve the path's last modification time as a unix timestamp
+     * Retrieve the path's last modification time as a unix timestamp.
      *
      * @param string $path An absolute file system path
      * @return \Amp\Promise<int>
@@ -122,6 +131,7 @@ class BlockingDriver implements Driver {
                 "Path does not exist"
             ));
         }
+
         $mtime = @\filemtime($path);
         \clearstatcache(true, $path);
 
@@ -129,7 +139,7 @@ class BlockingDriver implements Driver {
     }
 
     /**
-     * Retrieve the path's last access time as a unix timestamp
+     * Retrieve the path's last access time as a unix timestamp.
      *
      * @param string $path An absolute file system path
      * @return \Amp\Promise<int>
@@ -147,7 +157,7 @@ class BlockingDriver implements Driver {
     }
 
     /**
-     * Retrieve the path's creation time as a unix timestamp
+     * Retrieve the path's creation time as a unix timestamp.
      *
      * @param string $path An absolute file system path
      * @return \Amp\Promise<int>
@@ -158,6 +168,7 @@ class BlockingDriver implements Driver {
                 "Path does not exist"
             ));
         }
+
         $ctime = @\filectime($path);
         \clearstatcache(true, $path);
 
@@ -253,16 +264,16 @@ class BlockingDriver implements Driver {
                 "Not a directory"
             ));
         } elseif ($arr = @\scandir($path)) {
-            $arr = \array_values(\array_filter($arr, function($el) {
+            $arr = \array_values(\array_filter($arr, function ($el) {
                 return !($el === "." || $el === "..");
             }));
             \clearstatcache(true, $path);
             return new Success($arr);
-        } else {
-            return new Failure(new FilesystemException(
-                "Failed reading contents from {$path}"
-            ));
         }
+
+        return new Failure(new FilesystemException(
+            "Failed reading contents from {$path}"
+        ));
     }
 
     /**
@@ -305,8 +316,7 @@ class BlockingDriver implements Driver {
         $result = @\file_get_contents($path);
         return ($result === false)
             ? new Failure(new FilesystemException(\error_get_last()["message"]))
-            : new Success($result)
-        ;
+            : new Success($result);
     }
 
     /**
@@ -316,7 +326,6 @@ class BlockingDriver implements Driver {
         $result = @\file_put_contents($path, $contents);
         return ($result === false)
             ? new Failure(new FilesystemException(\error_get_last()["message"]))
-            : new Success($result)
-        ;
+            : new Success($result);
     }
 }

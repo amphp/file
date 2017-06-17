@@ -9,7 +9,7 @@ class UvDriverTest extends DriverTest {
         if (\extension_loaded("uv")) {
             $loop = new Loop\UvDriver;
             Loop::set($loop);
-            Loop::run(function() use ($cb, $loop) {
+            Loop::run(function () use ($cb, $loop) {
                 \Amp\File\filesystem(new \Amp\File\UvDriver($loop));
                 \Amp\Promise\rethrow(new \Amp\Coroutine($cb()));
             });

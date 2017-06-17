@@ -10,7 +10,7 @@ interface Handle extends InputStream, OutputStream {
     const DEFAULT_READ_LENGTH = 8192;
 
     /**
-     * Read $len bytes from the open file handle starting at $offset
+     * Read $len bytes from the open file handle starting at $offset.
      *
      * @param int $length
      * @return \Amp\Promise<string|null>
@@ -18,7 +18,7 @@ interface Handle extends InputStream, OutputStream {
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise;
 
     /**
-     * Write $data to the open file handle starting at $offset
+     * Write $data to the open file handle starting at $offset.
      *
      * @param string $data
      * @return \Amp\Promise<int>
@@ -35,7 +35,7 @@ interface Handle extends InputStream, OutputStream {
     public function end(string $data = ""): Promise;
 
     /**
-     * Close the file handle
+     * Close the file handle.
      *
      * Applications are not required to manually close handles -- they will
      * be unloaded automatically when the object is garbage collected.
@@ -45,7 +45,7 @@ interface Handle extends InputStream, OutputStream {
     public function close(): Promise;
 
     /**
-     * Set the handle's internal pointer position
+     * Set the handle's internal pointer position.
      *
      * $whence values:
      *
@@ -60,28 +60,28 @@ interface Handle extends InputStream, OutputStream {
     public function seek(int $position, int $whence = \SEEK_SET): Promise;
 
     /**
-     * Return the current internal offset position of the file handle
+     * Return the current internal offset position of the file handle.
      *
      * @return int
      */
     public function tell(): int;
 
     /**
-     * Test for "end-of-file" on the file handle
+     * Test for "end-of-file" on the file handle.
      *
      * @return bool
      */
     public function eof(): bool;
 
     /**
-     * Retrieve the path used when opening the file handle
+     * Retrieve the path used when opening the file handle.
      *
      * @return string
      */
     public function path(): string;
 
     /**
-     * Retrieve the mode used when opening the file handle
+     * Retrieve the mode used when opening the file handle.
      *
      * @return string
      */

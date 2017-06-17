@@ -2,7 +2,10 @@
 
 namespace Amp\File;
 
-use Amp\{ Deferred, Loop, Promise, Success };
+use Amp\Deferred;
+use Amp\Loop;
+use Amp\Promise;
+use Amp\Success;
 
 class EioDriver implements Driver {
     private $watcher;
@@ -22,7 +25,7 @@ class EioDriver implements Driver {
             \eio_init();
             self::$stream = \eio_get_event_stream();
         }
-        $this->callableDecrementor = function() {
+        $this->callableDecrementor = function () {
             ($this->incrementor)(-1);
         };
         $this->incrementor = function ($increment) {
@@ -390,11 +393,11 @@ class EioDriver implements Driver {
         $priority = \EIO_PRI_DEFAULT;
 
         if ($recursive) {
-            $path = str_replace("/", DIRECTORY_SEPARATOR,  $path);
+            $path = str_replace("/", DIRECTORY_SEPARATOR, $path);
             $arrayPath = array_filter(explode(DIRECTORY_SEPARATOR, $path));
             $tmpPath = "";
 
-            $callback = function() use (
+            $callback = function () use (
                 &$callback, &$arrayPath, &$tmpPath, $mode, $priority, $deferred
             ) {
                 $tmpPath .= DIRECTORY_SEPARATOR . array_shift($arrayPath);

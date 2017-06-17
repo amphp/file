@@ -2,8 +2,12 @@
 
 namespace Amp\File;
 
-use Amp\{ Coroutine, Promise, Success };
-use Amp\Parallel\Worker\{ TaskException, Worker, WorkerException };
+use Amp\Coroutine;
+use Amp\Parallel\Worker\TaskException;
+use Amp\Parallel\Worker\Worker;
+use Amp\Parallel\Worker\WorkerException;
+use Amp\Promise;
+use Amp\Success;
 
 class ParallelHandle implements Handle {
     /** @var \Amp\Parallel\Worker\Worker */

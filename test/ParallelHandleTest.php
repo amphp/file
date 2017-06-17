@@ -9,7 +9,7 @@ use function Amp\call;
 
 class ParallelHandleTest extends HandleTest {
     protected function execute(callable $cb) {
-        Loop::run(function() use ($cb) {
+        Loop::run(function () use ($cb) {
             $pool = new DefaultPool;
             $pool->start();
 

@@ -9,7 +9,7 @@ use function Amp\call;
 
 class ParallelDriverTest extends DriverTest {
     protected function execute(callable $cb) {
-        Loop::run(function() use ($cb) {
+        Loop::run(function () use ($cb) {
             $pool = new DefaultPool;
             $pool->start();
 

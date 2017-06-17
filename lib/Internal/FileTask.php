@@ -1,8 +1,11 @@
 <?php
 namespace Amp\File\Internal;
 
-use Amp\File\{ BlockingDriver, BlockingHandle, FilesystemException };
-use Amp\Parallel\Worker\{ Environment, Task };
+use Amp\File\BlockingDriver;
+use Amp\File\BlockingHandle;
+use Amp\File\FilesystemException;
+use Amp\Parallel\Worker\Environment;
+use Amp\Parallel\Worker\Task;
 
 /**
  * @codeCoverageIgnore
@@ -11,7 +14,7 @@ use Amp\Parallel\Worker\{ Environment, Task };
  */
 class FileTask extends BlockingDriver implements Task {
     const ENV_PREFIX = self::class . '_';
-    
+
     /** @var string */
     private $operation;
 
@@ -52,7 +55,7 @@ class FileTask extends BlockingDriver implements Task {
             if ("fopen" === $this->operation) {
                 $path = $this->args[0];
                 $mode = \str_replace(['b', 't'], '', $this->args[1]);
-    
+
                 switch ($mode) {
                     case "r":
                     case "r+":
@@ -65,13 +68,13 @@ class FileTask extends BlockingDriver implements Task {
                     case "c":
                     case "c+":
                         break;
-        
+
                     default:
                         throw new FilesystemException("Invalid file mode");
                 }
-    
+
                 $handle = @\fopen($path, $mode . 'b');
-    
+
                 if (!$handle) {
                     $message = 'Could not open the file.';
                     if ($error = \error_get_last()) {
@@ -79,12 +82,12 @@ class FileTask extends BlockingDriver implements Task {
                     }
                     throw new FilesystemException($message);
                 }
-    
+
                 $file = new BlockingHandle($handle, $path, $mode);
                 $id = (int) $handle;
                 $size = \fstat($handle)["size"];
                 $environment->set($this->makeId($id), $file);
-                
+
                 return [$id, $size, $mode];
             }
 

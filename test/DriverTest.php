@@ -64,7 +64,7 @@ abstract class DriverTest extends TestCase {
             $target = "{$fixtureDir}/small.txt";
             $link = "{$fixtureDir}/symlink.txt";
             $this->assertTrue(yield File\symlink($target, $link));
-            $this->assertTrue(is_array(yield File\lstat($link)));
+            $this->assertInternalType('array', yield File\lstat($link));
             yield File\unlink($link);
         });
     }

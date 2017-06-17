@@ -6,7 +6,7 @@ use Amp\Promise;
 
 interface Driver {
     /**
-     * Open a handle for the specified path
+     * Open a handle for the specified path.
      *
      * @param string $path
      * @param string $mode
@@ -15,7 +15,7 @@ interface Driver {
     public function open(string $path, string $mode): Promise;
 
     /**
-     * Execute a file stat operation
+     * Execute a file stat operation.
      *
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *
@@ -69,7 +69,7 @@ interface Driver {
     public function isfile(string $path): Promise;
 
     /**
-     * Retrieve the path's last modification time as a unix timestamp
+     * Retrieve the path's last modification time as a unix timestamp.
      *
      * @param string $path An absolute file system path
      * @return \Amp\Promise<int>
@@ -77,7 +77,7 @@ interface Driver {
     public function mtime(string $path): Promise;
 
     /**
-     * Retrieve the path's last access time as a unix timestamp
+     * Retrieve the path's last access time as a unix timestamp.
      *
      * @param string $path An absolute file system path
      * @return \Amp\Promise<int>
@@ -85,7 +85,7 @@ interface Driver {
     public function atime(string $path): Promise;
 
     /**
-     * Retrieve the path's creation time as a unix timestamp
+     * Retrieve the path's creation time as a unix timestamp.
      *
      * @param string $path An absolute file system path
      * @return \Amp\Promise<int>
@@ -93,7 +93,7 @@ interface Driver {
     public function ctime(string $path): Promise;
 
     /**
-     * Same as stat() except if the path is a link then the link's data is returned
+     * Same as stat() except if the path is a link then the link's data is returned.
      *
      * @param string $path The file system path to stat
      * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
@@ -101,7 +101,7 @@ interface Driver {
     public function lstat(string $path): Promise;
 
     /**
-     * Create a symlink $link pointing to the file/directory located at $target
+     * Create a symlink $link pointing to the file/directory located at $target.
      *
      * @param string $target
      * @param string $link
@@ -110,7 +110,7 @@ interface Driver {
     public function symlink(string $target, string $link): Promise;
 
     /**
-     * Create a hard link $link pointing to the file/directory located at $target
+     * Create a hard link $link pointing to the file/directory located at $target.
      *
      * @param string $target
      * @param string $link
@@ -127,7 +127,7 @@ interface Driver {
     public function readlink(string $target): Promise;
 
     /**
-     * Rename a file or directory
+     * Rename a file or directory.
      *
      * @param string $from
      * @param string $to
@@ -136,7 +136,7 @@ interface Driver {
     public function rename(string $from, string $to): Promise;
 
     /**
-     * Delete a file
+     * Delete a file.
      *
      * @param string $path
      * @return \Amp\Promise
@@ -144,7 +144,7 @@ interface Driver {
     public function unlink(string $path): Promise;
 
     /**
-     * Create a director
+     * Create a director.
      *
      * @param string $path
      * @param int $mode
@@ -154,7 +154,7 @@ interface Driver {
     public function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise;
 
     /**
-     * Delete a directory
+     * Delete a directory.
      *
      * @param string $path
      * @return \Amp\Promise
@@ -162,7 +162,7 @@ interface Driver {
     public function rmdir(string $path): Promise;
 
     /**
-     * Retrieve an array of files and directories inside the specified path
+     * Retrieve an array of files and directories inside the specified path.
      *
      * Dot entries are not included in the resulting array (i.e. "." and "..").
      *
@@ -172,7 +172,7 @@ interface Driver {
     public function scandir(string $path): Promise;
 
     /**
-     * chmod a file or directory
+     * chmod a file or directory.
      *
      * @param string $path
      * @param int $mode
@@ -181,7 +181,7 @@ interface Driver {
     public function chmod(string $path, int $mode): Promise;
 
     /**
-     * chown a file or directory
+     * chown a file or directory.
      *
      * @param string $path
      * @param int $uid
@@ -191,7 +191,7 @@ interface Driver {
     public function chown(string $path, int $uid, int $gid): Promise;
 
     /**
-     * Update the access and modification time of the specified path
+     * Update the access and modification time of the specified path.
      *
      * If the file does not exist it will be created automatically.
      *
@@ -201,7 +201,7 @@ interface Driver {
     public function touch(string $path): Promise;
 
     /**
-     * Buffer the specified file's contents
+     * Buffer the specified file's contents.
      *
      * @param string $path The file path from which to buffer contents
      * @return \Amp\Promise A promise resolving to a string upon successful resolution
