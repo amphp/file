@@ -20,7 +20,7 @@ abstract class DriverTest extends TestCase {
     public function testScandir() {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
-            $actual = (yield File\scandir($fixtureDir));
+            $actual = yield File\scandir($fixtureDir);
             $expected = ["dir", "small.txt"];
             $this->assertSame($expected, $actual);
         });
@@ -98,6 +98,13 @@ abstract class DriverTest extends TestCase {
             $fixtureDir = Fixture::path();
             $this->assertFalse(yield File\exists("{$fixtureDir}/nonexistent"));
             $this->assertTrue(yield File\exists("{$fixtureDir}/small.txt"));
+        });
+    }
+
+    public function testGet() {
+        $this->execute(function () {
+            $fixtureDir = Fixture::path();
+            $this->assertSame("small", yield File\get("{$fixtureDir}/small.txt"));
         });
     }
 
@@ -219,7 +226,7 @@ abstract class DriverTest extends TestCase {
 
             yield File\mkdir($dir);
             $stat = yield File\stat($dir);
-            $this->assertTrue(($stat["mode"] & 0777) === 0644);
+            $this->assertSame(0644, $stat["mode"] & 0777);
             yield File\rmdir($dir);
             $this->assertNull(yield File\stat($dir));
 
@@ -227,7 +234,7 @@ abstract class DriverTest extends TestCase {
 
             yield File\mkdir($dir, 0764, true); // the umask is 022 by default
             $stat = yield File\stat($dir);
-            $this->assertTrue(($stat["mode"] & 0777) == 0744);
+            $this->assertSame(0764, $stat["mode"] & 0777);
         });
     }
 
