@@ -3,7 +3,6 @@
 namespace Amp\File;
 
 use Amp\Loop;
-use Amp\Parallel\Worker\Worker;
 use Amp\Promise;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
