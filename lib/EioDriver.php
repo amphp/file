@@ -394,7 +394,7 @@ class EioDriver implements Driver {
 
         if ($recursive) {
             $path = str_replace("/", DIRECTORY_SEPARATOR, $path);
-            $arrayPath = array_filter(explode(DIRECTORY_SEPARATOR, $path));
+            $arrayPath = explode(DIRECTORY_SEPARATOR, $path);
             $tmpPath = "";
 
             $callback = function () use (

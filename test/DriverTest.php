@@ -230,7 +230,8 @@ abstract class DriverTest extends TestCase {
             yield File\rmdir($dir);
             $this->assertNull(yield File\stat($dir));
 
-            $dir = "{$fixtureDir}/newdir/with/recursive/creation";
+            // test for 0, because previous array_filter made that not work
+            $dir = "{$fixtureDir}/newdir/with/recursive/creation/0/1/2";
 
             yield File\mkdir($dir, 0764, true); // the umask is 022 by default
             $stat = yield File\stat($dir);
