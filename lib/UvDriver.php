@@ -351,7 +351,7 @@ class UvDriver implements Driver {
         $deferred = new Deferred;
 
         if ($recursive) {
-            $path = str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $path);
+            $path = str_replace("/", DIRECTORY_SEPARATOR, $path);
             $arrayPath = explode(DIRECTORY_SEPARATOR, $path);
             $tmpPath = "";
 

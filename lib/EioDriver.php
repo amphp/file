@@ -393,7 +393,7 @@ class EioDriver implements Driver {
         $priority = \EIO_PRI_DEFAULT;
 
         if ($recursive) {
-            $path = str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $path);
+            $path = str_replace("/", DIRECTORY_SEPARATOR, $path);
             $arrayPath = explode(DIRECTORY_SEPARATOR, $path);
             $tmpPath = "";
 
