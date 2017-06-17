@@ -10,7 +10,7 @@ final class Fixture {
             self::$fixtureId = \uniqid();
         }
 
-        return \sys_get_temp_dir() . "/amphp_file_fixture/" . __CLASS__ . self::$fixtureId;
+        return \sys_get_temp_dir() . "/amphp_file_fixture/" . strtr(__CLASS__, "\\", ".") . self::$fixtureId;
     }
 
     public static function init() {
