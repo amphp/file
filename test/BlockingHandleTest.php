@@ -2,11 +2,15 @@
 
 namespace Amp\File\Test;
 
+use Amp\File;
+use Amp\Loop;
+use function Amp\asyncCall;
+
 class BlockingHandleTest extends HandleTest {
     protected function execute(callable $cb) {
-        \Amp\Loop::run(function () use ($cb) {
-            \Amp\File\filesystem(new \Amp\File\BlockingDriver);
-            \Amp\Promise\rethrow(new \Amp\Coroutine($cb()));
+        Loop::run(function () use ($cb) {
+            File\filesystem(new File\BlockingDriver);
+            asyncCall($cb);
         });
     }
 }
