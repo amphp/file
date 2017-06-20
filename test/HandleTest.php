@@ -24,7 +24,7 @@ abstract class HandleTest extends TestCase {
             $handle = yield File\open($path, "c+");
             $this->assertSame(0, $handle->tell());
 
-            yield $handle->write("foo");
+            $handle->write("foo");
             yield $handle->write("bar");
             yield $handle->seek(0);
             $contents = yield $handle->read();
