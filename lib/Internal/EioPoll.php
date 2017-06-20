@@ -2,9 +2,13 @@
 
 namespace Amp\File\Internal;
 
+use Amp\CallableMaker;
 use Amp\Loop;
+use Amp\Promise;
 
 class EioPoll {
+    use CallableMaker;
+
     /** @var resource */
     private static $stream;
 
@@ -14,7 +18,12 @@ class EioPoll {
     /** @var int */
     private $requests = 0;
 
+    /** @var callable */
+    private $onDone;
+
     public function __construct() {
+        $this->onDone = $this->callableFromInstanceMethod("done");
+
         if (!self::$stream) {
             \eio_init();
             self::$stream = \eio_get_event_stream();
@@ -27,21 +36,40 @@ class EioPoll {
         });
 
         Loop::disable($this->watcher);
+
+        Loop::setState(self::class, new class ($this->watcher) {
+            private $watcher;
+            private $driver;
+
+            public function __construct(string $watcher) {
+                $this->watcher = $watcher;
+                $this->driver = Loop::get();
+            }
+
+            public function __destruct() {
+                $this->driver->cancel($this->watcher);
+
+                // Ensure there are no active operations anymore. This is a safe-guard as some operations might not be
+                // finished on loop exit due to not being yielded. This also ensures a clean shutdown for these if PHP
+                // exists.
+                \eio_event_loop();
+            }
+        });
     }
 
-    public function listen() {
+    public function listen(Promise $promise) {
         if ($this->requests++ === 0) {
             Loop::enable($this->watcher);
         }
+
+        $promise->onResolve($this->onDone);
     }
 
-    public function done() {
+    private function done() {
         if (--$this->requests === 0) {
             Loop::disable($this->watcher);
         }
-    }
 
-    public function __destruct() {
-        Loop::cancel($this->watcher);
+        \assert($this->requests >= 0);
     }
 }

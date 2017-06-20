@@ -43,7 +43,7 @@ class EioHandle implements Handle {
         $length = $length > $remaining ? $remaining : $length;
 
         $deferred = new Deferred;
-        $this->poll->listen();
+        $this->poll->listen($deferred->promise());
 
         \eio_read(
             $this->fh,
@@ -59,7 +59,7 @@ class EioHandle implements Handle {
 
     private function onRead(Deferred $deferred, $result, $req) {
         $this->isActive = false;
-        $this->poll->done();
+
         if ($result === -1) {
             $deferred->fail(new FilesystemException(
                 sprintf('Reading from file failed: %s.', \eio_get_last_error($req))
@@ -101,8 +101,9 @@ class EioHandle implements Handle {
 
     private function push(string $data): Promise {
         $length = \strlen($data);
+
         $deferred = new Deferred;
-        $this->poll->listen();
+        $this->poll->listen($deferred->promise());
 
         \eio_write(
             $this->fh,
@@ -128,8 +129,6 @@ class EioHandle implements Handle {
     }
 
     private function onWrite(Deferred $deferred, $result, $req) {
-        $this->poll->done();
-
         if ($this->queue->isEmpty()) {
             $deferred->fail(new FilesystemException('No pending write, the file may have been closed'));
         }
@@ -157,19 +156,17 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Promise {
-        $this->poll->listen();
         $deferred = new Deferred;
+        $this->poll->listen($deferred->promise());
+
         \eio_close($this->fh, \EIO_PRI_DEFAULT, [$this, "onClose"], $deferred);
 
         return $deferred->promise();
     }
 
     private function onClose($deferred, $result, $req) {
-        $this->poll->done();
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(
-                \eio_get_last_error($req)
-            ));
+            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
             $deferred->resolve();
         }

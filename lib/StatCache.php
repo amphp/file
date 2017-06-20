@@ -11,7 +11,6 @@ class StatCache {
     private static $now = null;
 
     private static function init() {
-        Loop::setState(self::class, true);
         self::$now = \time();
 
         $watcher = Loop::repeat(1000, function () {
@@ -29,6 +28,20 @@ class StatCache {
         });
 
         Loop::unreference($watcher);
+
+        Loop::setState(self::class, new class ($watcher) {
+            private $watcher;
+            private $driver;
+
+            public function __construct(string $watcher) {
+                $this->watcher = $watcher;
+                $this->driver = Loop::get();
+            }
+
+            public function __destruct() {
+                $this->driver->cancel($this->watcher);
+            }
+        });
     }
 
     public static function get(string $path) {
