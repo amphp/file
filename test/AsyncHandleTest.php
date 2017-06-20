@@ -3,7 +3,6 @@
 namespace Amp\File\Test;
 
 use Amp\File;
-use Amp\PHPUnit\TestCase;
 
 abstract class AsyncHandleTest extends HandleTest {
     /**

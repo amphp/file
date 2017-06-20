@@ -2,7 +2,6 @@
 
 namespace Amp\File\Test;
 
-use Amp\File;
 use Amp\Loop;
 
 class UvHandleTest extends AsyncHandleTest {

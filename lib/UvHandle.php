@@ -66,7 +66,7 @@ class UvHandle implements Handle {
         };
 
         \uv_fs_read($this->loop, $this->fh, $this->position, $length, $onRead);
-        
+
         return $deferred->promise();
     }
 

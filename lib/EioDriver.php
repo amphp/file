@@ -5,7 +5,6 @@ namespace Amp\File;
 use Amp\Deferred;
 use Amp\Promise;
 use Amp\Success;
-use function Amp\call;
 
 class EioDriver implements Driver {
     /** @var \Amp\File\Internal\EioPoll */
