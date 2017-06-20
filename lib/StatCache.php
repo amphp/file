@@ -9,11 +9,11 @@ class StatCache {
     private static $timeouts = [];
     private static $ttl = 3;
     private static $now = null;
-    private static $isInitialized = false;
 
     private static function init() {
-        self::$isInitialized = true;
+        Loop::setState(self::class, true);
         self::$now = \time();
+
         $watcher = Loop::repeat(1000, function () {
             self::$now = $now = \time();
             foreach (self::$cache as $path => $expiry) {
@@ -27,6 +27,7 @@ class StatCache {
                 }
             }
         });
+
         Loop::unreference($watcher);
     }
 
@@ -38,9 +39,11 @@ class StatCache {
         if (self::$ttl <= 0) {
             return;
         }
-        if (empty(self::$isInitialized)) {
+
+        if (Loop::getState(self::class) === null) {
             self::init();
         }
+
         self::$cache[$path] = $stat;
         self::$timeouts[$path] = self::$now + self::$ttl;
     }
