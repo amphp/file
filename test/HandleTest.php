@@ -53,6 +53,7 @@ abstract class HandleTest extends TestCase {
                 $this->assertSame($position, $handle->tell());
             }
 
+            $this->assertNull(yield $handle->read());
             $this->assertSame(yield File\get(__FILE__), $contents);
 
             yield $handle->close();

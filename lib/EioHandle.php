@@ -66,7 +66,7 @@ class EioHandle implements Handle {
             ));
         } else {
             $this->position += \strlen($result);
-            $deferred->resolve($result);
+            $deferred->resolve(\strlen($result) ? $result : null);
         }
     }
 
