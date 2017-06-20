@@ -10,7 +10,7 @@ class EioHandle implements Handle {
     const OP_READ = 1;
     const OP_WRITE = 2;
 
-    private $incrementor;
+    private $poll;
     private $fh;
     private $path;
     private $mode;
@@ -20,8 +20,8 @@ class EioHandle implements Handle {
     private $pendingWriteOps = 0;
     private $isActive = false;
 
-    public function __construct(callable $incrementor, $fh, string $path, string $mode, int $size) {
-        $this->incrementor = $incrementor;
+    public function __construct(Internal\EioPoll $poll, $fh, string $path, string $mode, int $size) {
+        $this->poll = $poll;
         $this->fh = $fh;
         $this->path = $path;
         $this->mode = $mode;
@@ -43,7 +43,7 @@ class EioHandle implements Handle {
         if ($this->isActive) {
             $this->queue[] = $op;
         } else {
-            ($this->incrementor)(1);
+            $this->poll->listen();
             $this->isActive = true;
             \eio_read($this->fh, $op->readLen, $op->position, \EIO_PRI_DEFAULT, [$this, "onRead"], $op);
         }
@@ -56,12 +56,12 @@ class EioHandle implements Handle {
         $op = \array_shift($this->queue);
         switch ($op->type) {
             case self::OP_READ:
-                ($this->incrementor)(1);
+                $this->poll->listen();
                 $this->isActive = true;
                 \eio_read($this->fh, $op->readLen, $op->position, \EIO_PRI_DEFAULT, [$this, "onRead"], $op);
                 break;
             case self::OP_WRITE:
-                ($this->incrementor)(1);
+                $this->poll->listen();
                 $this->isActive = true;
                 \eio_write($this->fh, $op->writeData, \strlen($op->writeData), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
                 break;
@@ -70,7 +70,7 @@ class EioHandle implements Handle {
 
     private function onRead($op, $result, $req) {
         $this->isActive = false;
-        ($this->incrementor)(-1);
+        $this->poll->done();
         if ($result === -1) {
             $op->deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -99,7 +99,7 @@ class EioHandle implements Handle {
         if ($this->isActive) {
             $this->queue[] = $op;
         } else {
-            ($this->incrementor)(1);
+            $this->poll->listen();
             $this->isActive = true;
             \eio_write($this->fh, $data, \strlen($data), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
         }
@@ -118,7 +118,7 @@ class EioHandle implements Handle {
 
     private function onWrite($op, $result, $req) {
         $this->isActive = false;
-        ($this->incrementor)(-1);
+        $this->poll->done();
         if ($result === -1) {
             $op->deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
@@ -142,7 +142,7 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Promise {
-        ($this->incrementor)(1);
+        $this->poll->listen();
         $deferred = new Deferred;
         \eio_close($this->fh, \EIO_PRI_DEFAULT, [$this, "onClose"], $deferred);
 
@@ -150,7 +150,7 @@ class EioHandle implements Handle {
     }
 
     private function onClose($deferred, $result, $req) {
-        ($this->incrementor)(-1);
+        $this->poll->done();
         if ($result === -1) {
             $deferred->fail(new FilesystemException(
                 \eio_get_last_error($req)
