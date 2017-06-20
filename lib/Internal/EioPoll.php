@@ -20,7 +20,7 @@ class EioPoll {
             self::$stream = \eio_get_event_stream();
         }
 
-        $this->watcher = Loop::onReadable(self::$stream, function () {
+        $this->watcher = Loop::onReadable(self::$stream, static function () {
             while (\eio_npending()) {
                 \eio_poll();
             }

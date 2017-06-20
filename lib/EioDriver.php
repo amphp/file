@@ -573,8 +573,4 @@ class EioDriver implements Driver {
             $deferred->resolve($result);
         }
     }
-
-    public function __destruct() {
-        //Loop::cancel($this->watcher);
-    }
 }
