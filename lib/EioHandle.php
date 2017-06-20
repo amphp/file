@@ -5,20 +5,18 @@ namespace Amp\File;
 use Amp\Deferred;
 use Amp\Promise;
 use Amp\Success;
+use function Amp\call;
 
 class EioHandle implements Handle {
-    const OP_READ = 1;
-    const OP_WRITE = 2;
-
     private $poll;
     private $fh;
     private $path;
     private $mode;
     private $size;
     private $position;
-    private $queue = [];
-    private $pendingWriteOps = 0;
+    private $queue;
     private $isActive = false;
+    private $writable = true;
 
     public function __construct(Internal\EioPoll $poll, $fh, string $path, string $mode, int $size) {
         $this->poll = $poll;
@@ -27,61 +25,48 @@ class EioHandle implements Handle {
         $this->mode = $mode;
         $this->size = $size;
         $this->position = ($mode[0] === "a") ? $size : 0;
+
+        $this->queue = new \SplQueue;
     }
 
     /**
      * {@inheritdoc}
      */
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
-        $deferred = new Deferred;
-        $op = new \StdClass;
-        $op->type = self::OP_READ;
-        $op->position = $this->position;
-        $op->deferred = $deferred;
-        $remaining = $this->size - $this->position;
-        $op->readLen = ($length > $remaining) ? $remaining : $length;
         if ($this->isActive) {
-            $this->queue[] = $op;
-        } else {
-            $this->poll->listen();
-            $this->isActive = true;
-            \eio_read($this->fh, $op->readLen, $op->position, \EIO_PRI_DEFAULT, [$this, "onRead"], $op);
+            throw new PendingOperationError;
         }
+
+        $this->isActive = true;
+
+        $remaining = $this->size - $this->position;
+        $length = $length > $remaining ? $remaining : $length;
+
+        $deferred = new Deferred;
+        $this->poll->listen();
+
+        \eio_read(
+            $this->fh,
+            $length,
+            $this->position,
+            \EIO_PRI_DEFAULT,
+            [$this, "onRead"],
+            $deferred
+        );
 
         return $deferred->promise();
     }
 
-    private function dequeue() {
-        $this->isActive = true;
-        $op = \array_shift($this->queue);
-        switch ($op->type) {
-            case self::OP_READ:
-                $this->poll->listen();
-                $this->isActive = true;
-                \eio_read($this->fh, $op->readLen, $op->position, \EIO_PRI_DEFAULT, [$this, "onRead"], $op);
-                break;
-            case self::OP_WRITE:
-                $this->poll->listen();
-                $this->isActive = true;
-                \eio_write($this->fh, $op->writeData, \strlen($op->writeData), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
-                break;
-        }
-    }
-
-    private function onRead($op, $result, $req) {
+    private function onRead(Deferred $deferred, $result, $req) {
         $this->isActive = false;
         $this->poll->done();
         if ($result === -1) {
-            $op->deferred->fail(new FilesystemException(
-                \eio_get_last_error($req)
+            $deferred->fail(new FilesystemException(
+                sprintf('Reading from file failed: %s.', \eio_get_last_error($req))
             ));
         } else {
-            $length = \strlen($result);
-            $this->position = $op->position + $length;
-            $op->deferred->resolve($length ? $result : null);
-        }
-        if ($this->queue) {
-            $this->dequeue();
+            $this->position += \strlen($result);
+            $deferred->resolve($result);
         }
     }
 
@@ -89,20 +74,45 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function write(string $data): Promise {
-        $deferred = new Deferred;
-        $op = new \StdClass;
-        $op->type = self::OP_WRITE;
-        $op->position = $this->position;
-        $op->deferred = $deferred;
-        $op->writeData = $data;
-        $this->pendingWriteOps++;
-        if ($this->isActive) {
-            $this->queue[] = $op;
-        } else {
-            $this->poll->listen();
-            $this->isActive = true;
-            \eio_write($this->fh, $data, \strlen($data), $op->position, \EIO_PRI_DEFAULT, [$this, "onWrite"], $op);
+        if ($this->isActive && $this->queue->isEmpty()) {
+            throw new PendingOperationError;
         }
+
+        if (!$this->writable) {
+            throw new \Error("The file is no longer writable");
+        }
+
+        $this->isActive = true;
+
+        if ($this->queue->isEmpty()) {
+            $promise = $this->push($data);
+        } else {
+            $promise = $this->queue->top();
+            $promise = call(function () use ($promise, $data) {
+                yield $promise;
+                return yield $this->push($data);
+            });
+        }
+
+        $this->queue->push($promise);
+
+        return $promise;
+    }
+
+    private function push(string $data): Promise {
+        $length = \strlen($data);
+        $deferred = new Deferred;
+        $this->poll->listen();
+
+        \eio_write(
+            $this->fh,
+            $data,
+            $length,
+            $this->position,
+            \EIO_PRI_DEFAULT,
+            [$this, "onWrite"],
+            $deferred
+        );
 
         return $deferred->promise();
     }
@@ -112,29 +122,34 @@ class EioHandle implements Handle {
      */
     public function end(string $data = ""): Promise {
         $promise = $this->write($data);
+        $this->writable = false;
         $promise->onResolve([$this, "close"]);
         return $promise;
     }
 
-    private function onWrite($op, $result, $req) {
-        $this->isActive = false;
+    private function onWrite(Deferred $deferred, $result, $req) {
         $this->poll->done();
+
+        if ($this->queue->isEmpty()) {
+            $deferred->fail(new FilesystemException('No pending write, the file may have been closed'));
+        }
+
+        $this->queue->shift();
+        if ($this->queue->isEmpty()) {
+            $this->isActive = false;
+        }
+
         if ($result === -1) {
-            $op->deferred->fail(new FilesystemException(
-                \eio_get_last_error($req)
+            $deferred->fail(new FilesystemException(
+                sprintf('Writing to the file failed: %s', \eio_get_last_error($req))
             ));
         } else {
-            StatCache::clear($this->path);
-            $bytesWritten = \strlen($op->writeData);
-            $this->pendingWriteOps--;
-            $newPosition = $op->position + $bytesWritten;
-            $delta = $newPosition - $this->position;
-            $this->position = ($this->mode[0] === "a") ? $this->position : $newPosition;
-            $this->size += $delta;
-            $op->deferred->resolve($result);
-        }
-        if ($this->queue) {
-            $this->dequeue();
+            $this->position += $result;
+            if ($this->position > $this->size) {
+                $this->size = $this->position;
+            }
+
+            $deferred->resolve($result);
         }
     }
 
@@ -164,6 +179,10 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function seek(int $offset, int $whence = \SEEK_SET): Promise {
+        if ($this->isActive) {
+            throw new PendingOperationError;
+        }
+
         $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:
@@ -195,7 +214,7 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function eof(): bool {
-        return ($this->pendingWriteOps > 0) ? false : ($this->size <= $this->position);
+        return !$this->queue->isEmpty() ? false : ($this->size <= $this->position);
     }
 
     /**

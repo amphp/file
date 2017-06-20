@@ -70,7 +70,7 @@ class FileTask extends BlockingDriver implements Task {
                         break;
 
                     default:
-                        throw new FilesystemException("Invalid file mode");
+                        throw new \Error("Invalid file mode");
                 }
 
                 $handle = @\fopen($path, $mode . 'b');

@@ -6,12 +6,10 @@ use Amp\Deferred;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
+use function Amp\call;
 
 class UvHandle implements Handle {
-    const OP_READ = 1;
-    const OP_WRITE = 2;
-
-    private $busy;
+    private $watcher;
     private $driver;
     private $fh;
     private $path;
@@ -19,10 +17,9 @@ class UvHandle implements Handle {
     private $size;
     private $loop;
     private $position;
-    private $queue = [];
-    private $pendingWriteOps = 0;
+    private $queue;
     private $isActive = false;
-    private $isCloseInitialized = false;
+    private $writable = true;
 
     /**
      * @param \Amp\Loop\UvDriver $driver
@@ -32,56 +29,74 @@ class UvHandle implements Handle {
      * @param string $mode
      * @param int $size
      */
-    public function __construct(Loop\UvDriver $driver, string $busy, $fh, string $path, string $mode, int $size) {
+    public function __construct(Loop\UvDriver $driver, string $watcher, $fh, string $path, string $mode, int $size) {
         $this->driver = $driver;
-        $this->busy = $busy;
+        $this->watcher = $watcher;
         $this->fh = $fh;
         $this->path = $path;
         $this->mode = $mode;
         $this->size = $size;
         $this->loop = $driver->getHandle();
         $this->position = ($mode[0] === "a") ? $size : 0;
+
+        $this->queue = new \SplQueue;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function read(int $readLen = self::DEFAULT_READ_LENGTH): Promise {
-        $deferred = new Deferred;
-        $op = new \StdClass;
-        $op->type = self::OP_READ;
-        $op->position = $this->position;
-        $op->promisor = $deferred;
-        $op->readLen = $readLen;
+    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
         if ($this->isActive) {
-            $this->queue[] = $op;
-        } else {
-            $this->isActive = true;
-            $this->doRead($op);
+            throw new PendingOperationError;
         }
 
+        $this->driver->reference($this->watcher);
+        $deferred = new Deferred;
+        $this->isActive = true;
+
+        $onRead = function ($fh, $result, $buffer) use ($deferred) {
+            $this->isActive = false;
+            $this->driver->unreference($this->watcher);
+            if ($result < 0) {
+                $deferred->fail(new FilesystemException(
+                    \uv_strerror($result)
+                ));
+            } else {
+                $length = strlen($buffer);
+                $this->position = $this->position + $length;
+                $deferred->resolve($length ? $buffer : null);
+            }
+        };
+
+        \uv_fs_read($this->loop, $this->fh, $this->position, $length, $onRead);
+        
         return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function write(string $writeData): Promise {
-        $this->pendingWriteOps++;
-        $deferred = new Deferred;
-        $op = new \StdClass;
-        $op->type = self::OP_WRITE;
-        $op->position = $this->position;
-        $op->promisor = $deferred;
-        $op->writeData = $writeData;
-        if ($this->isActive) {
-            $this->queue[] = $op;
-        } else {
-            $this->isActive = true;
-            $this->doWrite($op);
+    public function write(string $data): Promise {
+        if ($this->isActive && $this->queue->isEmpty()) {
+            throw new PendingOperationError;
         }
 
-        return $deferred->promise();
+        if (!$this->writable) {
+            throw new \Error("The file is no longer writable");
+        }
+
+        $this->isActive = true;
+
+        if ($this->queue->isEmpty()) {
+            $promise = $this->push($data);
+        } else {
+            $promise = $this->queue->top();
+            $promise = call(function () use ($promise, $data) {
+                yield $promise;
+                return yield $this->push($data);
+            });
+        }
+
+        $this->queue->push($promise);
+
+        return $promise;
     }
 
     /**
@@ -89,70 +104,55 @@ class UvHandle implements Handle {
      */
     public function end(string $data = ""): Promise {
         $promise = $this->write($data);
+        $this->writable = false;
         $promise->onResolve([$this, "close"]);
         return $promise;
     }
 
-    private function doRead($op) {
-        $this->driver->reference($this->busy);
-        $onRead = function ($fh, $result, $buffer) use ($op) {
-            $this->isActive = false;
-            $this->driver->unreference($this->busy);
-            if ($result < 0) {
-                $op->promisor->fail(new FilesystemException(
-                    \uv_strerror($result)
-                ));
-            } else {
-                $length = strlen($buffer);
-                $this->position = $op->position + $length;
-                $op->promisor->resolve($length ? $buffer : null);
-            }
-            if ($this->queue) {
-                $this->dequeue();
-            }
-        };
-        \uv_fs_read($this->loop, $this->fh, $op->position, $op->readLen, $onRead);
-    }
+    private function push(string $data): Promise {
+        $length = \strlen($data);
+        $this->driver->reference($this->watcher);
+        $deferred = new Deferred;
 
-    private function doWrite($op) {
-        $this->driver->reference($this->busy);
-        $onWrite = function ($fh, $result) use ($op) {
-            $this->isActive = false;
-            $this->driver->unreference($this->busy);
+        $onWrite = function ($fh, $result) use ($deferred, $length) {
+            if ($this->queue->isEmpty()) {
+                $this->driver->unreference($this->watcher);
+                $deferred->fail(new FilesystemException('No pending write, the file may have been closed'));
+            }
+
+            $this->queue->shift();
+            if ($this->queue->isEmpty()) {
+                $this->driver->unreference($this->watcher);
+                $this->isActive = false;
+            }
+
             if ($result < 0) {
-                $op->promisor->fail(new FilesystemException(
+                $deferred->fail(new FilesystemException(
                     \uv_strerror($result)
                 ));
             } else {
                 StatCache::clear($this->path);
-                $bytesWritten = \strlen($op->writeData);
-                $this->pendingWriteOps--;
-                $newPosition = $op->position + $bytesWritten;
+                $newPosition = $this->position + $length;
                 $delta = $newPosition - $this->position;
                 $this->position = ($this->mode[0] === "a") ? $this->position : $newPosition;
                 $this->size += $delta;
-                $op->promisor->resolve($result);
-            }
-            if ($this->queue) {
-                $this->dequeue();
+                $deferred->resolve($length);
             }
         };
-        \uv_fs_write($this->loop, $this->fh, $op->writeData, $op->position, $onWrite);
-    }
 
-    private function dequeue() {
-        $this->isActive = true;
-        $op = \array_shift($this->queue);
-        switch ($op->type) {
-            case self::OP_READ: $this->doRead($op); break;
-            case self::OP_WRITE: $this->doWrite($op); break;
-        }
+        \uv_fs_write($this->loop, $this->fh, $data, $this->position, $onWrite);
+
+        return $deferred->promise();
     }
 
     /**
      * {@inheritdoc}
      */
     public function seek(int $offset, int $whence = \SEEK_SET): Promise {
+        if ($this->isActive) {
+            throw new PendingOperationError;
+        }
+
         $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:
@@ -184,7 +184,7 @@ class UvHandle implements Handle {
      * {@inheritdoc}
      */
     public function eof(): bool {
-        return ($this->pendingWriteOps > 0) ? false : ($this->size <= $this->position);
+        return !$this->queue->isEmpty() ? false : ($this->size <= $this->position);
     }
 
     /**
@@ -205,20 +205,13 @@ class UvHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Promise {
-        $this->isCloseInitialized = true;
-        $this->driver->reference($this->busy);
+        $this->driver->reference($this->watcher);
         $deferred = new Deferred;
         \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred) {
-            $this->driver->unreference($this->busy);
+            $this->driver->unreference($this->watcher);
             $deferred->resolve();
         });
 
         return $deferred->promise();
-    }
-
-    public function __destruct() {
-        if (empty($this->isCloseInitialized)) {
-            $this->close();
-        }
     }
 }

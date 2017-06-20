@@ -20,13 +20,14 @@ abstract class HandleTest extends TestCase {
     public function testWrite() {
         $this->execute(function () {
             $path = Fixture::path() . "/write";
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "c+");
             $this->assertSame(0, $handle->tell());
 
             yield $handle->write("foo");
             yield $handle->write("bar");
-            $handle->seek(0);
-            $contents = (yield $handle->read(8192));
+            yield $handle->seek(0);
+            $contents = yield $handle->read();
             $this->assertSame(6, $handle->tell());
             $this->assertTrue($handle->eof());
             $this->assertSame("foobar", $contents);
@@ -37,6 +38,7 @@ abstract class HandleTest extends TestCase {
 
     public function testReadingToEof() {
         $this->execute(function () {
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
             $contents = "";
             $position = 0;
@@ -51,25 +53,22 @@ abstract class HandleTest extends TestCase {
                 $this->assertSame($position, $handle->tell());
             }
 
-            $this->assertSame((yield File\get(__FILE__)), $contents);
+            $this->assertSame(yield File\get(__FILE__), $contents);
 
             yield $handle->close();
         });
     }
 
-    public function testQueuedReads() {
+    public function testSequentialReads() {
         $this->execute(function () {
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
 
             $contents = "";
-            $read1 = $handle->read(10);
-            $handle->seek(10);
-            $read2 = $handle->read(10);
+            $contents .= yield $handle->read(10);
+            $contents .= yield $handle->read(10);
 
-            $contents .= (yield $read1);
-            $contents .= (yield $read2);
-
-            $expected = \substr((yield File\get(__FILE__)), 0, 20);
+            $expected = \substr(yield File\get(__FILE__), 0, 20);
             $this->assertSame($expected, $contents);
 
             yield $handle->close();
@@ -78,13 +77,14 @@ abstract class HandleTest extends TestCase {
 
     public function testReadingFromOffset() {
         $this->execute(function () {
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
             $this->assertSame(0, $handle->tell());
             yield $handle->seek(10);
             $this->assertSame(10, $handle->tell());
-            $chunk = (yield $handle->read(90));
+            $chunk = yield $handle->read(90);
             $this->assertSame(100, $handle->tell());
-            $expected = \substr((yield File\get(__FILE__)), 10, 90);
+            $expected = \substr(yield File\get(__FILE__), 10, 90);
             $this->assertSame($expected, $chunk);
 
             yield $handle->close();
@@ -97,6 +97,7 @@ abstract class HandleTest extends TestCase {
     public function testSeekThrowsOnInvalidWhence() {
         $this->execute(function () {
             try {
+                /** @var \Amp\File\Handle $handle */
                 $handle = yield File\open(__FILE__, "r");
                 yield $handle->seek(0, 99999);
             } finally {
@@ -107,6 +108,7 @@ abstract class HandleTest extends TestCase {
 
     public function testSeekSetCur() {
         $this->execute(function () {
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
             $this->assertSame(0, $handle->tell());
             yield $handle->seek(10);
@@ -120,6 +122,7 @@ abstract class HandleTest extends TestCase {
     public function testSeekSetEnd() {
         $this->execute(function () {
             $size = yield File\size(__FILE__);
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
             $this->assertSame(0, $handle->tell());
             yield $handle->seek(-10, \SEEK_END);
@@ -130,6 +133,7 @@ abstract class HandleTest extends TestCase {
 
     public function testPath() {
         $this->execute(function () {
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
             $this->assertSame(__FILE__, $handle->path());
             yield $handle->close();
@@ -138,6 +142,7 @@ abstract class HandleTest extends TestCase {
 
     public function testMode() {
         $this->execute(function () {
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
             $this->assertSame("r", $handle->mode());
             yield $handle->close();
@@ -149,6 +154,7 @@ abstract class HandleTest extends TestCase {
      */
     public function testClose() {
         $this->execute(function () {
+            /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
             yield $handle->close();
             yield $handle->read();
