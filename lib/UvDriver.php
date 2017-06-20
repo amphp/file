@@ -4,6 +4,7 @@ namespace Amp\File;
 
 use Amp\Coroutine;
 use Amp\Deferred;
+use Amp\File\Internal\UvPoll;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
@@ -15,11 +16,8 @@ class UvDriver implements Driver {
     /** @var \UVLoop|resource Loop resource of type uv_loop or instance of \UVLoop. */
     private $loop;
 
-    /** @var string Loop onReadable watcher. */
-    private $busy;
-
-    /** @var int Number of pending operations for disabling / enabling the busy watcher */
-    private $pendingOperations = 0;
+    /** @var UvPoll */
+    private $poll;
 
     /**
      * @param \Amp\Loop\UvDriver $driver
@@ -27,11 +25,7 @@ class UvDriver implements Driver {
     public function __construct(Loop\UvDriver $driver) {
         $this->driver = $driver;
         $this->loop = $driver->getHandle();
-
-        // dummy handle to be able to tell the loop that there is work being done and
-        // it shouldn't abort if there are no other watchers at a given moment.
-        $this->busy = $driver->repeat(PHP_INT_MAX, function () {});
-        $driver->unreference($this->busy);
+        $this->poll = new UvPoll;
     }
 
     /**
@@ -42,7 +36,7 @@ class UvDriver implements Driver {
         $chmod = ($flags & \UV::O_CREAT) ? 0644 : 0;
 
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         $openArr = [$mode, $path, $deferred];
         \uv_fs_open($this->loop, $path, $flags, $chmod, function ($fh) use ($openArr) {
@@ -110,7 +104,7 @@ class UvDriver implements Driver {
 
     private function finalizeHandle($fh, $size, array $openArr) {
         list($mode, $path, $deferred) = $openArr;
-        $handle = new UvHandle($this->driver, $this->busy, $fh, $path, $mode, $size);
+        $handle = new UvHandle($this->driver, $this->poll, $fh, $path, $mode, $size);
         $deferred->resolve($handle);
     }
 
@@ -123,7 +117,7 @@ class UvDriver implements Driver {
         }
 
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_stat($this->loop, $path, function ($fh, $stat) use ($deferred, $path) {
             if (empty($fh)) {
@@ -270,7 +264,7 @@ class UvDriver implements Driver {
      */
     public function lstat(string $path): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_lstat($this->loop, $path, function ($fh, $stat) use ($deferred) {
             if (empty($fh)) {
@@ -288,7 +282,7 @@ class UvDriver implements Driver {
      */
     public function symlink(string $target, string $link): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function ($fh) use ($deferred) {
             $deferred->resolve((bool) $fh);
@@ -302,7 +296,7 @@ class UvDriver implements Driver {
      */
     public function link(string $target, string $link): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_link($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function ($fh) use ($deferred) {
             $deferred->resolve((bool) $fh);
@@ -316,7 +310,7 @@ class UvDriver implements Driver {
      */
     public function readlink(string $path): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_readlink($this->loop, $path, function ($fh) use ($deferred) {
             $deferred->resolve((bool) $fh);
@@ -330,7 +324,7 @@ class UvDriver implements Driver {
      */
     public function rename(string $from, string $to): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_rename($this->loop, $from, $to, function ($fh) use ($deferred, $from) {
             StatCache::clear($from);
@@ -345,7 +339,7 @@ class UvDriver implements Driver {
      */
     public function unlink(string $path): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_unlink($this->loop, $path, function ($fh) use ($deferred, $path) {
             StatCache::clear($path);
@@ -360,7 +354,7 @@ class UvDriver implements Driver {
      */
     public function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         if ($recursive) {
             $path = str_replace("/", DIRECTORY_SEPARATOR, $path);
@@ -404,7 +398,7 @@ class UvDriver implements Driver {
      */
     public function rmdir(string $path): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_rmdir($this->loop, $path, function ($fh) use ($deferred, $path) {
             StatCache::clear($path);
@@ -419,7 +413,7 @@ class UvDriver implements Driver {
      */
     public function scandir(string $path): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         uv_fs_readdir($this->loop, $path, 0, function ($fh, $data) use ($deferred, $path) {
             if (empty($fh)) {
@@ -437,7 +431,7 @@ class UvDriver implements Driver {
      */
     public function chmod(string $path, int $mode): Promise {
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_chmod($this->loop, $path, $mode, function ($fh) use ($deferred) {
             $deferred->resolve((bool) $fh);
@@ -452,7 +446,7 @@ class UvDriver implements Driver {
     public function chown(string $path, int $uid, int $gid): Promise {
         // @TODO Return a failure in windows environments
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_chown($this->loop, $path, $uid, $gid, function ($fh) use ($deferred) {
             $deferred->resolve((bool) $fh);
@@ -468,7 +462,7 @@ class UvDriver implements Driver {
         $atime = $mtime = time();
 
         $deferred = new Deferred;
-        $this->watchOperation($deferred->promise());
+        $this->poll->listen($deferred->promise());
 
         \uv_fs_utime($this->loop, $path, $mtime, $atime, function () use ($deferred) {
             // The uv_fs_utime() callback does not receive any args at this time
@@ -483,7 +477,7 @@ class UvDriver implements Driver {
      */
     public function get(string $path): Promise {
         $promise = new Coroutine($this->doGet($path));
-        $this->watchOperation($promise);
+        $this->poll->listen($promise);
 
         return $promise;
     }
@@ -562,7 +556,7 @@ class UvDriver implements Driver {
      */
     public function put(string $path, string $contents): Promise {
         $promise = new Coroutine($this->doPut($path, $contents));
-        $this->watchOperation($promise);
+        $this->poll->listen($promise);
 
         return $promise;
     }
@@ -591,21 +585,5 @@ class UvDriver implements Driver {
         });
 
         return yield $deferred->promise();
-    }
-
-    private function watchOperation(Promise $promise) {
-        $this->pendingOperations++;
-
-        if ($this->pendingOperations === 1) {
-            $this->driver->reference($this->busy);
-        }
-
-        $promise->onResolve(function () {
-            $this->pendingOperations--;
-
-            if ($this->pendingOperations === 0) {
-                $this->driver->unreference($this->busy);
-            }
-        });
     }
 }

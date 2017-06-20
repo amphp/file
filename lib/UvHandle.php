@@ -3,13 +3,14 @@
 namespace Amp\File;
 
 use Amp\Deferred;
+use Amp\File\Internal\UvPoll;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
 class UvHandle implements Handle {
-    private $watcher;
+    private $poll;
     private $driver;
     private $fh;
     private $path;
@@ -23,15 +24,15 @@ class UvHandle implements Handle {
 
     /**
      * @param \Amp\Loop\UvDriver $driver
-     * @param string $busy Watcher ID.
+     * @param UvPoll $poll Poll for keeping the loop active.
      * @param resource $fh File handle.
      * @param string $path
      * @param string $mode
      * @param int $size
      */
-    public function __construct(Loop\UvDriver $driver, string $watcher, $fh, string $path, string $mode, int $size) {
+    public function __construct(Loop\UvDriver $driver, UvPoll $poll, $fh, string $path, string $mode, int $size) {
         $this->driver = $driver;
-        $this->watcher = $watcher;
+        $this->poll = $poll;
         $this->fh = $fh;
         $this->path = $path;
         $this->mode = $mode;
@@ -47,17 +48,16 @@ class UvHandle implements Handle {
             throw new PendingOperationError;
         }
 
-        $this->driver->reference($this->watcher);
         $deferred = new Deferred;
+        $this->poll->listen($deferred->promise());
+
         $this->isActive = true;
 
         $onRead = function ($fh, $result, $buffer) use ($deferred) {
             $this->isActive = false;
-            $this->driver->unreference($this->watcher);
+
             if ($result < 0) {
-                $deferred->fail(new FilesystemException(
-                    \uv_strerror($result)
-                ));
+                $deferred->fail(new FilesystemException(\uv_strerror($result)));
             } else {
                 $length = strlen($buffer);
                 $this->position = $this->position + $length;
@@ -111,18 +111,17 @@ class UvHandle implements Handle {
 
     private function push(string $data): Promise {
         $length = \strlen($data);
-        $this->driver->reference($this->watcher);
+
         $deferred = new Deferred;
+        $this->poll->listen($deferred->promise());
 
         $onWrite = function ($fh, $result) use ($deferred, $length) {
             if ($this->queue->isEmpty()) {
-                $this->driver->unreference($this->watcher);
                 $deferred->fail(new FilesystemException('No pending write, the file may have been closed'));
             }
 
             $this->queue->shift();
             if ($this->queue->isEmpty()) {
-                $this->driver->unreference($this->watcher);
                 $this->isActive = false;
             }
 
@@ -205,10 +204,10 @@ class UvHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Promise {
-        $this->driver->reference($this->watcher);
         $deferred = new Deferred;
+        $this->poll->listen($deferred->promise());
+
         \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred) {
-            $this->driver->unreference($this->watcher);
             $deferred->resolve();
         });
 
