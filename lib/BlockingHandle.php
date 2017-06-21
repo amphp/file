@@ -2,9 +2,11 @@
 
 namespace Amp\File;
 
+use Amp\ByteStream\ClosedException;
 use Amp\Failure;
 use Amp\Promise;
 use Amp\Success;
+use function Amp\call;
 
 class BlockingHandle implements Handle {
     private $fh;
@@ -33,7 +35,7 @@ class BlockingHandle implements Handle {
      */
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
         if ($this->fh === null) {
-            throw new FilesystemException("The file has been closed");
+            throw new ClosedException("The file has been closed");
         }
 
         $data = \fread($this->fh, $length);
@@ -52,7 +54,7 @@ class BlockingHandle implements Handle {
      */
     public function write(string $data): Promise {
         if ($this->fh === null) {
-            throw new FilesystemException("The file has been closed");
+            throw new ClosedException("The file has been closed");
         }
 
         $len = \fwrite($this->fh, $data);
@@ -70,9 +72,14 @@ class BlockingHandle implements Handle {
      * {@inheritdoc}
      */
     public function end(string $data = ""): Promise {
-        $promise = $this->write($data);
-        $promise->onResolve([$this, "close"]);
-        return $promise;
+        return call(function () use ($data) {
+            $promise = $this->write($data);
+
+            // ignore any errors
+            yield Promise\any([$this->close()]);
+
+            return $promise;
+        });
     }
 
     /**

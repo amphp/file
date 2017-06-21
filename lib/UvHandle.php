@@ -2,6 +2,7 @@
 
 namespace Amp\File;
 
+use Amp\ByteStream\ClosedException;
 use Amp\Deferred;
 use Amp\File\Internal\UvPoll;
 use Amp\Loop;
@@ -57,7 +58,7 @@ class UvHandle implements Handle {
             $this->isActive = false;
 
             if ($result < 0) {
-                $deferred->fail(new FilesystemException(\uv_strerror($result)));
+                $deferred->fail(new ClosedException(\uv_strerror($result)));
             } else {
                 $length = strlen($buffer);
                 $this->position = $this->position + $length;
@@ -79,7 +80,7 @@ class UvHandle implements Handle {
         }
 
         if (!$this->writable) {
-            throw new \Error("The file is no longer writable");
+            throw new ClosedException("The file is no longer writable");
         }
 
         $this->isActive = true;
@@ -103,10 +104,15 @@ class UvHandle implements Handle {
      * {@inheritdoc}
      */
     public function end(string $data = ""): Promise {
-        $promise = $this->write($data);
-        $this->writable = false;
-        $promise->onResolve([$this, "close"]);
-        return $promise;
+        return call(function () use ($data) {
+            $promise = $this->write($data);
+            $this->writable = false;
+
+            // ignore any errors
+            yield Promise\any([$this->close()]);
+
+            return $promise;
+        });
     }
 
     private function push(string $data): Promise {
@@ -117,7 +123,7 @@ class UvHandle implements Handle {
 
         $onWrite = function ($fh, $result) use ($deferred, $length) {
             if ($this->queue->isEmpty()) {
-                $deferred->fail(new FilesystemException('No pending write, the file may have been closed'));
+                $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
             }
 
             $this->queue->shift();
@@ -126,9 +132,7 @@ class UvHandle implements Handle {
             }
 
             if ($result < 0) {
-                $deferred->fail(new FilesystemException(
-                    \uv_strerror($result)
-                ));
+                $deferred->fail(new ClosedException(\uv_strerror($result)));
             } else {
                 StatCache::clear($this->path);
                 $newPosition = $this->position + $length;

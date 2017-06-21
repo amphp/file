@@ -2,12 +2,14 @@
 
 namespace Amp\File;
 
+use Amp\ByteStream\ClosedException;
 use Amp\Coroutine;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
 use Amp\Promise;
 use Amp\Success;
+use function Amp\call;
 
 class ParallelHandle implements Handle {
     /** @var \Amp\Parallel\Worker\Worker */
@@ -90,7 +92,7 @@ class ParallelHandle implements Handle {
 
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
         if ($this->id === null) {
-            throw new FilesystemException("The file has been closed");
+            throw new ClosedException("The file has been closed");
         }
 
         if ($this->busy) {
@@ -121,7 +123,7 @@ class ParallelHandle implements Handle {
      */
     public function write(string $data): Promise {
         if ($this->id === null) {
-            throw new FilesystemException("The file has been closed");
+            throw new ClosedException("The file has been closed");
         }
 
         if ($this->busy && $this->pendingWrites === 0) {
@@ -129,7 +131,7 @@ class ParallelHandle implements Handle {
         }
 
         if (!$this->writable) {
-            throw new \Error("The file is no longer writable");
+            throw new ClosedException("The file is no longer writable");
         }
 
         return new Coroutine($this->doWrite($data));
@@ -139,10 +141,15 @@ class ParallelHandle implements Handle {
      * {@inheritdoc}
      */
     public function end(string $data = ""): Promise {
-        $promise = $this->write($data);
-        $this->writable = false;
-        $promise->onResolve([$this, "close"]);
-        return $promise;
+        return call(function () use ($data) {
+            $promise = $this->write($data);
+            $this->writable = false;
+
+            // ignore any errors
+            yield Promise\any([$this->close()]);
+
+            return $promise;
+        });
     }
 
     private function doWrite(string $data): \Generator {
@@ -170,7 +177,7 @@ class ParallelHandle implements Handle {
      */
     public function seek(int $offset, int $whence = SEEK_SET): Promise {
         if ($this->id === null) {
-            throw new FilesystemException("The file has been closed");
+            throw new ClosedException("The file has been closed");
         }
 
         if ($this->busy) {

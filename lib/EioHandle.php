@@ -2,6 +2,7 @@
 
 namespace Amp\File;
 
+use Amp\ByteStream\ClosedException;
 use Amp\Deferred;
 use Amp\Promise;
 use Amp\Success;
@@ -61,7 +62,7 @@ class EioHandle implements Handle {
         $this->isActive = false;
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(
+            $deferred->fail(new ClosedException(
                 sprintf('Reading from file failed: %s.', \eio_get_last_error($req))
             ));
         } else {
@@ -79,7 +80,7 @@ class EioHandle implements Handle {
         }
 
         if (!$this->writable) {
-            throw new \Error("The file is no longer writable");
+            throw new ClosedException("The file is no longer writable");
         }
 
         $this->isActive = true;
@@ -122,15 +123,20 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function end(string $data = ""): Promise {
-        $promise = $this->write($data);
-        $this->writable = false;
-        $promise->onResolve([$this, "close"]);
-        return $promise;
+        return call(function () use ($data) {
+            $promise = $this->write($data);
+            $this->writable = false;
+
+            // ignore any errors
+            yield Promise\any([$this->close()]);
+
+            return $promise;
+        });
     }
 
     private function onWrite(Deferred $deferred, $result, $req) {
         if ($this->queue->isEmpty()) {
-            $deferred->fail(new FilesystemException('No pending write, the file may have been closed'));
+            $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
         }
 
         $this->queue->shift();
@@ -139,7 +145,7 @@ class EioHandle implements Handle {
         }
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(
+            $deferred->fail(new ClosedException(
                 sprintf('Writing to the file failed: %s', \eio_get_last_error($req))
             ));
         } else {

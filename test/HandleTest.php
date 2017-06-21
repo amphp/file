@@ -2,6 +2,7 @@
 
 namespace Amp\File\Test;
 
+use Amp\ByteStream\ClosedException;
 use Amp\File;
 use Amp\PHPUnit\TestCase;
 
@@ -33,6 +34,33 @@ abstract class HandleTest extends TestCase {
             $this->assertSame("foobar", $contents);
 
             yield $handle->close();
+        });
+    }
+
+    public function testWriteAfterClose() {
+        $this->execute(function () {
+            $path = Fixture::path() . "/write";
+            /** @var \Amp\File\Handle $handle */
+            $handle = yield File\open($path, "c+");
+            $this->assertSame(0, $handle->tell());
+            yield $handle->write("foo");
+            yield $handle->close();
+
+            $this->expectException(ClosedException::class);
+            yield $handle->write("bar");
+        });
+    }
+
+    public function testWriteAfterEnd() {
+        $this->execute(function () {
+            $path = Fixture::path() . "/write";
+            /** @var \Amp\File\Handle $handle */
+            $handle = yield File\open($path, "c+");
+            $this->assertSame(0, $handle->tell());
+            yield $handle->end("foo");
+
+            $this->expectException(ClosedException::class);
+            yield $handle->write("bar");
         });
     }
 
@@ -150,14 +178,13 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    /**
-     * @expectedException \Amp\File\FilesystemException
-     */
     public function testClose() {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
             yield $handle->close();
+
+            $this->expectException(ClosedException::class);
             yield $handle->read();
         });
     }
