@@ -2,7 +2,6 @@
 
 [![Build Status](https://img.shields.io/travis/amphp/file/master.svg?style=flat-square)](https://travis-ci.org/amphp/file)
 [![CoverageStatus](https://img.shields.io/coveralls/amphp/file/master.svg?style=flat-square)](https://coveralls.io/github/amphp/file?branch=master)
-![Stable](https://img.shields.io/badge/v0.2-stable-orange.svg?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
 `amphp/file` allows non-blocking access to the filesystem for [Amp](https://github.com/amphp/amp).
