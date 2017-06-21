@@ -5,6 +5,7 @@ namespace Amp\File;
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Coroutine;
+use Amp\Failure;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
@@ -73,7 +74,11 @@ class ParallelHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Promise {
-        $this->open = false;
+        if (!$this->writable) {
+            return new Success;
+        }
+
+        $this->writable = false;
 
         if ($this->worker->isRunning()) {
             $promise = $this->worker->enqueue(new Internal\FileTask('fclose', [], $this->id));
@@ -81,6 +86,7 @@ class ParallelHandle implements Handle {
             return $promise;
         }
 
+        // FIXME: Should that really return new Success instead of an exception?
         return new Success;
     }
 

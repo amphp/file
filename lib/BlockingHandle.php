@@ -88,7 +88,7 @@ class BlockingHandle implements Handle {
      */
     public function close(): Promise {
         if ($this->fh === null) {
-            throw new ClosedException("The file has already been closed");
+            return new Success;
         }
 
         $fh = $this->fh;

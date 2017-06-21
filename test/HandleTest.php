@@ -42,12 +42,20 @@ abstract class HandleTest extends TestCase {
             $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "c+");
-            $this->assertSame(0, $handle->tell());
-            yield $handle->write("foo");
             yield $handle->close();
 
             $this->expectException(ClosedException::class);
             yield $handle->write("bar");
+        });
+    }
+
+    public function testDoubleClose() {
+        $this->execute(function () {
+            $path = Fixture::path() . "/write";
+            /** @var \Amp\File\Handle $handle */
+            $handle = yield File\open($path, "c+");
+            yield $handle->close();
+            $this->assertNull(yield $handle->close());
         });
     }
 

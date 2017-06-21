@@ -223,6 +223,7 @@ class UvHandle implements Handle {
         $this->poll->listen($deferred->promise());
 
         \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred) {
+            // FIXME: Check for errors
             $deferred->resolve();
         });
 
