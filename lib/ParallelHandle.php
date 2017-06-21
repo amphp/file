@@ -5,7 +5,6 @@ namespace Amp\File;
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Coroutine;
-use Amp\Failure;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
