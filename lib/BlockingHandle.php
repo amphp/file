@@ -3,6 +3,7 @@
 namespace Amp\File;
 
 use Amp\ByteStream\ClosedException;
+use Amp\ByteStream\StreamException;
 use Amp\Failure;
 use Amp\Promise;
 use Amp\Success;
@@ -44,7 +45,7 @@ class BlockingHandle implements Handle {
             return new Success(\strlen($data) ? $data : null);
         }
 
-        return new Failure(new FilesystemException(
+        return new Failure(new StreamException(
             "Failed reading from file handle"
         ));
     }
@@ -63,7 +64,7 @@ class BlockingHandle implements Handle {
             return new Success($len);
         }
 
-        return new Failure(new FilesystemException(
+        return new Failure(new StreamException(
             "Failed writing to file handle"
         ));
     }
@@ -87,7 +88,7 @@ class BlockingHandle implements Handle {
      */
     public function close(): Promise {
         if ($this->fh === null) {
-            throw new FilesystemException("The file has already been closed");
+            throw new ClosedException("The file has already been closed");
         }
 
         $fh = $this->fh;
@@ -97,7 +98,7 @@ class BlockingHandle implements Handle {
             return new Success;
         }
 
-        return new Failure(new FilesystemException(
+        return new Failure(new StreamException(
             "Failed closing file handle"
         ));
     }
@@ -107,7 +108,7 @@ class BlockingHandle implements Handle {
      */
     public function seek(int $position, int $whence = \SEEK_SET): Promise {
         if ($this->fh === null) {
-            throw new FilesystemException("The file has been closed");
+            throw new ClosedException("The file has been closed");
         }
 
         switch ($whence) {
@@ -115,7 +116,7 @@ class BlockingHandle implements Handle {
             case \SEEK_CUR:
             case \SEEK_END:
                 if (@\fseek($this->fh, $position, $whence) === -1) {
-                    return new Failure(new FilesystemException("Could not seek in file"));
+                    return new Failure(new StreamException("Could not seek in file"));
                 }
                 return new Success($this->tell());
             default:
@@ -130,7 +131,7 @@ class BlockingHandle implements Handle {
      */
     public function tell(): int {
         if ($this->fh === null) {
-            throw new FilesystemException("The file has been closed");
+            throw new ClosedException("The file has been closed");
         }
 
         return \ftell($this->fh);
@@ -141,7 +142,7 @@ class BlockingHandle implements Handle {
      */
     public function eof(): bool {
         if ($this->fh === null) {
-            throw new FilesystemException("The file has been closed");
+            throw new ClosedException("The file has been closed");
         }
 
         return \feof($this->fh);

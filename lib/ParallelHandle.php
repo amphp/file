@@ -3,6 +3,7 @@
 namespace Amp\File;
 
 use Amp\ByteStream\ClosedException;
+use Amp\ByteStream\StreamException;
 use Amp\Coroutine;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
@@ -110,9 +111,9 @@ class ParallelHandle implements Handle {
             $this->position += \strlen($data);
             return $data;
         } catch (TaskException $exception) {
-            throw new FilesystemException("Reading from the file failed", $exception);
+            throw new StreamException("Reading from the file failed", 0, $exception);
         } catch (WorkerException $exception) {
-            throw new FilesystemException("Sending the task to the worker failed", $exception);
+            throw new StreamException("Sending the task to the worker failed", 0, $exception);
         } finally {
             $this->busy = false;
         }
@@ -159,9 +160,9 @@ class ParallelHandle implements Handle {
         try {
             $length = yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
         } catch (TaskException $exception) {
-            throw new FilesystemException("Writing to the file failed", $exception);
+            throw new StreamException("Writing to the file failed", 0, $exception);
         } catch (WorkerException $exception) {
-            throw new FilesystemException("Sending the task to the worker failed", $exception);
+            throw new StreamException("Sending the task to the worker failed", 0, $exception);
         } finally {
             if (--$this->pendingWrites === 0) {
                 $this->busy = false;
@@ -205,9 +206,9 @@ class ParallelHandle implements Handle {
 
                     return $this->position;
                 } catch (TaskException $exception) {
-                    throw new FilesystemException('Seeking in the file failed.', $exception);
+                    throw new StreamException('Seeking in the file failed.', 0, $exception);
                 } catch (WorkerException $exception) {
-                    throw new FilesystemException("Sending the task to the worker failed", $exception);
+                    throw new StreamException("Sending the task to the worker failed", 0, $exception);
                 } finally {
                     $this->busy = false;
                 }

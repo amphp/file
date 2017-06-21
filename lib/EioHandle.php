@@ -3,6 +3,7 @@
 namespace Amp\File;
 
 use Amp\ByteStream\ClosedException;
+use Amp\ByteStream\StreamException;
 use Amp\Deferred;
 use Amp\Promise;
 use Amp\Success;
@@ -62,9 +63,12 @@ class EioHandle implements Handle {
         $this->isActive = false;
 
         if ($result === -1) {
-            $deferred->fail(new ClosedException(
-                sprintf('Reading from file failed: %s.', \eio_get_last_error($req))
-            ));
+            $error = \eio_get_last_error($req);
+            if ($error === "Bad file descriptor") {
+                $deferred->fail(new ClosedException("Reading from the file failed due to a closed handle"));
+            } else {
+                $deferred->fail(new StreamException("Reading from the file failed:" . $error));
+            }
         } else {
             $this->position += \strlen($result);
             $deferred->resolve(\strlen($result) ? $result : null);
@@ -145,9 +149,12 @@ class EioHandle implements Handle {
         }
 
         if ($result === -1) {
-            $deferred->fail(new ClosedException(
-                sprintf('Writing to the file failed: %s', \eio_get_last_error($req))
-            ));
+            $error = \eio_get_last_error($req);
+            if ($error === "Bad file descriptor") {
+                $deferred->fail(new ClosedException("Writing to the file failed due to a closed handle"));
+            } else {
+                $deferred->fail(new StreamException("Writing to the file failed: " . $error));
+            }
         } else {
             $this->position += $result;
             if ($this->position > $this->size) {
@@ -172,7 +179,8 @@ class EioHandle implements Handle {
 
     private function onClose($deferred, $result, $req) {
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $error = \eio_get_last_error($req);
+            $deferred->fail(new StreamException($error));
         } else {
             $deferred->resolve();
         }

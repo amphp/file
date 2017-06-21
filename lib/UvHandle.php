@@ -3,6 +3,7 @@
 namespace Amp\File;
 
 use Amp\ByteStream\ClosedException;
+use Amp\ByteStream\StreamException;
 use Amp\Deferred;
 use Amp\File\Internal\UvPoll;
 use Amp\Loop;
@@ -58,7 +59,12 @@ class UvHandle implements Handle {
             $this->isActive = false;
 
             if ($result < 0) {
-                $deferred->fail(new ClosedException(\uv_strerror($result)));
+                $error = \uv_strerror($result);
+                if ($error === "bad file descriptor") {
+                    $deferred->fail(new ClosedException("Reading from the file failed due to a closed handle"));
+                } else {
+                    $deferred->fail(new StreamException("Reading from the file failed: " . $error));
+                }
             } else {
                 $length = strlen($buffer);
                 $this->position = $this->position + $length;
@@ -132,7 +138,12 @@ class UvHandle implements Handle {
             }
 
             if ($result < 0) {
-                $deferred->fail(new ClosedException(\uv_strerror($result)));
+                $error = \uv_strerror($result);
+                if ($error === "bad file descriptor") {
+                    $deferred->fail(new ClosedException("Writing to the file failed due to a closed handle"));
+                } else {
+                    $deferred->fail(new StreamException("Writing to the file failed: " . $error));
+                }
             } else {
                 StatCache::clear($this->path);
                 $newPosition = $this->position + $length;
