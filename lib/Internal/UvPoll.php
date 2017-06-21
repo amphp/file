@@ -29,15 +29,13 @@ class UvPoll {
 
         Loop::setState(self::class, new class($this->watcher) {
             private $watcher;
-            private $driver;
 
             public function __construct(string $watcher) {
                 $this->watcher = $watcher;
-                $this->driver = Loop::get();
             }
 
             public function __destruct() {
-                $this->driver->cancel($this->watcher);
+                Loop::cancel($this->watcher);
             }
         });
     }

@@ -39,15 +39,13 @@ class EioPoll {
 
         Loop::setState(self::class, new class($this->watcher) {
             private $watcher;
-            private $driver;
 
             public function __construct(string $watcher) {
                 $this->watcher = $watcher;
-                $this->driver = Loop::get();
             }
 
             public function __destruct() {
-                $this->driver->cancel($this->watcher);
+                Loop::cancel($this->watcher);
 
                 // Ensure there are no active operations anymore. This is a safe-guard as some operations might not be
                 // finished on loop exit due to not being yielded. This also ensures a clean shutdown for these if PHP
