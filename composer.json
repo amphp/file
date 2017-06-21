@@ -1,7 +1,7 @@
 {
     "name": "amphp/file",
     "homepage": "https://github.com/amphp/file",
-    "description": "An async filesystem library for Amp.",
+    "description": "Allows non-blocking access to the filesystem for Amp.",
     "support": {
         "issues": "https://github.com/amphp/file/issues"
     },
@@ -25,12 +25,16 @@
         {
             "name": "Aaron Piotrowski",
             "email": "aaron@trowski.com"
+        },
+        {
+            "name": "Niklas Keller",
+            "email": "me@kelunik.com"
         }
     ],
     "require": {
         "amphp/amp": "^2",
         "amphp/byte-stream": "^1",
-        "amphp/parallel": "^0.1.4"
+        "amphp/parallel": "^0.1.5"
     },
     "require-dev": {
         "amphp/phpunit-util": "^1",
