@@ -195,10 +195,9 @@ function link(string $original, string $link): Promise {
 /**
  * Read the symlink at $path.
  *
- * @param string $original
- * @param string $link
+ * @param string $path
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<string>
  */
 function readlink(string $path): Promise {
     return filesystem()->readlink($path);
