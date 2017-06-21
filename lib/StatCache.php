@@ -29,7 +29,7 @@ class StatCache {
 
         Loop::unreference($watcher);
 
-        Loop::setState(self::class, new class ($watcher) {
+        Loop::setState(self::class, new class($watcher) {
             private $watcher;
             private $driver;
 

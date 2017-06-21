@@ -37,7 +37,7 @@ class EioPoll {
 
         Loop::disable($this->watcher);
 
-        Loop::setState(self::class, new class ($this->watcher) {
+        Loop::setState(self::class, new class($this->watcher) {
             private $watcher;
             private $driver;
 

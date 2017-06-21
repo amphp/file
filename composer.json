@@ -30,7 +30,7 @@
     "require": {
         "amphp/amp": "^2",
         "amphp/byte-stream": "^1",
-        "amphp/parallel": "^0.1"
+        "amphp/parallel": "^0.1.4"
     },
     "require-dev": {
         "amphp/phpunit-util": "^1",
