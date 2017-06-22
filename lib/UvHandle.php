@@ -12,17 +12,38 @@ use Amp\Success;
 use function Amp\call;
 
 class UvHandle implements Handle {
+    /** @var UvPoll */
     private $poll;
-    private $driver;
-    private $fh;
-    private $path;
-    private $mode;
-    private $size;
+
+    /** @var \UVLoop */
     private $loop;
+
+    /** @var resource */
+    private $fh;
+
+    /** @var string */
+    private $path;
+
+    /** @var string */
+    private $mode;
+
+    /** @var int */
+    private $size;
+
+    /** @var int */
     private $position;
+
+    /** @var \SplQueue */
     private $queue;
+
+    /** @var bool */
     private $isActive = false;
+
+    /** @var bool */
     private $writable = true;
+
+    /** @var \Amp\Promise|null */
+    private $closing;
 
     /**
      * @param \Amp\Loop\UvDriver $driver
@@ -33,7 +54,6 @@ class UvHandle implements Handle {
      * @param int $size
      */
     public function __construct(Loop\UvDriver $driver, UvPoll $poll, $fh, string $path, string $mode, int $size) {
-        $this->driver = $driver;
         $this->poll = $poll;
         $this->fh = $fh;
         $this->path = $path;
@@ -219,8 +239,12 @@ class UvHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Promise {
+        if ($this->closing) {
+            return $this->closing;
+        }
+
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen($this->closing = $deferred->promise());
 
         \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred) {
             // FIXME: Check for errors

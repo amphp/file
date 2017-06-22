@@ -112,7 +112,7 @@ class FileTask extends BlockingDriver implements Task {
                 case "fclose":
                     $file->close();
                     $environment->delete($this->id);
-                    return true;
+                    return;
 
                 default:
                     throw new \Error('Invalid operation');

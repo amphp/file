@@ -10,15 +10,35 @@ use Amp\Success;
 use function Amp\call;
 
 class EioHandle implements Handle {
+    /** @var \Amp\File\Internal\EioPoll */
     private $poll;
+
+    /** @var resource eio file handle. */
     private $fh;
+
+    /** @var string */
     private $path;
+
+    /** @var string */
     private $mode;
+
+    /** @var int */
     private $size;
+
+    /** @var int */
     private $position;
+
+    /** @var \SplQueue */
     private $queue;
+
+    /** @var bool */
     private $isActive = false;
+
+    /** @var bool */
     private $writable = true;
+
+    /** @var \Amp\Promise|null */
+    private $closing;
 
     public function __construct(Internal\EioPoll $poll, $fh, string $path, string $mode, int $size) {
         $this->poll = $poll;
@@ -169,8 +189,12 @@ class EioHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Promise {
+        if ($this->closing) {
+            return $this->closing;
+        }
+
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen($this->closing = $deferred->promise());
 
         \eio_close($this->fh, \EIO_PRI_DEFAULT, [$this, "onClose"], $deferred);
 

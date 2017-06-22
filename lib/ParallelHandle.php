@@ -40,6 +40,9 @@ class ParallelHandle implements Handle {
     /** @var bool */
     private $writable = true;
 
+    /** @var \Amp\Promise|null */
+    private $closing;
+
     /**
      * @param \Amp\Parallel\Worker\Worker $worker
      * @param int $id
@@ -73,20 +76,20 @@ class ParallelHandle implements Handle {
      * {@inheritdoc}
      */
     public function close(): Promise {
-        if (!$this->writable) {
-            return new Success;
+        if ($this->closing) {
+            return $this->closing;
         }
 
         $this->writable = false;
 
         if ($this->worker->isRunning()) {
-            $promise = $this->worker->enqueue(new Internal\FileTask('fclose', [], $this->id));
+            $this->closing = $this->worker->enqueue(new Internal\FileTask('fclose', [], $this->id));
             $this->id = null;
-            return $promise;
+        } else {
+            $this->closing = new Success;
         }
 
-        // FIXME: Should that really return new Success instead of an exception?
-        return new Success;
+        return $this->closing;
     }
 
     /**
