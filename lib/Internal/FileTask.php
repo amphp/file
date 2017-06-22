@@ -13,7 +13,7 @@ use Amp\Parallel\Worker\Task;
  * @internal
  */
 class FileTask extends BlockingDriver implements Task {
-    const ENV_PREFIX = self::class . '_';
+    const ENV_PREFIX = self::class . '#';
 
     /** @var string */
     private $operation;
@@ -38,10 +38,7 @@ class FileTask extends BlockingDriver implements Task {
 
         $this->operation = $operation;
         $this->args = $args;
-
-        if ($id !== null) {
-            $this->id = $this->makeId($id);
-        }
+        $this->id = $id;
     }
 
     /**
@@ -86,21 +83,23 @@ class FileTask extends BlockingDriver implements Task {
                 $file = new BlockingHandle($handle, $path, $mode);
                 $id = (int) $handle;
                 $size = \fstat($handle)["size"];
-                $environment->set($this->makeId($id), $file);
+                $environment->set(self::makeId($id), $file);
 
                 return [$id, $size, $mode];
             }
 
-            if (null === $this->id) {
+            if ($this->id === null) {
                 throw new FilesystemException("No file ID provided");
             }
 
-            if (!$environment->exists($this->id)) {
-                throw new FilesystemException("No file handle with the given ID has been opened on the worker");
+            $id = self::makeId($this->id);
+
+            if (!$environment->exists($id)) {
+                throw new FilesystemException(\sprintf("No file handle with the ID %d has been opened on the worker", $this->id));
             }
 
             /** @var \Amp\File\BlockingHandle $file */
-            if (!($file = $environment->get($this->id)) instanceof BlockingHandle) {
+            if (!($file = $environment->get($id)) instanceof BlockingHandle) {
                 throw new FilesystemException("File storage found in inconsistent state");
             }
 
@@ -155,7 +154,7 @@ class FileTask extends BlockingDriver implements Task {
      *
      * @return string
      */
-    private function makeId(int $id): string {
+    private static function makeId(int $id): string {
         return self::ENV_PREFIX . $id;
     }
 }
