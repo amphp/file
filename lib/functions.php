@@ -42,6 +42,10 @@ function driver(): Driver {
         return new EioDriver;
     }
 
+    if (\strncasecmp(\PHP_OS, "WIN", 3) === 0) {
+        return new BlockingDriver;
+    }
+
     return new ParallelDriver;
 }
 
