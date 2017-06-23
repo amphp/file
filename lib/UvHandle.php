@@ -247,7 +247,7 @@ class UvHandle implements Handle {
         $this->poll->listen($this->closing = $deferred->promise());
 
         \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred) {
-            // FIXME: Check for errors
+            // Ignore errors when closing file, as the handle will become invalid anyway.
             $deferred->resolve();
         });
 

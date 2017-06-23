@@ -201,18 +201,9 @@ class EioHandle implements Handle {
         return $deferred->promise();
     }
 
-    private function onClose($deferred, $result, $req) {
-        if ($result === -1) {
-            $error = \eio_get_last_error($req);
-            if ($error === "Bad file descriptor") {
-                // Handle is already closed, ignore
-                $deferred->resolve();
-            } else {
-                $deferred->fail(new StreamException("Closing the file failed: " . $error));
-            }
-        } else {
-            $deferred->resolve();
-        }
+    private function onClose(Deferred $deferred, $result, $req) {
+        // Ignore errors when closing file, as the handle will become invalid anyway.
+        $deferred->resolve();
     }
 
     /**
