@@ -96,7 +96,7 @@ class ParallelHandle implements Handle {
      * {@inheritdoc}
      */
     public function eof(): bool {
-        return ($this->pendingWrites > 0) ? false : ($this->size <= $this->position);
+        return $this->pendingWrites > 0 && $this->size <= $this->position;
     }
 
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
@@ -197,8 +197,6 @@ class ParallelHandle implements Handle {
     }
 
     private function doSeek(int $offset, int $whence) {
-        $this->busy = true;
-
         switch ($whence) {
             case \SEEK_SET:
             case \SEEK_CUR:
@@ -217,8 +215,6 @@ class ParallelHandle implements Handle {
                     throw new StreamException('Seeking in the file failed.', 0, $exception);
                 } catch (WorkerException $exception) {
                     throw new StreamException("Sending the task to the worker failed", 0, $exception);
-                } finally {
-                    $this->busy = false;
                 }
 
             default:
