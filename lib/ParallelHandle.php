@@ -96,7 +96,7 @@ class ParallelHandle implements Handle {
      * {@inheritdoc}
      */
     public function eof(): bool {
-        return $this->pendingWrites > 0 && $this->size <= $this->position;
+        return $this->pendingWrites === 0 && $this->size <= $this->position;
     }
 
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
