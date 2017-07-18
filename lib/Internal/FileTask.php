@@ -12,7 +12,7 @@ use Amp\Parallel\Worker\Task;
  *
  * @internal
  */
-class FileTask extends BlockingDriver implements Task {
+class FileTask implements Task {
     const ENV_PREFIX = self::class . '#';
 
     /** @var string */
@@ -142,7 +142,7 @@ class FileTask extends BlockingDriver implements Task {
             case "ctime":
             case "get":
             case "put":
-                return ([$this, $this->operation])(...$this->args);
+                return ([new BlockingDriver, $this->operation])(...$this->args);
 
             default:
                 throw new \Error("Invalid operation");

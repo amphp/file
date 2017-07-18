@@ -22,6 +22,11 @@ function filesystem(Driver $driver = null): Driver {
 
         $driver = driver();
     }
+
+    if (\defined("AMP_WORKER") && $driver instanceof ParallelDriver) {
+        throw new \Error("Cannot use the parallel driver within a worker");
+    }
+
     Loop::setState(LOOP_STATE_IDENTIFIER, $driver);
     return $driver;
 }
@@ -43,6 +48,10 @@ function driver(): Driver {
     }
 
     if (\strncasecmp(\PHP_OS, "WIN", 3) === 0) {
+        return new BlockingDriver;
+    }
+
+    if (\defined("AMP_WORKER")) { // Prevent spawning infinite workers.
         return new BlockingDriver;
     }
 
