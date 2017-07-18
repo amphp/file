@@ -4,6 +4,7 @@ namespace Amp\File\Internal;
 use Amp\File\BlockingDriver;
 use Amp\File\BlockingHandle;
 use Amp\File\FilesystemException;
+use Amp\File\StatCache;
 use Amp\Parallel\Worker\Environment;
 use Amp\Parallel\Worker\Task;
 
@@ -118,6 +119,8 @@ class FileTask implements Task {
                     throw new \Error('Invalid operation');
             }
         }
+
+        StatCache::clear();
 
         switch ($this->operation) {
             case "stat":
