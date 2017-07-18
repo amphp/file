@@ -9,6 +9,8 @@ use Amp\Parallel\Worker\Pool;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\WorkerException;
 use Amp\Promise;
+use Amp\Success;
+use function Amp\call;
 
 class ParallelDriver implements Driver {
     /**
@@ -67,14 +69,28 @@ class ParallelDriver implements Driver {
      * {@inheritdoc}
      */
     public function unlink(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("unlink", [$path])));
+        return call(function () use ($path) {
+            $result = yield from $this->runFileTask(new Internal\FileTask("unlink", [$path]));
+            StatCache::clear($path);
+            return $result;
+        });
     }
 
     /**
      * {@inheritdoc}
      */
     public function stat(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("stat", [$path])));
+        if ($stat = StatCache::get($path)) {
+            return new Success($stat);
+        }
+
+        return call(function () use ($path) {
+            $stat = yield from $this->runFileTask(new Internal\FileTask("stat", [$path]));
+            if (!empty($stat)) {
+                StatCache::set($path, $stat);
+            }
+            return $stat;
+        });
     }
 
     /**
@@ -88,14 +104,32 @@ class ParallelDriver implements Driver {
      * {@inheritdoc}
      */
     public function isfile(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("isfile", [$path])));
+        return call(function () use ($path) {
+            $stat = yield $this->stat($path);
+            if (empty($stat)) {
+                return false;
+            }
+            if ($stat["mode"] & 0100000) {
+                return true;
+            }
+            return false;
+        });
     }
 
     /**
      * {@inheritdoc}
      */
     public function isdir(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("isdir", [$path])));
+        return call(function () use ($path) {
+            $stat = yield $this->stat($path);
+            if (empty($stat)) {
+                return false;
+            }
+            if ($stat["mode"] & 0040000) {
+                return true;
+            }
+            return false;
+        });
     }
 
     /**
@@ -137,7 +171,11 @@ class ParallelDriver implements Driver {
      * {@inheritdoc}
      */
     public function rmdir(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("rmdir", [$path])));
+        return call(function () use ($path) {
+            $result = yield from $this->runFileTask(new Internal\FileTask("rmdir", [$path]));
+            StatCache::clear($path);
+            return $result;
+        });
     }
 
     /**
@@ -165,28 +203,55 @@ class ParallelDriver implements Driver {
      * {@inheritdoc}
      */
     public function size(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("size", [$path])));
+        return call(function () use ($path) {
+            $stat = yield $this->stat($path);
+            if (empty($stat)) {
+                throw new FilesystemException("Specified path does not exist");
+            }
+            if ($stat["mode"] & 0100000) {
+                return $stat["size"];
+            }
+            throw new FilesystemException("Specified path is not a regular file");
+        });
     }
 
     /**
      * {@inheritdoc}
      */
     public function mtime(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("mtime", [$path])));
+        return call(function () use ($path) {
+            $stat = yield $this->stat($path);
+            if (empty($stat)) {
+                throw new FilesystemException("Specified path does not exist");
+            }
+            return $stat["mtime"];
+        });
     }
 
     /**
      * {@inheritdoc}
      */
     public function atime(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("atime", [$path])));
+        return call(function () use ($path) {
+            $stat = yield $this->stat($path);
+            if (empty($stat)) {
+                throw new FilesystemException("Specified path does not exist");
+            }
+            return $stat["atime"];
+        });
     }
 
     /**
      * {@inheritdoc}
      */
     public function ctime(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("ctime", [$path])));
+        return call(function () use ($path) {
+            $stat = yield $this->stat($path);
+            if (empty($stat)) {
+                throw new FilesystemException("Specified path does not exist");
+            }
+            return $stat["ctime"];
+        });
     }
 
     /**

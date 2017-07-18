@@ -131,18 +131,12 @@ class FileTask implements Task {
             case "readlink":
             case "lstat":
             case "exists":
-            case "isfile":
-            case "isdir":
             case "mkdir":
             case "scandir":
             case "rmdir":
             case "chmod":
             case "chown":
             case "touch":
-            case "size":
-            case "mtime":
-            case "atime":
-            case "ctime":
             case "get":
             case "put":
                 return ([new BlockingDriver, $this->operation])(...$this->args);
