@@ -51,6 +51,10 @@ function driver(): Driver {
         return new BlockingDriver;
     }
 
+    if (\PHP_SAPI !== "cli" && \PHP_SAPI !== "phpdbg") { // We don't have a binary to launch sub-processes
+        return new BlockingDriver;
+    }
+
     if (\defined("AMP_WORKER")) { // Prevent spawning infinite workers.
         return new BlockingDriver;
     }
