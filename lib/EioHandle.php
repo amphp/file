@@ -214,7 +214,6 @@ class EioHandle implements Handle {
             throw new PendingOperationError;
         }
 
-        $offset = (int) $offset;
         switch ($whence) {
             case \SEEK_SET:
                 $this->position = $offset;
