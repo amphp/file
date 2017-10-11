@@ -65,14 +65,13 @@ class FileTask implements Task {
                     case "x+":
                     case "c":
                     case "c+":
-                    case "e":
                         break;
 
                     default:
                         throw new \Error("Invalid file mode");
                 }
 
-                $handle = @\fopen($path, $mode . 'e');
+                $handle = @\fopen($path, $mode . 'be');
 
                 if (!$handle) {
                     $message = 'Could not open the file.';
