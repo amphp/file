@@ -52,7 +52,7 @@ class FileTask implements Task {
         if ('f' === $this->operation[0]) {
             if ("fopen" === $this->operation) {
                 $path = $this->args[0];
-                $mode = \str_replace(['b', 't'], '', $this->args[1]);
+                $mode = \str_replace(['b', 't', 'e'], '', $this->args[1]);
 
                 switch ($mode) {
                     case "r":
