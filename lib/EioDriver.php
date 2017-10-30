@@ -31,7 +31,7 @@ class EioDriver implements Driver {
     }
 
     private function parseMode(string $mode): int {
-        $mode = \str_replace(['b', 't'], '', $mode);
+        $mode = \str_replace(['b', 't', 'e'], '', $mode);
 
         switch ($mode) {
             case 'r':  return \EIO_O_RDONLY;

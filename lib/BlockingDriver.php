@@ -11,7 +11,26 @@ class BlockingDriver implements Driver {
      * {@inheritdoc}
      */
     public function open(string $path, string $mode): Promise {
-        if (!$fh = \fopen($path, $mode)) {
+        $mode = \str_replace(['b', 't', 'e'], '', $mode);
+
+        switch ($mode) {
+            case "r":
+            case "r+":
+            case "w":
+            case "w+":
+            case "a":
+            case "a+":
+            case "x":
+            case "x+":
+            case "c":
+            case "c+":
+                break;
+
+            default:
+                throw new \Error("Invalid file mode");
+        }
+
+        if (!$fh = \fopen($path, $mode . 'be')) {
             return new Failure(new FilesystemException(
                 "Failed opening file handle"
             ));
