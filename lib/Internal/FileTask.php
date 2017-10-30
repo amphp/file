@@ -71,7 +71,7 @@ class FileTask implements Task {
                         throw new \Error("Invalid file mode");
                 }
 
-                $handle = @\fopen($path, $mode . 'b');
+                $handle = @\fopen($path, $mode . 'be');
 
                 if (!$handle) {
                     $message = 'Could not open the file.';
