@@ -196,9 +196,11 @@ interface Driver {
      * If the file does not exist it will be created automatically.
      *
      * @param string $path
+     * @param int $time The touch time. If $time is not supplied, the current system time is used.
+     * @param int $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
      * @return \Amp\Promise
      */
-    public function touch(string $path): Promise;
+    public function touch(string $path, int $time = null, int $atime = null): Promise;
 
     /**
      * Buffer the specified file's contents.
