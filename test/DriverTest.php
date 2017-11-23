@@ -316,8 +316,7 @@ abstract class DriverTest extends TestCase {
             yield File\put($touch, "touch me");
 
             $oldStat = (yield File\stat($touch));
-            sleep(1);
-            yield File\touch($touch);
+            yield File\touch($touch, \time() + 10, \time() + 20);
             File\StatCache::clear($touch);
             $newStat = (yield File\stat($touch));
             yield File\unlink($touch);

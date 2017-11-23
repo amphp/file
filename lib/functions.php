@@ -305,10 +305,12 @@ function chown(string $path, int $uid, int $gid = -1): Promise {
  * If the file does not exist it will be created automatically.
  *
  * @param string $path
+ * @param int $time The touch time. If $time is not supplied, the current system time is used.
+ * @param int $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
  * @return \Amp\Promise<null>
  */
-function touch(string $path): Promise {
-    return filesystem()->touch($path);
+function touch(string $path, int $time = null, int $atime = null): Promise {
+    return filesystem()->touch($path, $time, $atime);
 }
 
 /**

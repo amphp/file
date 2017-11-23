@@ -324,8 +324,10 @@ class BlockingDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path): Promise {
-        return new Success((bool) \touch($path));
+    public function touch(string $path, int $time = null, int $atime = null): Promise {
+        $time = $time ?? \time();
+        $atime = $atime ?? $time;
+        return new Success((bool) \touch($path, $time, $atime));
     }
 
     /**

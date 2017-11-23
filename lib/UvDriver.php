@@ -458,13 +458,14 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path): Promise {
-        $atime = $mtime = time();
+    public function touch(string $path, int $time = null, int $atime = null): Promise {
+        $time = $time ?? \time();
+        $atime = $atime ?? $time;
 
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_utime($this->loop, $path, $mtime, $atime, function () use ($deferred) {
+        \uv_fs_utime($this->loop, $path, $time, $atime, function () use ($deferred) {
             // The uv_fs_utime() callback does not receive any args at this time
             $deferred->resolve(true);
         });

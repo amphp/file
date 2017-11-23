@@ -464,14 +464,15 @@ class EioDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path): Promise {
-        $atime = $mtime = \time();
+    public function touch(string $path, int $time = null, int $atime = null): Promise {
+        $time = $time ?? \time();
+        $atime = $atime ?? $time;
 
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
         $priority = \EIO_PRI_DEFAULT;
-        \eio_utime($path, $atime, $mtime, $priority, [$this, "onGenericResult"], $deferred);
+        \eio_utime($path, $atime, $time, $priority, [$this, "onGenericResult"], $deferred);
 
         return $deferred->promise();
     }

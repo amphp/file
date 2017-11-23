@@ -264,8 +264,8 @@ class ParallelDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path): Promise {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("touch", [$path])));
+    public function touch(string $path, int $time = null, int $atime = null): Promise {
+        return new Coroutine($this->runFileTask(new Internal\FileTask("touch", [$path, $time, $atime])));
     }
 
     /**
