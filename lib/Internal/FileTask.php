@@ -1,4 +1,5 @@
 <?php
+
 namespace Amp\File\Internal;
 
 use Amp\File\BlockingDriver;
