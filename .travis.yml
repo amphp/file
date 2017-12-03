@@ -20,9 +20,9 @@ before_install:
   - phpenv config-rm xdebug.ini || echo "No xdebug config."
 
 install:
+  - composer update -n --prefer-dist
   - travis/install-eio.sh
   - travis/install-uv.sh
-  - composer update -n --prefer-dist
   - wget https://github.com/php-coveralls/php-coveralls/releases/download/v1.0.2/coveralls.phar
   - chmod +x coveralls.phar
 
