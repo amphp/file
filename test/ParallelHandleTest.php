@@ -11,7 +11,6 @@ class ParallelHandleTest extends AsyncHandleTest {
     protected function execute(callable $cb) {
         Loop::run(function () use ($cb) {
             $pool = new DefaultPool;
-            $pool->start();
 
             File\filesystem(new File\ParallelDriver($pool));
             yield call($cb);

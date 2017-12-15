@@ -15,7 +15,7 @@ use Amp\Parallel\Worker\Task;
  * @internal
  */
 class FileTask implements Task {
-    const ENV_PREFIX = self::class . '#';
+    const ENV_PREFIX = "amp/file#";
 
     /** @var string */
     private $operation;
@@ -112,8 +112,8 @@ class FileTask implements Task {
                     return ([$file, \substr($this->operation, 1)])(...$this->args);
 
                 case "fclose":
+                    $environment->delete($id);
                     $file->close();
-                    $environment->delete($this->id);
                     return;
 
                 default:

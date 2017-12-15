@@ -3,7 +3,6 @@
 namespace Amp\File;
 
 use Amp\Coroutine;
-use Amp\Deferred;
 use Amp\Parallel\Worker;
 use Amp\Parallel\Worker\Pool;
 use Amp\Parallel\Worker\TaskException;
@@ -23,42 +22,29 @@ class ParallelDriver implements Driver {
      */
     public function __construct(Pool $pool = null) {
         $this->pool = $pool ?: Worker\pool();
-        if (!$this->pool->isRunning()) {
-            $this->pool->start();
-        }
     }
 
     /**
      * {@inheritdoc}
      */
     public function open(string $path, string $mode): Promise {
-        $worker = $this->pool->get();
-
-        $task = new Internal\FileTask("fopen", [$path, $mode]);
-
-        $deferred = new Deferred;
-        $promise = $worker->enqueue($task);
-        $promise->onResolve(static function ($exception, array $result = null) use ($worker, $deferred, $path) {
-            if ($exception) {
-                $deferred->fail($exception);
-                return;
+        return call(function () use ($path, $mode) {
+            $worker = $this->pool->get();
+            try {
+                list($id, $size, $mode) = yield $worker->enqueue(new Internal\FileTask("fopen", [$path, $mode]));
+            } catch (TaskException $exception) {
+                throw new FilesystemException("Could not open file", $exception);
+            } catch (WorkerException $exception) {
+                throw new FilesystemException("Could not send open request to worker", $exception);
             }
-
-            list($id, $size, $mode) = $result;
-
-            $deferred->resolve(new ParallelHandle($worker, $id, $path, $size, $mode));
+            return new ParallelHandle($worker, $id, $path, $size, $mode);
         });
-
-        return $deferred->promise();
     }
 
     private function runFileTask(Internal\FileTask $task): \Generator {
         try {
             return yield $this->pool->enqueue($task);
         } catch (TaskException $exception) {
-            if (\strcasecmp(\substr($exception->getName(), -5), "Error") === 0) {
-                throw new \Error($exception->getMessage());
-            }
             throw new FilesystemException("The file operation failed", $exception);
         } catch (WorkerException $exception) {
             throw new FilesystemException("Could not send the file task to worker", $exception);
