@@ -224,9 +224,11 @@ abstract class DriverTest extends TestCase {
 
             $dir = "{$fixtureDir}/newdir";
 
+            \umask(0022);
+
             yield File\mkdir($dir);
             $stat = yield File\stat($dir);
-            $this->assertSame(0644, $stat["mode"] & 0777);
+            $this->assertSame('0755', $this->getPermissionsFromStat($stat));
             yield File\rmdir($dir);
             $this->assertNull(yield File\stat($dir));
 
@@ -235,7 +237,7 @@ abstract class DriverTest extends TestCase {
 
             yield File\mkdir($dir, 0764, true);
             $stat = yield File\stat($dir);
-            $this->assertSame(0764 & (~\umask()), $stat["mode"] & 0777);
+            $this->assertSame('0744', $this->getPermissionsFromStat($stat));
         });
     }
 
@@ -324,5 +326,13 @@ abstract class DriverTest extends TestCase {
             $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
             $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
         });
+    }
+
+    /**
+     * @param array $stat
+     * @return string
+     */
+    private function getPermissionsFromStat(array $stat): string {
+        return \substr(\decoct($stat["mode"]), 1);
     }
 }
