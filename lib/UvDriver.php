@@ -352,7 +352,7 @@ class UvDriver implements Driver {
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0644, bool $recursive = false): Promise {
+    public function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
