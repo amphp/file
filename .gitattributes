@@ -6,3 +6,4 @@
 /.travis.yml        export-ignore
 /phpunit.xml        export-ignore
 /examples           export-ignore
+docs/asset          export-ignore
