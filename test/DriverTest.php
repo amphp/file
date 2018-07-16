@@ -57,6 +57,43 @@ abstract class DriverTest extends TestCase {
         });
     }
 
+    public function testReadlink() {
+        $this->execute(function () {
+            $fixtureDir = Fixture::path();
+
+            $original = "{$fixtureDir}/small.txt";
+            $link = "{$fixtureDir}/symlink.txt";
+            \symlink($original, $link);
+
+            $this->assertSame($original, yield File\readlink($link));
+        });
+    }
+
+    public function readlinkPathProvider() {
+        return [
+            'nonExistingPath' => [function () {
+                return Fixture::path() . '/' . uniqid();
+            }],
+            'notLink' => [function () {
+                return Fixture::path();
+            }],
+        ];
+    }
+
+    /**
+     * @dataProvider readlinkPathProvider
+     * @expectedException \Amp\File\FilesystemException
+     *
+     * @param \Closure $linkResolver
+     */
+    public function testReadlinkError(\Closure $linkResolver) {
+        $this->execute(function () use ($linkResolver) {
+            $link = $linkResolver();
+
+            yield File\readlink($link);
+        });
+    }
+
     public function testLstat() {
         $this->execute(function () {
             $fixtureDir = Fixture::path();

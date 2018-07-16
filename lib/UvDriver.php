@@ -320,8 +320,12 @@ class UvDriver implements Driver {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_readlink($this->loop, $path, function ($fh) use ($deferred) {
-            $deferred->resolve((bool) $fh);
+        \uv_fs_readlink($this->loop, $path, function ($fh, $target) use ($deferred) {
+            if (!(bool) $fh) {
+                $deferred->fail(new FilesystemException("Could not read symbolic link"));
+            }
+
+            $deferred->resolve($target);
         });
 
         return $deferred->promise();

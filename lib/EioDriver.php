@@ -296,10 +296,19 @@ class EioDriver implements Driver {
         $this->poll->listen($deferred->promise());
 
         $priority = \EIO_PRI_DEFAULT;
-        \eio_readlink($path, $priority, [$this, "onGenericResult"], $deferred);
+        \eio_readlink($path, $priority, [$this, "onReadlink"], $deferred);
 
         return $deferred->promise();
     }
+
+    private function onReadlink($deferred, $result, $req) {
+        if ($result === -1) {
+            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+        } else {
+            $deferred->resolve($result);
+        }
+    }
+
     private function onGenericResult($deferred, $result, $req) {
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
