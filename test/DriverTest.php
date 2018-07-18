@@ -74,6 +74,7 @@ abstract class DriverTest extends TestCase {
             $fixtureDir = Fixture::path();
             $stat = (yield File\stat("{$fixtureDir}/small.txt"));
             $this->assertInternalType("array", $stat);
+            $this->assertStatSame(\stat("{$fixtureDir}/small.txt"), $stat);
         });
     }
 
@@ -82,6 +83,7 @@ abstract class DriverTest extends TestCase {
             $fixtureDir = Fixture::path();
             $stat = (yield File\stat("{$fixtureDir}/dir"));
             $this->assertInternalType("array", $stat);
+            $this->assertStatSame(\stat("{$fixtureDir}/dir"), $stat);
         });
     }
 
@@ -326,6 +328,24 @@ abstract class DriverTest extends TestCase {
             $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
             $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
         });
+    }
+
+    private function assertStatSame(array $expected, array $actual) {
+        $filter = function (array $stat) {
+            $filtered = \array_filter(
+                $stat,
+                function (string $key): bool {
+                    return !\is_numeric($key);
+                },
+                ARRAY_FILTER_USE_KEY
+            );
+
+            ksort($filtered);
+
+            return $filtered;
+        };
+
+        $this->assertSame($filter($expected), $filter($actual));
     }
 
     /**

@@ -123,6 +123,14 @@ class UvDriver implements Driver {
             if (empty($fh)) {
                 $stat = null;
             } else {
+                // link is not a valid stat type but returned by the uv extension
+                // change link to nlink
+                if (isset($stat['link'])) {
+                    $stat['nlink'] = $stat['link'];
+
+                    unset($stat['link']);
+                }
+
                 StatCache::set($path, $stat);
             }
 
