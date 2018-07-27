@@ -323,6 +323,8 @@ class UvDriver implements Driver {
         \uv_fs_readlink($this->loop, $path, function ($fh, $target) use ($deferred) {
             if (!(bool) $fh) {
                 $deferred->fail(new FilesystemException("Could not read symbolic link"));
+                
+                return;
             }
 
             $deferred->resolve($target);
