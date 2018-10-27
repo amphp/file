@@ -6,8 +6,10 @@ use Amp\File;
 use Amp\Loop;
 use function Amp\asyncCall;
 
-class EioHandleTest extends AsyncHandleTest {
-    protected function execute(callable $cb) {
+class EioHandleTest extends AsyncHandleTest
+{
+    protected function execute(callable $cb)
+    {
         if (!\extension_loaded("eio")) {
             $this->markTestSkipped(
                 "eio extension not loaded"

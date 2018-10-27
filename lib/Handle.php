@@ -6,7 +6,8 @@ use Amp\ByteStream\InputStream;
 use Amp\ByteStream\OutputStream;
 use Amp\Promise;
 
-interface Handle extends InputStream, OutputStream {
+interface Handle extends InputStream, OutputStream
+{
     const DEFAULT_READ_LENGTH = 8192;
 
     /**

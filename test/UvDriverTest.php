@@ -6,8 +6,10 @@ use Amp\File;
 use Amp\Loop;
 use function Amp\asyncCall;
 
-class UvDriverTest extends DriverTest {
-    protected function execute(callable $cb) {
+class UvDriverTest extends DriverTest
+{
+    protected function execute(callable $cb)
+    {
         if (!\extension_loaded("uv")) {
             $this->markTestSkipped(
                 "php-uv extension not loaded"
@@ -28,7 +30,8 @@ class UvDriverTest extends DriverTest {
      *
      * @param \Closure $linkResolver
      */
-    public function testReadlinkError(\Closure $linkResolver) {
+    public function testReadlinkError(\Closure $linkResolver)
+    {
         $this->markTestSkipped('UvDriver Test Skipped: Causes Crash');
     }
 }

@@ -4,11 +4,13 @@ namespace Amp\File\Test;
 
 use Amp\File;
 
-abstract class AsyncHandleTest extends HandleTest {
+abstract class AsyncHandleTest extends HandleTest
+{
     /**
      * @expectedException \Amp\File\PendingOperationError
      */
-    public function testSimultaneousReads() {
+    public function testSimultaneousReads()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -26,7 +28,8 @@ abstract class AsyncHandleTest extends HandleTest {
     /**
      * @expectedException \Amp\File\PendingOperationError
      */
-    public function testSeekWhileReading() {
+    public function testSeekWhileReading()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -44,7 +47,8 @@ abstract class AsyncHandleTest extends HandleTest {
     /**
      * @expectedException \Amp\File\PendingOperationError
      */
-    public function testReadWhileWriting() {
+    public function testReadWhileWriting()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -63,7 +67,8 @@ abstract class AsyncHandleTest extends HandleTest {
     /**
      * @expectedException \Amp\File\PendingOperationError
      */
-    public function testWriteWhileReading() {
+    public function testWriteWhileReading()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");

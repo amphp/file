@@ -2,18 +2,21 @@
 
 namespace Amp\File\Test;
 
-final class Fixture {
+final class Fixture
+{
     private static $fixtureId;
 
-    public static function path() {
+    public static function path()
+    {
         if (empty(self::$fixtureId)) {
             self::$fixtureId = \uniqid();
         }
 
-        return \sys_get_temp_dir() . "/amphp_file_fixture/" . strtr(__CLASS__, "\\", ".") . self::$fixtureId;
+        return \sys_get_temp_dir() . "/amphp_file_fixture/" . \strtr(__CLASS__, "\\", ".") . self::$fixtureId;
     }
 
-    public static function init() {
+    public static function init()
+    {
         $fixtureDir = self::path();
         self::clear();
         if (!\mkdir($fixtureDir, $mode = 0777, $recursive = true)) {
@@ -33,7 +36,8 @@ final class Fixture {
         }
     }
 
-    public static function clear() {
+    public static function clear()
+    {
         $fixtureDir = self::path();
         if (!\file_exists($fixtureDir)) {
             return;

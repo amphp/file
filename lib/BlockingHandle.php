@@ -9,7 +9,8 @@ use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
-class BlockingHandle implements Handle {
+class BlockingHandle implements Handle
+{
     private $fh;
     private $path;
     private $mode;
@@ -19,13 +20,15 @@ class BlockingHandle implements Handle {
      * @param string $path
      * @param string $mode
      */
-    public function __construct($fh, string $path, string $mode) {
+    public function __construct($fh, string $path, string $mode)
+    {
         $this->fh = $fh;
         $this->path = $path;
         $this->mode = $mode;
     }
 
-    public function __destruct() {
+    public function __destruct()
+    {
         if ($this->fh !== null) {
             \fclose($this->fh);
         }
@@ -34,7 +37,8 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise {
+    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
+    {
         if ($this->fh === null) {
             throw new ClosedException("The file has been closed");
         }
@@ -53,7 +57,8 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function write(string $data): Promise {
+    public function write(string $data): Promise
+    {
         if ($this->fh === null) {
             throw new ClosedException("The file has been closed");
         }
@@ -72,7 +77,8 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function end(string $data = ""): Promise {
+    public function end(string $data = ""): Promise
+    {
         return call(function () use ($data) {
             $promise = $this->write($data);
 
@@ -86,7 +92,8 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function close(): Promise {
+    public function close(): Promise
+    {
         if ($this->fh === null) {
             return new Success;
         }
@@ -106,7 +113,8 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function seek(int $position, int $whence = \SEEK_SET): Promise {
+    public function seek(int $position, int $whence = \SEEK_SET): Promise
+    {
         if ($this->fh === null) {
             throw new ClosedException("The file has been closed");
         }
@@ -129,7 +137,8 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function tell(): int {
+    public function tell(): int
+    {
         if ($this->fh === null) {
             throw new ClosedException("The file has been closed");
         }
@@ -140,7 +149,8 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function eof(): bool {
+    public function eof(): bool
+    {
         if ($this->fh === null) {
             throw new ClosedException("The file has been closed");
         }
@@ -151,14 +161,16 @@ class BlockingHandle implements Handle {
     /**
      * {@inheritdoc}
      */
-    public function path(): string {
+    public function path(): string
+    {
         return $this->path;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function mode(): string {
+    public function mode(): string
+    {
         return $this->mode;
     }
 }

@@ -6,7 +6,8 @@ use Amp\CallableMaker;
 use Amp\Loop;
 use Amp\Promise;
 
-class EioPoll {
+class EioPoll
+{
     use CallableMaker;
 
     /** @var resource */
@@ -21,7 +22,8 @@ class EioPoll {
     /** @var callable */
     private $onDone;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->onDone = $this->callableFromInstanceMethod("done");
 
         if (!self::$stream) {
@@ -40,11 +42,13 @@ class EioPoll {
         Loop::setState(self::class, new class($this->watcher) {
             private $watcher;
 
-            public function __construct(string $watcher) {
+            public function __construct(string $watcher)
+            {
                 $this->watcher = $watcher;
             }
 
-            public function __destruct() {
+            public function __destruct()
+            {
                 Loop::cancel($this->watcher);
 
                 // Ensure there are no active operations anymore. This is a safe-guard as some operations might not be
@@ -55,7 +59,8 @@ class EioPoll {
         });
     }
 
-    public function listen(Promise $promise) {
+    public function listen(Promise $promise)
+    {
         if ($this->requests++ === 0) {
             Loop::enable($this->watcher);
         }
@@ -63,7 +68,8 @@ class EioPoll {
         $promise->onResolve($this->onDone);
     }
 
-    private function done() {
+    private function done()
+    {
         if (--$this->requests === 0) {
             Loop::disable($this->watcher);
         }

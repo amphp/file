@@ -4,13 +4,15 @@ namespace Amp\File;
 
 use Amp\Loop;
 
-class StatCache {
+class StatCache
+{
     private static $cache = [];
     private static $timeouts = [];
     private static $ttl = 3;
     private static $now = null;
 
-    private static function init() {
+    private static function init()
+    {
         self::$now = \time();
 
         $watcher = Loop::repeat(1000, function () {
@@ -33,22 +35,26 @@ class StatCache {
             private $watcher;
             private $driver;
 
-            public function __construct(string $watcher) {
+            public function __construct(string $watcher)
+            {
                 $this->watcher = $watcher;
                 $this->driver = Loop::get();
             }
 
-            public function __destruct() {
+            public function __destruct()
+            {
                 $this->driver->cancel($this->watcher);
             }
         });
     }
 
-    public static function get(string $path) {
+    public static function get(string $path)
+    {
         return isset(self::$cache[$path]) ? self::$cache[$path] : null;
     }
 
-    public static function set(string $path, array $stat) {
+    public static function set(string $path, array $stat)
+    {
         if (self::$ttl <= 0) {
             return;
         }
@@ -61,11 +67,13 @@ class StatCache {
         self::$timeouts[$path] = self::$now + self::$ttl;
     }
 
-    public static function ttl(int $seconds) {
+    public static function ttl(int $seconds)
+    {
         self::$ttl = $seconds;
     }
 
-    public static function clear(string $path = null) {
+    public static function clear(string $path = null)
+    {
         if (isset($path)) {
             unset(
                 self::$cache[$path],

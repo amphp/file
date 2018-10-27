@@ -6,8 +6,10 @@ use Amp\File;
 use Amp\Loop;
 use function Amp\asyncCall;
 
-class UvHandleTest extends AsyncHandleTest {
-    protected function execute(callable $cb) {
+class UvHandleTest extends AsyncHandleTest
+{
+    protected function execute(callable $cb)
+    {
         if (!\extension_loaded("uv")) {
             $this->markTestSkipped(
                 "php-uv extension not loaded"

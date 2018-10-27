@@ -13,7 +13,8 @@ const LOOP_STATE_IDENTIFIER = Driver::class;
  * @param \Amp\File\Driver $driver Use the specified object as the application-wide filesystem instance
  * @return \Amp\File\Driver
  */
-function filesystem(Driver $driver = null): Driver {
+function filesystem(Driver $driver = null): Driver
+{
     if ($driver === null) {
         $driver = Loop::getState(LOOP_STATE_IDENTIFIER);
         if ($driver) {
@@ -36,7 +37,8 @@ function filesystem(Driver $driver = null): Driver {
  *
  * @return \Amp\File\Driver
  */
-function driver(): Driver {
+function driver(): Driver
+{
     $driver = Loop::get();
 
     if ($driver instanceof Loop\UvDriver) {
@@ -61,7 +63,8 @@ function driver(): Driver {
  * @param string $mode
  * @return \Amp\Promise<\Amp\File\Handle>
  */
-function open(string $path, string $mode): Promise {
+function open(string $path, string $mode): Promise
+{
     return filesystem()->open($path, $mode);
 }
 
@@ -74,7 +77,8 @@ function open(string $path, string $mode): Promise {
  * @param string $path An absolute file system path
  * @return \Amp\Promise<array|null>
  */
-function stat(string $path): Promise {
+function stat(string $path): Promise
+{
     return filesystem()->stat($path);
 }
 
@@ -87,7 +91,8 @@ function stat(string $path): Promise {
  * @param string $path An absolute file system path
  * @return \Amp\Promise<bool>
  */
-function exists(string $path): Promise {
+function exists(string $path): Promise
+{
     return filesystem()->exists($path);
 }
 
@@ -101,7 +106,8 @@ function exists(string $path): Promise {
  * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file
  * @return \Amp\Promise<int>
  */
-function size(string $path): Promise {
+function size(string $path): Promise
+{
     return filesystem()->size($path);
 }
 
@@ -114,7 +120,8 @@ function size(string $path): Promise {
  * @param string $path An absolute file system path
  * @return \Amp\Promise<bool>
  */
-function isdir(string $path): Promise {
+function isdir(string $path): Promise
+{
     return filesystem()->isdir($path);
 }
 
@@ -127,7 +134,8 @@ function isdir(string $path): Promise {
  * @param string $path An absolute file system path
  * @return \Amp\Promise<bool>
  */
-function isfile(string $path): Promise {
+function isfile(string $path): Promise
+{
     return filesystem()->isfile($path);
 }
 
@@ -138,7 +146,8 @@ function isfile(string $path): Promise {
  * @fails \Amp\Files\FilesystemException If the path does not exist
  * @return \Amp\Promise<int>
  */
-function mtime(string $path): Promise {
+function mtime(string $path): Promise
+{
     return filesystem()->mtime($path);
 }
 
@@ -149,7 +158,8 @@ function mtime(string $path): Promise {
  * @fails \Amp\Files\FilesystemException If the path does not exist
  * @return \Amp\Promise<int>
  */
-function atime($path) {
+function atime($path)
+{
     return filesystem()->atime($path);
 }
 
@@ -160,7 +170,8 @@ function atime($path) {
  * @fails \Amp\Files\FilesystemException If the path does not exist
  * @return \Amp\Promise<int>
  */
-function ctime(string $path): Promise {
+function ctime(string $path): Promise
+{
     return filesystem()->ctime($path);
 }
 
@@ -173,7 +184,8 @@ function ctime(string $path): Promise {
  * @param string $path An absolute file system path
  * @return \Amp\Promise<array|null>
  */
-function lstat(string $path): Promise {
+function lstat(string $path): Promise
+{
     return filesystem()->lstat($path);
 }
 
@@ -185,7 +197,8 @@ function lstat(string $path): Promise {
  * @fails \Amp\Files\FilesystemException If the operation fails
  * @return \Amp\Promise<null>
  */
-function symlink(string $original, string $link): Promise {
+function symlink(string $original, string $link): Promise
+{
     return filesystem()->symlink($original, $link);
 }
 
@@ -197,7 +210,8 @@ function symlink(string $original, string $link): Promise {
  * @fails \Amp\Files\FilesystemException If the operation fails
  * @return \Amp\Promise<null>
  */
-function link(string $original, string $link): Promise {
+function link(string $original, string $link): Promise
+{
     return filesystem()->symlink($original, $link);
 }
 
@@ -208,7 +222,8 @@ function link(string $original, string $link): Promise {
  * @fails \Amp\Files\FilesystemException If the operation fails
  * @return \Amp\Promise<string>
  */
-function readlink(string $path): Promise {
+function readlink(string $path): Promise
+{
     return filesystem()->readlink($path);
 }
 
@@ -220,7 +235,8 @@ function readlink(string $path): Promise {
  * @fails \Amp\Files\FilesystemException If the operation fails
  * @return \Amp\Promise<null>
  */
-function rename(string $from, string $to): Promise {
+function rename(string $from, string $to): Promise
+{
     return filesystem()->rename($from, $to);
 }
 
@@ -230,7 +246,8 @@ function rename(string $from, string $to): Promise {
  * @param string $path
  * @return \Amp\Promise<null>
  */
-function unlink(string $path): Promise {
+function unlink(string $path): Promise
+{
     return filesystem()->unlink($path);
 }
 
@@ -242,7 +259,8 @@ function unlink(string $path): Promise {
  * @param bool $recursive
  * @return \Amp\Promise<null>
  */
-function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise {
+function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
+{
     return filesystem()->mkdir($path, $mode, $recursive);
 }
 
@@ -252,7 +270,8 @@ function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
  * @param string $path
  * @return \Amp\Promise<null>
  */
-function rmdir(string $path): Promise {
+function rmdir(string $path): Promise
+{
     return filesystem()->rmdir($path);
 }
 
@@ -264,7 +283,8 @@ function rmdir(string $path): Promise {
  * @param string $path
  * @return \Amp\Promise<array>
  */
-function scandir(string $path): Promise {
+function scandir(string $path): Promise
+{
     return filesystem()->scandir($path);
 }
 
@@ -275,7 +295,8 @@ function scandir(string $path): Promise {
  * @param int $mode
  * @return \Amp\Promise<null>
  */
-function chmod(string $path, int $mode): Promise {
+function chmod(string $path, int $mode): Promise
+{
     return filesystem()->chmod($path, $mode);
 }
 
@@ -287,7 +308,8 @@ function chmod(string $path, int $mode): Promise {
  * @param int $gid -1 to ignore
  * @return \Amp\Promise<null>
  */
-function chown(string $path, int $uid, int $gid = -1): Promise {
+function chown(string $path, int $uid, int $gid = -1): Promise
+{
     return filesystem()->chown($path, $uid, $gid);
 }
 
@@ -301,7 +323,8 @@ function chown(string $path, int $uid, int $gid = -1): Promise {
  * @param int $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
  * @return \Amp\Promise<null>
  */
-function touch(string $path, int $time = null, int $atime = null): Promise {
+function touch(string $path, int $time = null, int $atime = null): Promise
+{
     return filesystem()->touch($path, $time, $atime);
 }
 
@@ -311,7 +334,8 @@ function touch(string $path, int $time = null, int $atime = null): Promise {
  * @param string $path The file path from which to buffer contents
  * @return \Amp\Promise<string>
  */
-function get(string $path): Promise {
+function get(string $path): Promise
+{
     return filesystem()->get($path);
 }
 
@@ -322,6 +346,7 @@ function get(string $path): Promise {
  * @param string $contents The data to write to the specified $path
  * @return \Amp\Promise A promise resolving to the integer length written upon success
  */
-function put(string $path, string $contents): Promise {
+function put(string $path, string $contents): Promise
+{
     return filesystem()->put($path, $contents);
 }

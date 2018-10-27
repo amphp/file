@@ -6,7 +6,8 @@ use Amp\CallableMaker;
 use Amp\Loop;
 use Amp\Promise;
 
-class UvPoll {
+class UvPoll
+{
     use CallableMaker;
 
     /** @var string */
@@ -18,7 +19,8 @@ class UvPoll {
     /** @var callable */
     private $onDone;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->onDone = $this->callableFromInstanceMethod("done");
 
         $this->watcher = Loop::repeat(\PHP_INT_MAX / 2, function () {
@@ -30,17 +32,20 @@ class UvPoll {
         Loop::setState(self::class, new class($this->watcher) {
             private $watcher;
 
-            public function __construct(string $watcher) {
+            public function __construct(string $watcher)
+            {
                 $this->watcher = $watcher;
             }
 
-            public function __destruct() {
+            public function __destruct()
+            {
                 Loop::cancel($this->watcher);
             }
         });
     }
 
-    public function listen(Promise $promise) {
+    public function listen(Promise $promise)
+    {
         if ($this->requests++ === 0) {
             Loop::enable($this->watcher);
         }
@@ -48,7 +53,8 @@ class UvPoll {
         $promise->onResolve($this->onDone);
     }
 
-    private function done() {
+    private function done()
+    {
         if (--$this->requests === 0) {
             Loop::disable($this->watcher);
         }

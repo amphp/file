@@ -6,19 +6,23 @@ use Amp\ByteStream\ClosedException;
 use Amp\File;
 use Amp\PHPUnit\TestCase;
 
-abstract class HandleTest extends TestCase {
-    protected function setUp() {
+abstract class HandleTest extends TestCase
+{
+    protected function setUp()
+    {
         Fixture::init();
         File\StatCache::clear();
     }
 
-    protected function tearDown() {
+    protected function tearDown()
+    {
         Fixture::clear();
     }
 
     abstract protected function execute(callable $cb);
 
-    public function testWrite() {
+    public function testWrite()
+    {
         $this->execute(function () {
             $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
@@ -37,7 +41,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testWriteAfterClose() {
+    public function testWriteAfterClose()
+    {
         $this->execute(function () {
             $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
@@ -49,7 +54,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testDoubleClose() {
+    public function testDoubleClose()
+    {
         $this->execute(function () {
             $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
@@ -59,7 +65,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testWriteAfterEnd() {
+    public function testWriteAfterEnd()
+    {
         $this->execute(function () {
             $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
@@ -72,7 +79,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testReadingToEof() {
+    public function testReadingToEof()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -96,7 +104,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testSequentialReads() {
+    public function testSequentialReads()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -112,7 +121,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testReadingFromOffset() {
+    public function testReadingFromOffset()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -131,7 +141,8 @@ abstract class HandleTest extends TestCase {
     /**
      * @expectedException \Error
      */
-    public function testSeekThrowsOnInvalidWhence() {
+    public function testSeekThrowsOnInvalidWhence()
+    {
         $this->execute(function () {
             try {
                 /** @var \Amp\File\Handle $handle */
@@ -143,7 +154,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testSeekSetCur() {
+    public function testSeekSetCur()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -156,7 +168,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testSeekSetEnd() {
+    public function testSeekSetEnd()
+    {
         $this->execute(function () {
             $size = yield File\size(__FILE__);
             /** @var \Amp\File\Handle $handle */
@@ -168,7 +181,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testPath() {
+    public function testPath()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -177,7 +191,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testMode() {
+    public function testMode()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -186,7 +201,8 @@ abstract class HandleTest extends TestCase {
         });
     }
 
-    public function testClose() {
+    public function testClose()
+    {
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");

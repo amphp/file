@@ -4,7 +4,8 @@ namespace Amp\File;
 
 use Amp\Promise;
 
-interface Driver {
+interface Driver
+{
     /**
      * Open a handle for the specified path.
      *

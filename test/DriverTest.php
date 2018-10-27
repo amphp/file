@@ -5,19 +5,23 @@ namespace Amp\File\Test;
 use Amp\File as file;
 use Amp\PHPUnit\TestCase;
 
-abstract class DriverTest extends TestCase {
-    protected function setUp() {
+abstract class DriverTest extends TestCase
+{
+    protected function setUp()
+    {
         Fixture::init();
         File\StatCache::clear();
     }
 
-    protected function tearDown() {
+    protected function tearDown()
+    {
         Fixture::clear();
     }
 
     abstract protected function execute(callable $cb);
 
-    public function testScandir() {
+    public function testScandir()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $actual = yield File\scandir($fixtureDir);
@@ -29,7 +33,8 @@ abstract class DriverTest extends TestCase {
     /**
      * @expectedException \Amp\File\FilesystemException
      */
-    public function testScandirThrowsIfPathNotADirectory() {
+    public function testScandirThrowsIfPathNotADirectory()
+    {
         $this->execute(function () {
             (yield File\scandir(__FILE__));
         });
@@ -38,14 +43,16 @@ abstract class DriverTest extends TestCase {
     /**
      * @expectedException \Amp\File\FilesystemException
      */
-    public function testScandirThrowsIfPathDoesntExist() {
+    public function testScandirThrowsIfPathDoesntExist()
+    {
         $this->execute(function () {
             $path = Fixture::path() . "/nonexistent";
             (yield File\scandir($path));
         });
     }
 
-    public function testSymlink() {
+    public function testSymlink()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
 
@@ -57,7 +64,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testReadlink() {
+    public function testReadlink()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
 
@@ -69,10 +77,11 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function readlinkPathProvider() {
+    public function readlinkPathProvider()
+    {
         return [
             'nonExistingPath' => [function () {
-                return Fixture::path() . '/' . uniqid();
+                return Fixture::path() . '/' . \uniqid();
             }],
             'notLink' => [function () {
                 return Fixture::path();
@@ -86,7 +95,8 @@ abstract class DriverTest extends TestCase {
      *
      * @param \Closure $linkResolver
      */
-    public function testReadlinkError(\Closure $linkResolver) {
+    public function testReadlinkError(\Closure $linkResolver)
+    {
         $this->execute(function () use ($linkResolver) {
             $link = $linkResolver();
 
@@ -94,7 +104,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testLstat() {
+    public function testLstat()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
 
@@ -106,7 +117,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testFileStat() {
+    public function testFileStat()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $stat = (yield File\stat("{$fixtureDir}/small.txt"));
@@ -115,7 +127,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testDirStat() {
+    public function testDirStat()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $stat = (yield File\stat("{$fixtureDir}/dir"));
@@ -124,7 +137,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testNonexistentPathStatResolvesToNull() {
+    public function testNonexistentPathStatResolvesToNull()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $stat = (yield File\stat("{$fixtureDir}/nonexistent"));
@@ -132,7 +146,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testExists() {
+    public function testExists()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $this->assertFalse(yield File\exists("{$fixtureDir}/nonexistent"));
@@ -140,14 +155,16 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testGet() {
+    public function testGet()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $this->assertSame("small", yield File\get("{$fixtureDir}/small.txt"));
         });
     }
 
-    public function testSize() {
+    public function testSize()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/small.txt";
@@ -161,7 +178,8 @@ abstract class DriverTest extends TestCase {
     /**
      * @expectedException \Amp\File\FilesystemException
      */
-    public function testSizeFailsOnNonexistentPath() {
+    public function testSizeFailsOnNonexistentPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/nonexistent";
@@ -172,7 +190,8 @@ abstract class DriverTest extends TestCase {
     /**
      * @expectedException \Amp\File\FilesystemException
      */
-    public function testSizeFailsOnDirectoryPath() {
+    public function testSizeFailsOnDirectoryPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/dir";
@@ -182,7 +201,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testIsdirResolvesTrueOnDirectoryPath() {
+    public function testIsdirResolvesTrueOnDirectoryPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/dir";
@@ -190,7 +210,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testIsdirResolvesFalseOnFilePath() {
+    public function testIsdirResolvesFalseOnFilePath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/small.txt";
@@ -198,7 +219,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testIsdirResolvesFalseOnNonexistentPath() {
+    public function testIsdirResolvesFalseOnNonexistentPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/nonexistent";
@@ -206,7 +228,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testIsfileResolvesTrueOnFilePath() {
+    public function testIsfileResolvesTrueOnFilePath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/small.txt";
@@ -214,7 +237,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testIsfileResolvesFalseOnDirectoryPath() {
+    public function testIsfileResolvesFalseOnDirectoryPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/dir";
@@ -222,7 +246,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testIsfileResolvesFalseOnNonexistentPath() {
+    public function testIsfileResolvesFalseOnNonexistentPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/nonexistent";
@@ -230,7 +255,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testRename() {
+    public function testRename()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
 
@@ -247,7 +273,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testUnlink() {
+    public function testUnlink()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $toUnlink = "{$fixtureDir}/unlink";
@@ -257,7 +284,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testMkdirRmdir() {
+    public function testMkdirRmdir()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
 
@@ -280,7 +308,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testMtime() {
+    public function testMtime()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/small.txt";
@@ -294,7 +323,8 @@ abstract class DriverTest extends TestCase {
     /**
      * @expectedException \Amp\File\FilesystemException
      */
-    public function testMtimeFailsOnNonexistentPath() {
+    public function testMtimeFailsOnNonexistentPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/nonexistent";
@@ -302,7 +332,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testAtime() {
+    public function testAtime()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/small.txt";
@@ -316,7 +347,8 @@ abstract class DriverTest extends TestCase {
     /**
      * @expectedException \Amp\File\FilesystemException
      */
-    public function testAtimeFailsOnNonexistentPath() {
+    public function testAtimeFailsOnNonexistentPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/nonexistent";
@@ -324,7 +356,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    public function testCtime() {
+    public function testCtime()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/small.txt";
@@ -338,7 +371,8 @@ abstract class DriverTest extends TestCase {
     /**
      * @expectedException \Amp\File\FilesystemException
      */
-    public function testCtimeFailsOnNonexistentPath() {
+    public function testCtimeFailsOnNonexistentPath()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
             $path = "{$fixtureDir}/nonexistent";
@@ -349,7 +383,8 @@ abstract class DriverTest extends TestCase {
     /**
      * @group slow
      */
-    public function testTouch() {
+    public function testTouch()
+    {
         $this->execute(function () {
             $fixtureDir = Fixture::path();
 
@@ -367,7 +402,8 @@ abstract class DriverTest extends TestCase {
         });
     }
 
-    private function assertStatSame(array $expected, array $actual) {
+    private function assertStatSame(array $expected, array $actual)
+    {
         $filter = function (array $stat) {
             $filtered = \array_filter(
                 $stat,
@@ -377,7 +413,7 @@ abstract class DriverTest extends TestCase {
                 ARRAY_FILTER_USE_KEY
             );
 
-            ksort($filtered);
+            \ksort($filtered);
 
             return $filtered;
         };
@@ -389,7 +425,8 @@ abstract class DriverTest extends TestCase {
      * @param array $stat
      * @return string
      */
-    private function getPermissionsFromStat(array $stat): string {
+    private function getPermissionsFromStat(array $stat): string
+    {
         return \substr(\decoct($stat["mode"]), 1);
     }
 }
