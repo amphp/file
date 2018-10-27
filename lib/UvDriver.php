@@ -453,8 +453,10 @@ class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_readdir($this->loop, $path, 0, function ($fh, $data) use ($deferred, $path) {
-            if (empty($fh)) {
+            if (empty($fh) && $data !== 0) {
                 $deferred->fail(new FilesystemException("Failed reading contents from {$path}"));
+            } elseif ($data === 0) {
+                $deferred->resolve([]);
             } else {
                 $deferred->resolve($data);
             }
