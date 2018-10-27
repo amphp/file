@@ -29,7 +29,7 @@ class ParallelDriver implements Driver {
      */
     public function open(string $path, string $mode): Promise {
         return call(function () use ($path, $mode) {
-            $worker = $this->pool->get();
+            $worker = $this->pool->getWorker();
             try {
                 list($id, $size, $mode) = yield $worker->enqueue(new Internal\FileTask("fopen", [$path, $mode]));
             } catch (TaskException $exception) {
