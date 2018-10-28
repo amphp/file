@@ -11,6 +11,14 @@ class EioDriver implements Driver
     /** @var \Amp\File\Internal\EioPoll */
     private $poll;
 
+    /**
+     * @return bool Determines if this driver can be used based on the environment.
+     */
+    public static function isSupported(): bool
+    {
+        return \extension_loaded('eio');
+    }
+
     public function __construct()
     {
         $this->poll = new Internal\EioPoll;

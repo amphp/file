@@ -21,6 +21,16 @@ class UvDriver implements Driver
     private $poll;
 
     /**
+     * @param \Amp\Loop\Driver The currently active loop driver.
+     *
+     * @return bool Determines if this driver can be used based on the environment.
+     */
+    public static function isSupported(Loop\Driver $driver): bool
+    {
+        return $driver instanceof Loop\UvDriver;
+    }
+
+    /**
      * @param \Amp\Loop\UvDriver $driver
      */
     public function __construct(Loop\UvDriver $driver)

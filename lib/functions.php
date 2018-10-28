@@ -41,11 +41,11 @@ function driver(): Driver
 {
     $driver = Loop::get();
 
-    if ($driver instanceof Loop\UvDriver) {
+    if (UvDriver::isSupported($driver)) {
         return new UvDriver($driver);
     }
 
-    if (\extension_loaded("eio")) {
+    if (EioDriver::isSupported()) {
         return new EioDriver;
     }
 
