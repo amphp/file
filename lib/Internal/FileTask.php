@@ -112,6 +112,7 @@ class FileTask implements Task
                 case "fread":
                 case "fwrite":
                 case "fseek":
+                case "ftruncate":
                     return ([$file, \substr($this->operation, 1)])(...$this->args);
 
                 case "fclose":

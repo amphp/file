@@ -212,4 +212,61 @@ abstract class HandleTest extends TestCase
             yield $handle->read();
         });
     }
+
+    /**
+     * @depends testWrite
+     */
+    public function testTruncateToSmallerSize()
+    {
+        $this->execute(function () {
+            $path = Fixture::path() . "/write";
+            /** @var \Amp\File\Handle $handle */
+            $handle = yield File\open($path, "c+");
+
+            $handle->write("foo");
+            yield $handle->write("bar");
+            yield $handle->truncate(4);
+            yield $handle->seek(0);
+            $contents = yield $handle->read();
+            $this->assertTrue($handle->eof());
+            $this->assertSame("foob", $contents);
+
+            yield $handle->write("bar");
+            $this->assertSame(7, $handle->tell());
+            yield $handle->seek(0);
+            $contents = yield $handle->read();
+            $this->assertSame("foobbar", $contents);
+
+            yield $handle->close();
+        });
+    }
+
+    /**
+     * @depends testWrite
+     */
+    public function testTruncateToLargerSize()
+    {
+        $this->execute(function () {
+            $path = Fixture::path() . "/write";
+            /** @var \Amp\File\Handle $handle */
+            $handle = yield File\open($path, "c+");
+
+            yield $handle->write("foo");
+            yield $handle->truncate(6);
+            $this->assertSame(3, $handle->tell());
+            yield $handle->seek(0);
+            $contents = yield $handle->read();
+            $this->assertTrue($handle->eof());
+            $this->assertSame("foo\0\0\0", $contents);
+
+            yield $handle->write("bar");
+            $this->assertSame(9, $handle->tell());
+            yield $handle->seek(0);
+            $contents = yield $handle->read();
+            $this->assertSame("foo\0\0\0bar", $contents);
+
+            yield $handle->close();
+        });
+    }
+
 }

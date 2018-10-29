@@ -113,6 +113,22 @@ class BlockingHandle implements Handle
     /**
      * {@inheritdoc}
      */
+    public function truncate(int $size): Promise
+    {
+        if ($this->fh === null) {
+            throw new ClosedException("The file has been closed");
+        }
+
+        if (!@\ftruncate($this->fh, $size)) {
+            return new Failure(new StreamException("Could not truncate file"));
+        }
+
+        return new Success;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function seek(int $position, int $whence = \SEEK_SET): Promise
     {
         if ($this->fh === null) {

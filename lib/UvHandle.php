@@ -185,6 +185,63 @@ class UvHandle implements Handle
         return $deferred->promise();
     }
 
+    public function truncate(int $size): Promise
+    {
+        if ($this->isActive && $this->queue->isEmpty()) {
+            throw new PendingOperationError;
+        }
+
+        if (!$this->writable) {
+            throw new ClosedException("The file is no longer writable");
+        }
+
+        $this->isActive = true;
+
+        if ($this->queue->isEmpty()) {
+            $promise = $this->trim($size);
+        } else {
+            $promise = $this->queue->top();
+            $promise = call(function () use ($promise, $size) {
+                yield $promise;
+                return yield $this->trim($size);
+            });
+        }
+
+        $this->queue->push($promise);
+
+        return $promise;
+    }
+
+    private function trim(int $size): Promise
+    {
+        $deferred = new Deferred;
+        $this->poll->listen($deferred->promise());
+
+        $onTruncate = function ($fh) use ($deferred, $size) {
+            if ($this->queue->isEmpty()) {
+                $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
+            }
+
+            $this->queue->shift();
+            if ($this->queue->isEmpty()) {
+                $this->isActive = false;
+            }
+
+            StatCache::clear($this->path);
+            $this->size = $size;
+            $deferred->resolve();
+        };
+
+        \uv_fs_ftruncate(
+            $this->loop,
+            $this->fh,
+            $size,
+            $onTruncate
+        );
+
+        return $deferred->promise();
+    }
+
     /**
      * {@inheritdoc}
      */

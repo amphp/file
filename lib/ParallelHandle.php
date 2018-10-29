@@ -4,7 +4,6 @@ namespace Amp\File;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
-use Amp\Coroutine;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
@@ -100,6 +99,41 @@ class ParallelHandle implements Handle
     /**
      * {@inheritdoc}
      */
+    public function truncate(int $size): Promise
+    {
+        if ($this->id === null) {
+            throw new ClosedException("The file has been closed");
+        }
+
+        if ($this->busy) {
+            throw new PendingOperationError;
+        }
+
+        if (!$this->writable) {
+            throw new ClosedException("The file is no longer writable");
+        }
+
+        return call(function () use ($size) {
+            ++$this->pendingWrites;
+            $this->busy = true;
+
+            try {
+                yield $this->worker->enqueue(new Internal\FileTask('ftruncate', [$size], $this->id));
+            } catch (TaskException $exception) {
+                throw new StreamException("Reading from the file failed", 0, $exception);
+            } catch (WorkerException $exception) {
+                throw new StreamException("Sending the task to the worker failed", 0, $exception);
+            } finally {
+                if (--$this->pendingWrites === 0) {
+                    $this->busy = false;
+                }
+            }
+        });
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function eof(): bool
     {
         return $this->pendingWrites === 0 && $this->size <= $this->position;
@@ -115,24 +149,22 @@ class ParallelHandle implements Handle
             throw new PendingOperationError;
         }
 
-        return new Coroutine($this->doRead($length));
-    }
+        return call(function () use ($length) {
+            $this->busy = true;
 
-    private function doRead(int $length): \Generator
-    {
-        $this->busy = true;
+            try {
+                $data = yield $this->worker->enqueue(new Internal\FileTask('fread', [$length], $this->id));
+                $this->position += \strlen($data);
+            } catch (TaskException $exception) {
+                throw new StreamException("Reading from the file failed", 0, $exception);
+            } catch (WorkerException $exception) {
+                throw new StreamException("Sending the task to the worker failed", 0, $exception);
+            } finally {
+                $this->busy = false;
+            }
 
-        try {
-            $data = yield $this->worker->enqueue(new Internal\FileTask('fread', [$length], $this->id));
-            $this->position += \strlen($data);
             return $data;
-        } catch (TaskException $exception) {
-            throw new StreamException("Reading from the file failed", 0, $exception);
-        } catch (WorkerException $exception) {
-            throw new StreamException("Sending the task to the worker failed", 0, $exception);
-        } finally {
-            $this->busy = false;
-        }
+        });
     }
 
     /**
@@ -152,7 +184,25 @@ class ParallelHandle implements Handle
             throw new ClosedException("The file is no longer writable");
         }
 
-        return new Coroutine($this->doWrite($data));
+        return call(function () use ($data) {
+            ++$this->pendingWrites;
+            $this->busy = true;
+
+            try {
+                $length = yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
+            } catch (TaskException $exception) {
+                throw new StreamException("Writing to the file failed", 0, $exception);
+            } catch (WorkerException $exception) {
+                throw new StreamException("Sending the task to the worker failed", 0, $exception);
+            } finally {
+                if (--$this->pendingWrites === 0) {
+                    $this->busy = false;
+                }
+            }
+
+            $this->position += $length;
+            return $length;
+        });
     }
 
     /**
@@ -171,27 +221,6 @@ class ParallelHandle implements Handle
         });
     }
 
-    private function doWrite(string $data): \Generator
-    {
-        ++$this->pendingWrites;
-        $this->busy = true;
-
-        try {
-            $length = yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
-        } catch (TaskException $exception) {
-            throw new StreamException("Writing to the file failed", 0, $exception);
-        } catch (WorkerException $exception) {
-            throw new StreamException("Sending the task to the worker failed", 0, $exception);
-        } finally {
-            if (--$this->pendingWrites === 0) {
-                $this->busy = false;
-            }
-        }
-
-        $this->position += $length;
-        return $length;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -205,34 +234,31 @@ class ParallelHandle implements Handle
             throw new PendingOperationError;
         }
 
-        return new Coroutine($this->doSeek($offset, $whence));
-    }
+        return call(function () use ($offset, $whence) {
+            switch ($whence) {
+                case \SEEK_SET:
+                case \SEEK_CUR:
+                case \SEEK_END:
+                    try {
+                        $this->position = yield $this->worker->enqueue(
+                            new Internal\FileTask('fseek', [$offset, $whence], $this->id)
+                        );
 
-    private function doSeek(int $offset, int $whence)
-    {
-        switch ($whence) {
-            case \SEEK_SET:
-            case \SEEK_CUR:
-            case \SEEK_END:
-                try {
-                    $this->position = yield $this->worker->enqueue(
-                        new Internal\FileTask('fseek', [$offset, $whence], $this->id)
-                    );
+                        if ($this->position > $this->size) {
+                            $this->size = $this->position;
+                        }
 
-                    if ($this->position > $this->size) {
-                        $this->size = $this->position;
+                        return $this->position;
+                    } catch (TaskException $exception) {
+                        throw new StreamException('Seeking in the file failed.', 0, $exception);
+                    } catch (WorkerException $exception) {
+                        throw new StreamException("Sending the task to the worker failed", 0, $exception);
                     }
 
-                    return $this->position;
-                } catch (TaskException $exception) {
-                    throw new StreamException('Seeking in the file failed.', 0, $exception);
-                } catch (WorkerException $exception) {
-                    throw new StreamException("Sending the task to the worker failed", 0, $exception);
-                }
-
-            default:
-                throw new \Error('Invalid whence value. Use SEEK_SET, SEEK_CUR, or SEEK_END.');
-        }
+                default:
+                    throw new \Error('Invalid whence value. Use SEEK_SET, SEEK_CUR, or SEEK_END.');
+            }
+        });
     }
 
     /**

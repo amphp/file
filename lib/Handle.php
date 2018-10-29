@@ -46,6 +46,16 @@ interface Handle extends InputStream, OutputStream
     public function close(): Promise;
 
     /**
+     * Truncates the file to the given length. If $size is larger than the current file size, the file is extended
+     * with null bytes.
+     *
+     * @param int $size New file size.
+     *
+     * @return \Amp\Promise
+     */
+    public function truncate(int $size): Promise;
+
+    /**
      * Set the handle's internal pointer position.
      *
      * $whence values:

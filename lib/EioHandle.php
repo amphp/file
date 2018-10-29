@@ -70,33 +70,32 @@ class EioHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
+        $onRead = function (Deferred $deferred, $result, $req) {
+            $this->isActive = false;
+
+            if ($result === -1) {
+                $error = \eio_get_last_error($req);
+                if ($error === "Bad file descriptor") {
+                    $deferred->fail(new ClosedException("Reading from the file failed due to a closed handle"));
+                } else {
+                    $deferred->fail(new StreamException("Reading from the file failed:" . $error));
+                }
+            } else {
+                $this->position += \strlen($result);
+                $deferred->resolve(\strlen($result) ? $result : null);
+            }
+        };
+
         \eio_read(
             $this->fh,
             $length,
             $this->position,
             \EIO_PRI_DEFAULT,
-            [$this, "onRead"],
+            $onRead,
             $deferred
         );
 
         return $deferred->promise();
-    }
-
-    private function onRead(Deferred $deferred, $result, $req)
-    {
-        $this->isActive = false;
-
-        if ($result === -1) {
-            $error = \eio_get_last_error($req);
-            if ($error === "Bad file descriptor") {
-                $deferred->fail(new ClosedException("Reading from the file failed due to a closed handle"));
-            } else {
-                $deferred->fail(new StreamException("Reading from the file failed:" . $error));
-            }
-        } else {
-            $this->position += \strlen($result);
-            $deferred->resolve(\strlen($result) ? $result : null);
-        }
     }
 
     /**
@@ -136,13 +135,40 @@ class EioHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
+        $onWrite = function (Deferred $deferred, $result, $req) {
+            if ($this->queue->isEmpty()) {
+                $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
+            }
+
+            $this->queue->shift();
+            if ($this->queue->isEmpty()) {
+                $this->isActive = false;
+            }
+
+            if ($result === -1) {
+                $error = \eio_get_last_error($req);
+                if ($error === "Bad file descriptor") {
+                    $deferred->fail(new ClosedException("Writing to the file failed due to a closed handle"));
+                } else {
+                    $deferred->fail(new StreamException("Writing to the file failed: " . $error));
+                }
+            } else {
+                $this->position += $result;
+                if ($this->position > $this->size) {
+                    $this->size = $this->position;
+                }
+
+                $deferred->resolve($result);
+            }
+        };
+
         \eio_write(
             $this->fh,
             $data,
             $length,
             $this->position,
             \EIO_PRI_DEFAULT,
-            [$this, "onWrite"],
+            $onWrite,
             $deferred
         );
 
@@ -165,34 +191,6 @@ class EioHandle implements Handle
         });
     }
 
-    private function onWrite(Deferred $deferred, $result, $req)
-    {
-        if ($this->queue->isEmpty()) {
-            $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
-        }
-
-        $this->queue->shift();
-        if ($this->queue->isEmpty()) {
-            $this->isActive = false;
-        }
-
-        if ($result === -1) {
-            $error = \eio_get_last_error($req);
-            if ($error === "Bad file descriptor") {
-                $deferred->fail(new ClosedException("Writing to the file failed due to a closed handle"));
-            } else {
-                $deferred->fail(new StreamException("Writing to the file failed: " . $error));
-            }
-        } else {
-            $this->position += $result;
-            if ($this->position > $this->size) {
-                $this->size = $this->position;
-            }
-
-            $deferred->resolve($result);
-        }
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -205,15 +203,78 @@ class EioHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($this->closing = $deferred->promise());
 
-        \eio_close($this->fh, \EIO_PRI_DEFAULT, [$this, "onClose"], $deferred);
+        \eio_close($this->fh, \EIO_PRI_DEFAULT, function (Deferred $deferred) {
+            // Ignore errors when closing file, as the handle will become invalid anyway.
+            $deferred->resolve();
+        }, $deferred);
 
         return $deferred->promise();
     }
 
-    private function onClose(Deferred $deferred, $result, $req)
+    public function truncate(int $size): Promise
     {
-        // Ignore errors when closing file, as the handle will become invalid anyway.
-        $deferred->resolve();
+        if ($this->isActive && $this->queue->isEmpty()) {
+            throw new PendingOperationError;
+        }
+
+        if (!$this->writable) {
+            throw new ClosedException("The file is no longer writable");
+        }
+
+        $this->isActive = true;
+
+        if ($this->queue->isEmpty()) {
+            $promise = $this->trim($size);
+        } else {
+            $promise = $this->queue->top();
+            $promise = call(function () use ($promise, $size) {
+                yield $promise;
+                return yield $this->trim($size);
+            });
+        }
+
+        $this->queue->push($promise);
+
+        return $promise;
+    }
+
+    private function trim(int $size): Promise
+    {
+        $deferred = new Deferred;
+        $this->poll->listen($deferred->promise());
+
+        $onTruncate = function (Deferred $deferred, $result, $req) use ($size) {
+            if ($this->queue->isEmpty()) {
+                $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
+            }
+
+            $this->queue->shift();
+            if ($this->queue->isEmpty()) {
+                $this->isActive = false;
+            }
+
+            if ($result === -1) {
+                $error = \eio_get_last_error($req);
+                if ($error === "Bad file descriptor") {
+                    $deferred->fail(new ClosedException("Truncating the file failed due to a closed handle"));
+                } else {
+                    $deferred->fail(new StreamException("Truncating the file failed: " . $error));
+                }
+            } else {
+                $this->size = $size;
+                $deferred->resolve();
+            }
+        };
+
+        \eio_ftruncate(
+            $this->fh,
+            $size,
+            \EIO_PRI_DEFAULT,
+            $onTruncate,
+            $deferred
+        );
+
+        return $deferred->promise();
     }
 
     /**
