@@ -94,9 +94,12 @@ class BlockingDriver implements Driver
         }
 
         if (($size = @\filesize($path)) === false) {
-            return new Failure(new FilesystemException(
-                \error_get_last()["message"]
-            ));
+            $message = 'Could not open the file.';
+            if ($error = \error_get_last()) {
+                $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
+            }
+
+            return new Failure(new FilesystemException($message));
         }
 
         \clearstatcache(true, $path);
@@ -328,15 +331,21 @@ class BlockingDriver implements Driver
     public function chown(string $path, int $uid, int $gid): Promise
     {
         if ($uid !== -1 && !@\chown($path, $uid)) {
-            return new Failure(new FilesystemException(
-                \error_get_last()["message"]
-            ));
+            $message = 'Could not open the file.';
+            if ($error = \error_get_last()) {
+                $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
+            }
+
+            return new Failure(new FilesystemException($message));
         }
 
         if ($gid !== -1 && !@\chgrp($path, $gid)) {
-            return new Failure(new FilesystemException(
-                \error_get_last()["message"]
-            ));
+            $message = 'Could not open the file.';
+            if ($error = \error_get_last()) {
+                $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
+            }
+
+            return new Failure(new FilesystemException($message));
         }
 
         return new Success;
@@ -358,8 +367,14 @@ class BlockingDriver implements Driver
     public function get(string $path): Promise
     {
         $result = @\file_get_contents($path);
+        if ($result === false) {
+            $message = 'Could not open the file.';
+            if ($error = \error_get_last()) {
+                $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
+            }
+        }
         return ($result === false)
-            ? new Failure(new FilesystemException(\error_get_last()["message"]))
+            ? new Failure(new FilesystemException($message))
             : new Success($result);
     }
 
@@ -369,8 +384,15 @@ class BlockingDriver implements Driver
     public function put(string $path, string $contents): Promise
     {
         $result = @\file_put_contents($path, $contents);
+        if ($result === false) {
+            $message = 'Could not open the file.';
+            if ($error = \error_get_last()) {
+                $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
+            }
+        }
+
         return ($result === false)
-            ? new Failure(new FilesystemException(\error_get_last()["message"]))
+            ? new Failure(new FilesystemException($message))
             : new Success($result);
     }
 }
