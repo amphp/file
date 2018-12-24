@@ -372,10 +372,9 @@ class BlockingDriver implements Driver
             if ($error = \error_get_last()) {
                 $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
             }
+            return new Failure(new FilesystemException($message));
         }
-        return ($result === false)
-            ? new Failure(new FilesystemException($message))
-            : new Success($result);
+        return new Success($result);
     }
 
     /**
@@ -389,10 +388,8 @@ class BlockingDriver implements Driver
             if ($error = \error_get_last()) {
                 $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
             }
+            return new Failure(new FilesystemException($message));
         }
-
-        return ($result === false)
-            ? new Failure(new FilesystemException($message))
-            : new Success($result);
+        return new Success($result);
     }
 }
