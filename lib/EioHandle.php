@@ -132,6 +132,10 @@ class EioHandle implements Handle
     {
         $length = \strlen($data);
 
+        if ($length === 0) {
+            return new Success(0);
+        }
+
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 

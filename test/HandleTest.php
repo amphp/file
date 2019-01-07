@@ -41,6 +41,21 @@ abstract class HandleTest extends TestCase
         });
     }
 
+    public function testEmptyWrite()
+    {
+        $this->execute(function () {
+            $path = Fixture::path() . "/write";
+
+            $handle = yield File\open($path, "c+");
+            $this->assertSame(0, $handle->tell());
+
+            yield $handle->write("");
+            $this->assertSame(0, $handle->tell());
+
+            yield $handle->close();
+        });
+    }
+
     public function testWriteAfterClose()
     {
         $this->execute(function () {
