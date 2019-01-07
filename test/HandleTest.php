@@ -283,5 +283,4 @@ abstract class HandleTest extends TestCase
             yield $handle->close();
         });
     }
-
 }
