@@ -176,10 +176,10 @@ class UvHandle implements Handle
                 }
             } else {
                 StatCache::clear($this->path);
-                $newPosition = $this->position + $length;
-                $delta = $newPosition - $this->position;
-                $this->position = ($this->mode[0] === "a") ? $this->position : $newPosition;
-                $this->size += $delta;
+                $this->position += $length;
+                if ($this->position > $this->size) {
+                    $this->size = $this->position;
+                }
                 $deferred->resolve($length);
             }
         };
