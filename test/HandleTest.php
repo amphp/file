@@ -79,6 +79,23 @@ abstract class HandleTest extends TestCase
         });
     }
 
+    public function testWriteInAppendMode()
+    {
+        $this->execute(function () {
+            $path = Fixture::path() . "/write";
+            /** @var \Amp\File\Handle $handle */
+            $handle = yield File\open($path, "a+");
+            $this->assertSame(0, $handle->tell());
+            yield $handle->write("bar");
+            yield $handle->write("foo");
+            yield $handle->write("baz");
+            $this->assertSame(9, $handle->tell());
+            yield $handle->seek(0);
+            $this->assertSame(0, $handle->tell());
+            $this->assertSame("barfoobaz", yield $handle->read());
+        });
+    }
+
     public function testReadingToEof()
     {
         $this->execute(function () {
