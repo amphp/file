@@ -21,7 +21,7 @@ function filesystem(Driver $driver = null): Driver
             return $driver;
         }
 
-        $driver = driver();
+        $driver = createDefaultDriver();
     }
 
     if (\defined("AMP_WORKER") && $driver instanceof ParallelDriver) {
@@ -37,7 +37,7 @@ function filesystem(Driver $driver = null): Driver
  *
  * @return \Amp\File\Driver
  */
-function driver(): Driver
+function createDefaultDriver(): Driver
 {
     $driver = Loop::get();
 
