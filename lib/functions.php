@@ -2,8 +2,10 @@
 
 namespace Amp\File;
 
+use Amp\Delayed;
 use Amp\Loop;
 use Amp\Promise;
+use function Amp\call;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
@@ -349,4 +351,46 @@ function get(string $path): Promise
 function put(string $path, string $contents): Promise
 {
     return filesystem()->put($path, $contents);
+}
+
+/**
+ * Asynchronously lock a file
+ * Resolves with a callbable that MUST eventually be called in order to release the lock.
+ *
+ * @param string  $file      File to lock
+ * @param integer $operation Locking mode, one of \LOCK_SH or \LOCK_EX (see PHP flock docs)
+ * @param integer $polling   Polling interval for lock in milliseconds
+ *
+ * @return \Amp\Promise Resolves with a callbable that MUST eventually be called in order to release the lock.
+ */
+function lock(string $file, int $operation, int $polling = 100): Promise
+{
+    return call(static function () use ($file, $operation, $polling) {
+        if (!yield exists($file)) {
+            yield \touch($file);
+            StatCache::clear($file);
+        }
+        if ($operation === \LOCK_UN) {
+            throw new FilesystemException("Can't unlock like this, call the unlock function returned by the first instance of lock that acquired the lock to unlock");
+        }
+        $operation |= LOCK_NB;
+        $res = \fopen($file, 'c');
+        do {
+            $result = \flock($res, $operation, $wouldblock);
+            if (!$result) {
+                if (!$wouldblock) {
+                    throw new FilesystemException("Failed acquiring lock on file.");
+                }
+                yield new Delayed($polling);
+            }
+        } while (!$result);
+
+        return static function () use (&$res) {
+            if ($res) {
+                \flock($res, LOCK_UN);
+                \fclose($res);
+                $res = null;
+            }
+        };
+    });
 }
