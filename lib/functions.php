@@ -366,7 +366,7 @@ function put(string $path, string $contents): Promise
  * @param integer           $polling Polling interval for lock in milliseconds
  * @param CancellationToken $token   Cancellation token
  *
- * @return \Amp\Promise Resolves with a \Amp\Sync\Lock that MUST eventually be released
+ * @return \Amp\Promise Resolves with an \Amp\Sync\Lock
  */
 function lock(string $file, bool $shared, int $polling = 100, CancellationToken $token = null): Promise
 {
