@@ -34,7 +34,8 @@
     "require": {
         "amphp/amp": "^2",
         "amphp/byte-stream": "^1",
-        "amphp/parallel": "^1"
+        "amphp/parallel": "^1",
+        "amphp/sync": "^1.0"
     },
     "require-dev": {
         "amphp/phpunit-util": "^1",
@@ -56,5 +57,14 @@
         "platform": {
             "php": "7.0.0"
         }
+    },
+    "scripts": {
+        "check": [
+            "@cs",
+            "@test"
+        ],
+        "cs": "PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer fix -v --diff --dry-run",
+        "cs-fix": "PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer fix -v --diff",
+        "test": "@php -dzend.assertions=1 -dassert.exception=1 ./vendor/bin/phpunit --coverage-text"
     }
 }

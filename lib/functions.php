@@ -2,8 +2,14 @@
 
 namespace Amp\File;
 
+use Amp\CancellationToken;
+use Amp\Delayed;
 use Amp\Loop;
+use Amp\NullCancellationToken;
 use Amp\Promise;
+use Amp\Sync\Lock;
+
+use function Amp\call;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
@@ -349,4 +355,78 @@ function get(string $path): Promise
 function put(string $path, string $contents): Promise
 {
     return filesystem()->put($path, $contents);
+}
+
+/**
+ * Asynchronously lock a file
+ * Resolves with a callable that MUST eventually be called in order to release the lock.
+ *
+ * @param string            $file    File to lock
+ * @param bool              $shared  Whether to acquire a shared or exclusive lock (\LOCK_SH or \LOCK_EX, see PHP flock docs)
+ * @param integer           $polling Polling interval for lock in milliseconds
+ * @param CancellationToken $token   Cancellation token
+ *
+ * @return \Amp\Promise Resolves with an \Amp\Sync\Lock
+ */
+function lock(string $file, bool $shared, int $polling = 100, CancellationToken $token = null): Promise
+{
+    return call(static function () use ($file, $shared, $polling, $token) {
+        $operation = $shared ? \LOCK_SH : \LOCK_EX;
+        $token = $token ?? new NullCancellationToken;
+        if (!yield exists($file)) {
+            yield \touch($file);
+            StatCache::clear($file);
+        }
+        $operation |= LOCK_NB;
+        $res = \fopen($file, 'c');
+
+        while (!\flock($res, $operation, $wouldblock)) {
+            if (!$wouldblock) {
+                throw new FilesystemException("Failed acquiring lock on file.");
+            }
+            yield new Delayed($polling);
+            $token->throwIfRequested();
+        }
+
+        return new Lock(
+            0,
+            static function () use (&$res) {
+                if ($res) {
+                    \flock($res, LOCK_UN);
+                    \fclose($res);
+                    $res = null;
+                }
+            }
+        );
+    });
+}
+
+/**
+ * Asynchronously lock a file (shared lock)
+ * Resolves with a callable that MUST eventually be called in order to release the lock.
+ *
+ * @param string            $file    File to lock
+ * @param integer           $polling Polling interval for lock in milliseconds
+ * @param CancellationToken $token   Cancellation token
+ *
+ * @return \Amp\Promise Resolves with a callable that MUST eventually be called in order to release the lock.
+ */
+function lockShared(string $file, int $polling = 100, CancellationToken $token = null): Promise
+{
+    return lock($file, true, $polling, $token ?? new NullCancellationToken);
+}
+
+/**
+ * Asynchronously lock a file (exclusive lock)
+ * Resolves with a callable that MUST eventually be called in order to release the lock.
+ *
+ * @param string            $file    File to lock
+ * @param integer           $polling Polling interval for lock in milliseconds
+ * @param CancellationToken $token   Cancellation token
+ *
+ * @return \Amp\Promise Resolves with a callable that MUST eventually be called in order to release the lock.
+ */
+function lockExclusive(string $file, int $polling = 100, CancellationToken $token = null): Promise
+{
+    return lock($file, false, $polling, $token ?? new NullCancellationToken);
 }

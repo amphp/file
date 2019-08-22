@@ -3,8 +3,13 @@
 namespace Amp\File\Test;
 
 use Amp\ByteStream\ClosedException;
+use Amp\Delayed;
 use Amp\File;
 use Amp\PHPUnit\TestCase;
+use Amp\Sync\Lock;
+use Amp\TimeoutCancellationToken;
+
+use function Amp\Promise\timeout;
 
 abstract class HandleTest extends TestCase
 {
@@ -232,7 +237,89 @@ abstract class HandleTest extends TestCase
             yield $handle->close();
         });
     }
+    /**
+     * Try locking file exclusively.
+     *
+     * @param string $file File
+     * @param int $polling Polling interval
+     * @param int $timeout Lock timeout
+     * @return void
+     */
+    private function tryLockExclusive(string $file, int $polling, int $timeout)
+    {
+        return File\lockExclusive($file, $polling, new TimeoutCancellationToken($timeout));
+    }
+    /**
+     * Try locking file in shared mode.
+     *
+     * @param string $file File
+     * @param int $polling Polling interval
+     * @param int $timeout Lock timeout
+     * @return void
+     */
+    private function tryLockShared(string $file, int $polling, int $timeout)
+    {
+        return File\lockShared($file, $polling, new TimeoutCancellationToken($timeout));
+    }
+    public function testExclusiveLock()
+    {
+        $this->execute(function () {
+            $primary = null;
+            $secondary = null;
+            try {
+                try {
+                    $primary = yield $this->tryLockExclusive(__FILE__, 100, 100);
+                    $this->assertInstanceOf(Lock::class, $primary);
 
+                    $unlocked = false;
+                    $try = $this->tryLockShared(__FILE__, 100, 10000);
+                    $try->onResolve(static function ($e, $secondaryUnlock) use (&$unlocked, &$secondary) {
+                        if ($e) {
+                            throw $e;
+                        }
+                        $unlocked = true;
+                        $secondary = $secondaryUnlock;
+                    });
+
+                    $this->assertFalse($unlocked, "The lock wasn't acquired");
+                } finally {
+                    if ($primary) {
+                        $primary->release();
+                    }
+                }
+
+                yield new Delayed(100 * 2);
+                $this->assertTrue($unlocked, "The lock wasn't released");
+
+                yield $try;
+                $this->assertInstanceOf(Lock::class, $secondary);
+            } finally {
+                if ($secondary) {
+                    $secondary->release();
+                }
+            }
+        });
+    }
+    public function testSharedLock()
+    {
+        $this->execute(function () {
+            $primary = null;
+            $secondary = null;
+            try {
+                $primary = yield $this->tryLockShared(__FILE__, 100, 100);
+                $this->assertInstanceOf(Lock::class, $primary);
+                $secondary = yield $this->tryLockShared(__FILE__, 100, 100);
+                $this->assertInstanceOf(Lock::class, $secondary);
+            } finally {
+                if ($primary) {
+                    $primary->release();
+                }
+                if ($secondary) {
+                    $secondary->release();
+                }
+            }
+        });
+    }
     public function testClose()
     {
         $this->execute(function () {
