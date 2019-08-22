@@ -6,6 +6,8 @@ use Amp\ByteStream\ClosedException;
 use Amp\Delayed;
 use Amp\File;
 use Amp\PHPUnit\TestCase;
+use Amp\TimeoutCancellationToken;
+
 use function Amp\Promise\timeout;
 
 abstract class HandleTest extends TestCase
@@ -26,7 +28,7 @@ abstract class HandleTest extends TestCase
     public function testWrite()
     {
         $this->execute(function () {
-            $path = Fixture::path()."/write";
+            $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "c+");
             $this->assertSame(0, $handle->tell());
@@ -46,7 +48,7 @@ abstract class HandleTest extends TestCase
     public function testEmptyWrite()
     {
         $this->execute(function () {
-            $path = Fixture::path()."/write";
+            $path = Fixture::path() . "/write";
 
             $handle = yield File\open($path, "c+");
             $this->assertSame(0, $handle->tell());
@@ -61,7 +63,7 @@ abstract class HandleTest extends TestCase
     public function testWriteAfterClose()
     {
         $this->execute(function () {
-            $path = Fixture::path()."/write";
+            $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "c+");
             yield $handle->close();
@@ -74,7 +76,7 @@ abstract class HandleTest extends TestCase
     public function testDoubleClose()
     {
         $this->execute(function () {
-            $path = Fixture::path()."/write";
+            $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "c+");
             yield $handle->close();
@@ -85,7 +87,7 @@ abstract class HandleTest extends TestCase
     public function testWriteAfterEnd()
     {
         $this->execute(function () {
-            $path = Fixture::path()."/write";
+            $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "c+");
             $this->assertSame(0, $handle->tell());
@@ -99,7 +101,7 @@ abstract class HandleTest extends TestCase
     public function testWriteInAppendMode()
     {
         $this->execute(function () {
-            $path = Fixture::path()."/write";
+            $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "a+");
             $this->assertSame(0, $handle->tell());
@@ -235,17 +237,28 @@ abstract class HandleTest extends TestCase
         });
     }
     /**
-     * Try locking file.
+     * Try locking file exclusively.
      *
      * @param string $file File
-     * @param int $mode Locking mode
      * @param int $polling Polling interval
      * @param int $timeout Lock timeout
      * @return void
      */
-    private function tryLock(string $file, int $mode, int $polling, int $timeout)
+    private function tryLockExclusive(string $file, int $polling, int $timeout)
     {
-        return timeout(File\lock($file, $mode, $polling), $timeout);
+        return File\lockExclusive($file, $polling, new TimeoutCancellationToken($timeout));
+    }
+    /**
+     * Try locking file in shared mode.
+     *
+     * @param string $file File
+     * @param int $polling Polling interval
+     * @param int $timeout Lock timeout
+     * @return void
+     */
+    private function tryLockShared(string $file, int $polling, int $timeout)
+    {
+        return File\lockShared($file, $polling, new TimeoutCancellationToken($timeout));
     }
     public function testExclusiveLock()
     {
@@ -254,11 +267,11 @@ abstract class HandleTest extends TestCase
             $secondary = null;
             try {
                 try {
-                    $primary = yield $this->tryLock(__FILE__, \LOCK_EX, 100, 100);
-                    $this->assertInstanceOf("\\Closure", $primary);
+                    $primary = yield $this->tryLockExclusive(__FILE__, 100, 100);
+                    $this->assertInstanceOf(\Closure::class, $primary);
 
                     $unlocked = false;
-                    $try = $this->tryLock(__FILE__, LOCK_SH, 100, 10000);
+                    $try = $this->tryLockShared(__FILE__, 100, 10000);
                     $try->onResolve(static function ($e, $secondaryUnlock) use (&$unlocked, &$secondary) {
                         if ($e) {
                             throw $e;
@@ -278,7 +291,7 @@ abstract class HandleTest extends TestCase
                 $this->assertTrue($unlocked, "The lock wasn't released");
 
                 yield $try;
-                $this->assertInstanceOf("\\Closure", $secondary);
+                $this->assertInstanceOf(\Closure::class, $secondary);
             } finally {
                 if ($secondary) {
                     $secondary();
@@ -292,10 +305,10 @@ abstract class HandleTest extends TestCase
             $primary = null;
             $secondary = null;
             try {
-                $primary = yield $this->tryLock(__FILE__, \LOCK_SH, 100, 100);
-                $this->assertInstanceOf("\\Closure", $primary);
-                $secondary = yield $this->tryLock(__FILE__, \LOCK_SH, 100, 100);
-                $this->assertInstanceOf("\\Closure", $secondary);
+                $primary = yield $this->tryLockShared(__FILE__, 100, 100);
+                $this->assertInstanceOf(\Closure::class, $primary);
+                $secondary = yield $this->tryLockShared(__FILE__, 100, 100);
+                $this->assertInstanceOf(\Closure::class, $secondary);
             } finally {
                 if ($primary) {
                     $primary();
@@ -324,7 +337,7 @@ abstract class HandleTest extends TestCase
     public function testTruncateToSmallerSize()
     {
         $this->execute(function () {
-            $path = Fixture::path()."/write";
+            $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "c+");
 
@@ -352,7 +365,7 @@ abstract class HandleTest extends TestCase
     public function testTruncateToLargerSize()
     {
         $this->execute(function () {
-            $path = Fixture::path()."/write";
+            $path = Fixture::path() . "/write";
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open($path, "c+");
 
