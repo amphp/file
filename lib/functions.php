@@ -7,6 +7,8 @@ use Amp\Delayed;
 use Amp\Loop;
 use Amp\NullCancellationToken;
 use Amp\Promise;
+use Amp\Sync\Lock;
+
 use function Amp\call;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
@@ -364,7 +366,7 @@ function put(string $path, string $contents): Promise
  * @param integer           $polling Polling interval for lock in milliseconds
  * @param CancellationToken $token   Cancellation token
  *
- * @return \Amp\Promise Resolves with a callable that MUST eventually be called in order to release the lock.
+ * @return \Amp\Promise Resolves with a \Amp\Sync\Lock that MUST eventually be released
  */
 function lock(string $file, bool $shared, int $polling = 100, CancellationToken $token = null): Promise
 {
@@ -377,7 +379,7 @@ function lock(string $file, bool $shared, int $polling = 100, CancellationToken 
         }
         $operation |= LOCK_NB;
         $res = \fopen($file, 'c');
-        
+
         while (!\flock($res, $operation, $wouldblock)) {
             if (!$wouldblock) {
                 throw new FilesystemException("Failed acquiring lock on file.");
@@ -386,13 +388,16 @@ function lock(string $file, bool $shared, int $polling = 100, CancellationToken 
             $token->throwIfRequested();
         }
 
-        return static function () use (&$res) {
-            if ($res) {
-                \flock($res, LOCK_UN);
-                \fclose($res);
-                $res = null;
+        return new Lock(
+            0,
+            static function () use (&$res) {
+                if ($res) {
+                    \flock($res, LOCK_UN);
+                    \fclose($res);
+                    $res = null;
+                }
             }
-        };
+        );
     });
 }
 

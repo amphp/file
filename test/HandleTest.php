@@ -6,6 +6,7 @@ use Amp\ByteStream\ClosedException;
 use Amp\Delayed;
 use Amp\File;
 use Amp\PHPUnit\TestCase;
+use Amp\Sync\Lock;
 use Amp\TimeoutCancellationToken;
 
 use function Amp\Promise\timeout;
@@ -268,7 +269,7 @@ abstract class HandleTest extends TestCase
             try {
                 try {
                     $primary = yield $this->tryLockExclusive(__FILE__, 100, 100);
-                    $this->assertInstanceOf(\Closure::class, $primary);
+                    $this->assertInstanceOf(Lock::class, $primary);
 
                     $unlocked = false;
                     $try = $this->tryLockShared(__FILE__, 100, 10000);
@@ -283,7 +284,7 @@ abstract class HandleTest extends TestCase
                     $this->assertFalse($unlocked, "The lock wasn't acquired");
                 } finally {
                     if ($primary) {
-                        $primary();
+                        $primary->release();
                     }
                 }
 
@@ -291,10 +292,10 @@ abstract class HandleTest extends TestCase
                 $this->assertTrue($unlocked, "The lock wasn't released");
 
                 yield $try;
-                $this->assertInstanceOf(\Closure::class, $secondary);
+                $this->assertInstanceOf(Lock::class, $secondary);
             } finally {
                 if ($secondary) {
-                    $secondary();
+                    $secondary->release();
                 }
             }
         });
@@ -306,15 +307,15 @@ abstract class HandleTest extends TestCase
             $secondary = null;
             try {
                 $primary = yield $this->tryLockShared(__FILE__, 100, 100);
-                $this->assertInstanceOf(\Closure::class, $primary);
+                $this->assertInstanceOf(Lock::class, $primary);
                 $secondary = yield $this->tryLockShared(__FILE__, 100, 100);
-                $this->assertInstanceOf(\Closure::class, $secondary);
+                $this->assertInstanceOf(Lock::class, $secondary);
             } finally {
                 if ($primary) {
-                    $primary();
+                    $primary->release();
                 }
                 if ($secondary) {
-                    $secondary();
+                    $secondary->release();
                 }
             }
         });
