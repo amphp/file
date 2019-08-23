@@ -42,6 +42,7 @@ function createDefaultDriver(): Driver
     $driver = Loop::get();
 
     if (UvDriver::isSupported($driver)) {
+        /** @var Loop\UvDriver $driver */
         return new UvDriver($driver);
     }
 
@@ -158,7 +159,7 @@ function mtime(string $path): Promise
  * @fails \Amp\Files\FilesystemException If the path does not exist
  * @return \Amp\Promise<int>
  */
-function atime($path)
+function atime(string $path): Promise
 {
     return filesystem()->atime($path);
 }

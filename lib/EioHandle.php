@@ -70,7 +70,7 @@ final class EioHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        $onRead = function (Deferred $deferred, $result, $req) {
+        $onRead = function (Deferred $deferred, $result, $req): void {
             $this->isActive = false;
 
             if ($result === -1) {
@@ -139,7 +139,7 @@ final class EioHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        $onWrite = function (Deferred $deferred, $result, $req) {
+        $onWrite = function (Deferred $deferred, $result, $req): void {
             if ($this->queue->isEmpty()) {
                 $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
             }
@@ -207,7 +207,7 @@ final class EioHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($this->closing = $deferred->promise());
 
-        \eio_close($this->fh, \EIO_PRI_DEFAULT, function (Deferred $deferred) {
+        \eio_close($this->fh, \EIO_PRI_DEFAULT, function (Deferred $deferred): void {
             // Ignore errors when closing file, as the handle will become invalid anyway.
             $deferred->resolve();
         }, $deferred);
@@ -247,7 +247,7 @@ final class EioHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        $onTruncate = function (Deferred $deferred, $result, $req) use ($size) {
+        $onTruncate = function (Deferred $deferred, $result, $req) use ($size): void {
             if ($this->queue->isEmpty()) {
                 $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
             }

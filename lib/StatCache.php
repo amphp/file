@@ -11,7 +11,7 @@ final class StatCache
     private static $ttl = 3;
     private static $now = null;
 
-    private static function init()
+    private static function init(): void
     {
         self::$now = \time();
 
@@ -48,12 +48,12 @@ final class StatCache
         });
     }
 
-    public static function get(string $path)
+    public static function get(string $path): ?array
     {
         return isset(self::$cache[$path]) ? self::$cache[$path] : null;
     }
 
-    public static function set(string $path, array $stat)
+    public static function set(string $path, array $stat): void
     {
         if (self::$ttl <= 0) {
             return;
@@ -67,12 +67,12 @@ final class StatCache
         self::$timeouts[$path] = self::$now + self::$ttl;
     }
 
-    public static function ttl(int $seconds)
+    public static function ttl(int $seconds): void
     {
         self::$ttl = $seconds;
     }
 
-    public static function clear(string $path = null)
+    public static function clear(string $path = null): void
     {
         if (isset($path)) {
             unset(

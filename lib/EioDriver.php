@@ -62,7 +62,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onOpenHandle($openArr, $result, $req)
+    private function onOpenHandle(array $openArr, $result, $req): void
     {
         list($mode, $path, $deferred) = $openArr;
 
@@ -77,7 +77,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onOpenFtruncate($openArr, $result, $req)
+    private function onOpenFtruncate(array $openArr, $result, $req): void
     {
         list($fh, $mode, $path, $deferred) = $openArr;
 
@@ -89,7 +89,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onOpenFstat($openArr, $result, $req)
+    private function onOpenFstat(array $openArr, $result, $req): void
     {
         list($fh, $mode, $path, $deferred) = $openArr;
         if ($result === -1) {
@@ -120,7 +120,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    private function onStat($data, $result, $req)
+    private function onStat(array $data, $result, $req): void
     {
         list($deferred, $path) = $data;
         if ($result === -1) {
@@ -138,7 +138,7 @@ final class EioDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             $deferred->resolve((bool) $result);
         });
 
@@ -152,7 +152,7 @@ final class EioDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve(!($result["mode"] & \EIO_S_IFREG));
             } else {
@@ -170,7 +170,7 @@ final class EioDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve((bool) ($result["mode"] & \EIO_S_IFREG));
             } else {
@@ -188,7 +188,7 @@ final class EioDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if (empty($result)) {
                 $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
@@ -212,7 +212,7 @@ final class EioDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve($result["mtime"]);
             } else {
@@ -232,7 +232,7 @@ final class EioDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve($result["atime"]);
             } else {
@@ -252,7 +252,7 @@ final class EioDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve($result["ctime"]);
             } else {
@@ -279,7 +279,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    private function onLstat($deferred, $result, $req)
+    private function onLstat(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->resolve(null);
@@ -330,7 +330,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    private function onReadlink($deferred, $result, $req)
+    private function onReadlink(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -339,7 +339,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onGenericResult($deferred, $result, $req)
+    private function onGenericResult(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -377,7 +377,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    private function onUnlink($data, $result, $req)
+    private function onUnlink(array $data, $result, $req): void
     {
         list($deferred, $path) = $data;
 
@@ -406,7 +406,7 @@ final class EioDriver implements Driver
 
             $callback = function () use (
                 &$callback, &$arrayPath, &$tmpPath, $mode, $priority, $deferred
-            ) {
+            ): void {
                 $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
 
                 if (empty($arrayPath)) {
@@ -447,7 +447,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    private function onRmdir($data, $result, $req)
+    private function onRmdir(array $data, $result, $req): void
     {
         list($deferred, $path) = $data;
 
@@ -474,7 +474,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    private function onScandir($deferred, $result, $req)
+    private function onScandir(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -547,7 +547,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    private function onGetOpen($deferred, $result, $req)
+    private function onGetOpen(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -557,7 +557,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onGetFstat($fhAndPromisor, $result, $req)
+    private function onGetFstat(array $fhAndPromisor, $result, $req): void
     {
         list($fh, $deferred) = $fhAndPromisor;
 
@@ -572,7 +572,7 @@ final class EioDriver implements Driver
         \eio_read($fh, $length, $offset, $priority, [$this, "onGetRead"], $fhAndPromisor);
     }
 
-    private function onGetRead($fhAndPromisor, $result, $req)
+    private function onGetRead(array $fhAndPromisor, $result, $req): void
     {
         list($fh, $deferred) = $fhAndPromisor;
 
@@ -603,7 +603,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    private function onPutOpen($data, $result, $req)
+    private function onPutOpen(array $data, $result, $req): void
     {
         list($contents, $deferred) = $data;
 
@@ -619,7 +619,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onPutWrite($fhAndPromisor, $result, $req)
+    private function onPutWrite(array $fhAndPromisor, $result, $req): void
     {
         list($fh, $deferred) = $fhAndPromisor;
 

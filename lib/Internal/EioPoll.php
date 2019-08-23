@@ -59,7 +59,7 @@ final class EioPoll
         });
     }
 
-    public function listen(Promise $promise)
+    public function listen(Promise $promise): void
     {
         if ($this->requests++ === 0) {
             Loop::enable($this->watcher);
@@ -68,7 +68,7 @@ final class EioPoll
         $promise->onResolve($this->onDone);
     }
 
-    private function done()
+    private function done(): void
     {
         if (--$this->requests === 0) {
             Loop::disable($this->watcher);

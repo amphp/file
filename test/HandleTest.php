@@ -8,13 +8,13 @@ use Amp\PHPUnit\TestCase;
 
 abstract class HandleTest extends TestCase
 {
-    protected function setUp()
+    protected function setUp(): void
     {
         Fixture::init();
         File\StatCache::clear();
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         Fixture::clear();
     }

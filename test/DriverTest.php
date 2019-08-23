@@ -2,18 +2,18 @@
 
 namespace Amp\File\Test;
 
-use Amp\File as file;
+use Amp\File;
 use Amp\PHPUnit\TestCase;
 
 abstract class DriverTest extends TestCase
 {
-    protected function setUp()
+    protected function setUp(): void
     {
         Fixture::init();
         File\StatCache::clear();
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         Fixture::clear();
     }

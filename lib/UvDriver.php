@@ -52,7 +52,7 @@ class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         $openArr = [$mode, $path, $deferred];
-        \uv_fs_open($this->loop, $path, $flags, $chmod, function ($fh) use ($openArr) {
+        \uv_fs_open($this->loop, $path, $flags, $chmod, function ($fh) use ($openArr): void {
             if ($fh) {
                 $this->onOpenHandle($fh, $openArr);
             } else {
@@ -87,12 +87,12 @@ class UvDriver implements Driver
         }
     }
 
-    private function onOpenHandle($fh, array $openArr)
+    private function onOpenHandle($fh, array $openArr): void
     {
         list($mode) = $openArr;
 
         if ($mode[0] === "w") {
-            \uv_fs_ftruncate($this->loop, $fh, $length = 0, function ($fh) use ($openArr) {
+            \uv_fs_ftruncate($this->loop, $fh, $length = 0, function ($fh) use ($openArr): void {
                 if ($fh) {
                     $this->finalizeHandle($fh, $size = 0, $openArr);
                 } else {
@@ -103,7 +103,7 @@ class UvDriver implements Driver
                 }
             });
         } else {
-            \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($openArr) {
+            \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($openArr): void {
                 if ($fh) {
                     StatCache::set($openArr[1], $stat);
                     $this->finalizeHandle($fh, $stat["size"], $openArr);
@@ -117,7 +117,7 @@ class UvDriver implements Driver
         }
     }
 
-    private function finalizeHandle($fh, $size, array $openArr)
+    private function finalizeHandle($fh, $size, array $openArr): void
     {
         list($mode, $path, $deferred) = $openArr;
         $handle = new UvHandle($this->driver, $this->poll, $fh, $path, $mode, $size);
@@ -136,7 +136,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_stat($this->loop, $path, function ($fh, $stat) use ($deferred, $path) {
+        \uv_fs_stat($this->loop, $path, function ($fh, $stat) use ($deferred, $path): void {
             if (empty($fh)) {
                 $stat = null;
             } else {
@@ -164,7 +164,7 @@ class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             $deferred->resolve((bool) $result);
         });
 
@@ -178,7 +178,7 @@ class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve(!($result["mode"] & \UV::S_IFREG));
             } else {
@@ -196,7 +196,7 @@ class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve((bool) ($result["mode"] & \UV::S_IFREG));
             } else {
@@ -214,7 +214,7 @@ class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if (empty($result)) {
                 $deferred->fail(new FilesystemException(
                     "Specified path does not exist"
@@ -238,7 +238,7 @@ class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve($result["mtime"]);
             } else {
@@ -258,7 +258,7 @@ class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve($result["atime"]);
             } else {
@@ -278,7 +278,7 @@ class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred) {
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
                 $deferred->resolve($result["ctime"]);
             } else {
@@ -299,7 +299,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_lstat($this->loop, $path, function ($fh, $stat) use ($deferred) {
+        \uv_fs_lstat($this->loop, $path, function ($fh, $stat) use ($deferred): void {
             if (empty($fh)) {
                 $stat = null;
             }
@@ -318,7 +318,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function ($fh) use ($deferred) {
+        \uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function ($fh) use ($deferred): void {
             $deferred->resolve((bool) $fh);
         });
 
@@ -333,7 +333,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_link($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function ($fh) use ($deferred) {
+        \uv_fs_link($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function ($fh) use ($deferred): void {
             $deferred->resolve((bool) $fh);
         });
 
@@ -348,7 +348,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_readlink($this->loop, $path, function ($fh, $target) use ($deferred) {
+        \uv_fs_readlink($this->loop, $path, function ($fh, $target) use ($deferred): void {
             if (!(bool) $fh) {
                 $deferred->fail(new FilesystemException("Could not read symbolic link"));
 
@@ -369,7 +369,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_rename($this->loop, $from, $to, function ($fh) use ($deferred, $from) {
+        \uv_fs_rename($this->loop, $from, $to, function ($fh) use ($deferred, $from): void {
             StatCache::clear($from);
             $deferred->resolve((bool) $fh);
         });
@@ -385,7 +385,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_unlink($this->loop, $path, function ($fh) use ($deferred, $path) {
+        \uv_fs_unlink($this->loop, $path, function ($fh) use ($deferred, $path): void {
             StatCache::clear($path);
             $deferred->resolve((bool) $fh);
         });
@@ -412,13 +412,13 @@ class UvDriver implements Driver
                 $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
 
                 if (empty($arrayPath)) {
-                    \uv_fs_mkdir($this->loop, $tmpPath, $mode, function ($fh) use ($deferred) {
+                    \uv_fs_mkdir($this->loop, $tmpPath, $mode, function ($fh) use ($deferred): void {
                         $deferred->resolve((bool) $fh);
                     });
                 } else {
                     $this->isdir($tmpPath)->onResolve(function ($error, $result) use (
                         $callback, $tmpPath, $mode
-                    ) {
+                    ): void {
                         if ($result) {
                             $callback();
                         } else {
@@ -430,7 +430,7 @@ class UvDriver implements Driver
 
             $callback();
         } else {
-            \uv_fs_mkdir($this->loop, $path, $mode, function ($fh) use ($deferred) {
+            \uv_fs_mkdir($this->loop, $path, $mode, function ($fh) use ($deferred): void {
                 $deferred->resolve((bool) $fh);
             });
         }
@@ -446,7 +446,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_rmdir($this->loop, $path, function ($fh) use ($deferred, $path) {
+        \uv_fs_rmdir($this->loop, $path, function ($fh) use ($deferred, $path): void {
             StatCache::clear($path);
             $deferred->resolve((bool) $fh);
         });
@@ -462,7 +462,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_readdir($this->loop, $path, 0, function ($fh, $data) use ($deferred, $path) {
+        \uv_fs_readdir($this->loop, $path, 0, function ($fh, $data) use ($deferred, $path): void {
             if (empty($fh) && $data !== 0) {
                 $deferred->fail(new FilesystemException("Failed reading contents from {$path}"));
             } elseif ($data === 0) {
@@ -483,7 +483,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_chmod($this->loop, $path, $mode, function ($fh) use ($deferred) {
+        \uv_fs_chmod($this->loop, $path, $mode, function ($fh) use ($deferred): void {
             $deferred->resolve((bool) $fh);
         });
 
@@ -499,7 +499,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_chown($this->loop, $path, $uid, $gid, function ($fh) use ($deferred) {
+        \uv_fs_chown($this->loop, $path, $uid, $gid, function ($fh) use ($deferred): void {
             $deferred->resolve((bool) $fh);
         });
 
@@ -517,7 +517,7 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_utime($this->loop, $path, $time, $atime, function () use ($deferred) {
+        \uv_fs_utime($this->loop, $path, $time, $atime, function () use ($deferred): void {
             // The uv_fs_utime() callback does not receive any args at this time
             $deferred->resolve(true);
         });
@@ -550,18 +550,18 @@ class UvDriver implements Driver
         if (empty($stat)) {
             $deferred->fail(new FilesystemException("stat operation failed on open file handle"));
         } elseif (!$stat["isfile"]) {
-            \uv_fs_close($this->loop, $fh, function () use ($deferred) {
+            \uv_fs_close($this->loop, $fh, function () use ($deferred): void {
                 $deferred->fail(new FilesystemException("cannot buffer contents: path is not a file"));
             });
         } else {
             $buffer = yield $this->doFsRead($fh, $offset = 0, $stat["size"]);
 
             if ($buffer === false) {
-                \uv_fs_close($this->loop, $fh, function () use ($deferred) {
+                \uv_fs_close($this->loop, $fh, function () use ($deferred): void {
                     $deferred->fail(new FilesystemException("read operation failed on open file handle"));
                 });
             } else {
-                \uv_fs_close($this->loop, $fh, function () use ($deferred, $buffer) {
+                \uv_fs_close($this->loop, $fh, function () use ($deferred, $buffer): void {
                     $deferred->resolve($buffer);
                 });
             }
@@ -570,7 +570,7 @@ class UvDriver implements Driver
         return yield $deferred->promise();
     }
 
-    private function doFsOpen($path, $flags, $mode)
+    private function doFsOpen(string $path, int $flags, int $mode): Promise
     {
         $deferred = new Deferred;
 
@@ -581,11 +581,11 @@ class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    private function doFsStat($fh)
+    private function doFsStat($fh): Promise
     {
         $deferred = new Deferred;
 
-        \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($deferred) {
+        \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($deferred): void {
             if ($fh) {
                 $stat["isdir"] = (bool) ($stat["mode"] & \UV::S_IFDIR);
                 $stat["isfile"] = !$stat["isdir"];
@@ -598,11 +598,11 @@ class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    private function doFsRead($fh, $offset, $len)
+    private function doFsRead($fh, int $offset, int $len): Promise
     {
         $deferred = new Deferred;
 
-        \uv_fs_read($this->loop, $fh, $offset, $len, function ($fh, $nread, $buffer) use ($deferred) {
+        \uv_fs_read($this->loop, $fh, $offset, $len, function ($fh, $nread, $buffer) use ($deferred): void {
             $deferred->resolve($nread < 0 ? false : $buffer);
         });
 
@@ -620,7 +620,7 @@ class UvDriver implements Driver
         return $promise;
     }
 
-    private function doPut($path, $contents): \Generator
+    private function doPut(string $path, string $contents): \Generator
     {
         $flags = \UV::O_WRONLY | \UV::O_CREAT;
         $mode = \UV::S_IRWXU | \UV::S_IRUSR;
@@ -634,8 +634,8 @@ class UvDriver implements Driver
         $deferred = new Deferred;
         $len = \strlen($contents);
 
-        \uv_fs_write($this->loop, $fh, $contents, $offset = 0, function ($fh, $result) use ($deferred, $len) {
-            \uv_fs_close($this->loop, $fh, function () use ($deferred, $result, $len) {
+        \uv_fs_write($this->loop, $fh, $contents, $offset = 0, function ($fh, $result) use ($deferred, $len): void {
+            \uv_fs_close($this->loop, $fh, function () use ($deferred, $result, $len): void {
                 if ($result < 0) {
                     $deferred->fail(new FilesystemException(\uv_strerror($result)));
                 } else {

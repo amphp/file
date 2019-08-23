@@ -78,7 +78,7 @@ final class UvHandle implements Handle
 
         $this->isActive = true;
 
-        $onRead = function ($fh, $result, $buffer) use ($deferred) {
+        $onRead = function ($fh, $result, $buffer) use ($deferred): void {
             $this->isActive = false;
 
             if ($result < 0) {
@@ -157,7 +157,7 @@ final class UvHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        $onWrite = function ($fh, $result) use ($deferred, $length) {
+        $onWrite = function ($fh, $result) use ($deferred, $length): void {
             if ($this->queue->isEmpty()) {
                 $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
             }
@@ -221,7 +221,7 @@ final class UvHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        $onTruncate = function ($fh) use ($deferred, $size) {
+        $onTruncate = function ($fh) use ($deferred, $size): void {
             if ($this->queue->isEmpty()) {
                 $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
             }
@@ -319,7 +319,7 @@ final class UvHandle implements Handle
         $deferred = new Deferred;
         $this->poll->listen($this->closing = $deferred->promise());
 
-        \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred) {
+        \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred): void {
             // Ignore errors when closing file, as the handle will become invalid anyway.
             $deferred->resolve();
         });

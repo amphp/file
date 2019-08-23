@@ -44,7 +44,7 @@ final class UvPoll
         });
     }
 
-    public function listen(Promise $promise)
+    public function listen(Promise $promise): void
     {
         if ($this->requests++ === 0) {
             Loop::enable($this->watcher);
@@ -53,7 +53,7 @@ final class UvPoll
         $promise->onResolve($this->onDone);
     }
 
-    private function done()
+    private function done(): void
     {
         if (--$this->requests === 0) {
             Loop::disable($this->watcher);
