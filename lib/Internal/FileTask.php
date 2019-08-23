@@ -14,7 +14,7 @@ use Amp\Parallel\Worker\Task;
  *
  * @internal
  */
-class FileTask implements Task
+final class FileTask implements Task
 {
     const ENV_PREFIX = "amp/file#";
 

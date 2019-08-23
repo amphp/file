@@ -6,7 +6,7 @@ use Amp\CallableMaker;
 use Amp\Loop;
 use Amp\Promise;
 
-class UvPoll
+final class UvPoll
 {
     use CallableMaker;
 

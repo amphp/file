@@ -11,7 +11,7 @@ use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
-class ParallelHandle implements Handle
+final class ParallelHandle implements Handle
 {
     /** @var \Amp\Parallel\Worker\Worker */
     private $worker;

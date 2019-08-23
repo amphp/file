@@ -6,7 +6,7 @@ use Amp\Failure;
 use Amp\Promise;
 use Amp\Success;
 
-class BlockingDriver implements Driver
+final class BlockingDriver implements Driver
 {
     /**
      * {@inheritdoc}

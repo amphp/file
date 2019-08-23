@@ -11,7 +11,7 @@ use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
-class UvHandle implements Handle
+final class UvHandle implements Handle
 {
     /** @var UvPoll */
     private $poll;

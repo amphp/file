@@ -11,7 +11,7 @@ use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
-class ParallelDriver implements Driver
+final class ParallelDriver implements Driver
 {
     /**
      * @var \Amp\Parallel\Worker\Pool

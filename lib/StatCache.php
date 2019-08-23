@@ -4,7 +4,7 @@ namespace Amp\File;
 
 use Amp\Loop;
 
-class StatCache
+final class StatCache
 {
     private static $cache = [];
     private static $timeouts = [];

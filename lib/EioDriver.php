@@ -6,7 +6,7 @@ use Amp\Deferred;
 use Amp\Promise;
 use Amp\Success;
 
-class EioDriver implements Driver
+final class EioDriver implements Driver
 {
     /** @var \Amp\File\Internal\EioPoll */
     private $poll;
