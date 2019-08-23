@@ -170,11 +170,10 @@ abstract class HandleTest extends TestCase
         });
     }
 
-    /**
-     * @expectedException \Error
-     */
     public function testSeekThrowsOnInvalidWhence()
     {
+        $this->expectException(\Error::class);
+
         $this->execute(function () {
             try {
                 /** @var \Amp\File\Handle $handle */

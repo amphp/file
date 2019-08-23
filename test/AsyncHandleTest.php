@@ -3,14 +3,14 @@
 namespace Amp\File\Test;
 
 use Amp\File;
+use Amp\File\PendingOperationError;
 
 abstract class AsyncHandleTest extends HandleTest
 {
-    /**
-     * @expectedException \Amp\File\PendingOperationError
-     */
     public function testSimultaneousReads()
     {
+        $this->expectException(PendingOperationError::class);
+
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -25,11 +25,10 @@ abstract class AsyncHandleTest extends HandleTest
         });
     }
 
-    /**
-     * @expectedException \Amp\File\PendingOperationError
-     */
     public function testSeekWhileReading()
     {
+        $this->expectException(PendingOperationError::class);
+
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -44,11 +43,10 @@ abstract class AsyncHandleTest extends HandleTest
         });
     }
 
-    /**
-     * @expectedException \Amp\File\PendingOperationError
-     */
     public function testReadWhileWriting()
     {
+        $this->expectException(PendingOperationError::class);
+
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
@@ -64,11 +62,10 @@ abstract class AsyncHandleTest extends HandleTest
         });
     }
 
-    /**
-     * @expectedException \Amp\File\PendingOperationError
-     */
     public function testWriteWhileReading()
     {
+        $this->expectException(PendingOperationError::class);
+
         $this->execute(function () {
             /** @var \Amp\File\Handle $handle */
             $handle = yield File\open(__FILE__, "r");
