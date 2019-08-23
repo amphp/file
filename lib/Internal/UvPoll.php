@@ -2,28 +2,20 @@
 
 namespace Amp\File\Internal;
 
-use Amp\CallableMaker;
 use Amp\Loop;
 use Amp\Promise;
 
 final class UvPoll
 {
-    use CallableMaker;
-
     /** @var string */
     private $watcher;
 
     /** @var int */
     private $requests = 0;
 
-    /** @var callable */
-    private $onDone;
-
     public function __construct()
     {
-        $this->onDone = $this->callableFromInstanceMethod("done");
-
-        $this->watcher = Loop::repeat(\PHP_INT_MAX / 2, function () {
+        $this->watcher = Loop::repeat(\PHP_INT_MAX / 2, static function (): void {
             // do nothing, it's a dummy watcher
         });
 
@@ -50,7 +42,7 @@ final class UvPoll
             Loop::enable($this->watcher);
         }
 
-        $promise->onResolve($this->onDone);
+        $promise->onResolve(\Closure::fromCallable([$this, 'done']));
     }
 
     private function done(): void

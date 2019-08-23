@@ -2,14 +2,11 @@
 
 namespace Amp\File\Internal;
 
-use Amp\CallableMaker;
 use Amp\Loop;
 use Amp\Promise;
 
 final class EioPoll
 {
-    use CallableMaker;
-
     /** @var resource */
     private static $stream;
 
@@ -19,19 +16,14 @@ final class EioPoll
     /** @var int */
     private $requests = 0;
 
-    /** @var callable */
-    private $onDone;
-
     public function __construct()
     {
-        $this->onDone = $this->callableFromInstanceMethod("done");
-
         if (!self::$stream) {
             \eio_init();
             self::$stream = \eio_get_event_stream();
         }
 
-        $this->watcher = Loop::onReadable(self::$stream, static function () {
+        $this->watcher = Loop::onReadable(self::$stream, static function (): void {
             while (\eio_npending()) {
                 \eio_poll();
             }
@@ -65,7 +57,7 @@ final class EioPoll
             Loop::enable($this->watcher);
         }
 
-        $promise->onResolve($this->onDone);
+        $promise->onResolve(\Closure::fromCallable([$this, 'done']));
     }
 
     private function done(): void
