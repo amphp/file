@@ -4,12 +4,13 @@ namespace Amp\File\Test;
 
 use Amp\File;
 use Amp\Loop;
-use function Amp\asyncCall;
 
 class UvHandleTest extends AsyncHandleTest
 {
-    protected function execute(callable $cb)
+    protected function setUp(): void
     {
+        parent::setUp();
+
         if (!\extension_loaded("uv")) {
             $this->markTestSkipped(
                 "php-uv extension not loaded"
@@ -17,11 +18,7 @@ class UvHandleTest extends AsyncHandleTest
         }
 
         $loop = new Loop\UvDriver;
-
         Loop::set($loop);
-        Loop::run(function () use ($cb, $loop) {
-            File\filesystem(new File\UvDriver($loop));
-            asyncCall($cb);
-        });
+        File\filesystem(new File\UvDriver($loop));
     }
 }

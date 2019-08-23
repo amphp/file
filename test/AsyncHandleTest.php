@@ -7,76 +7,68 @@ use Amp\File\PendingOperationError;
 
 abstract class AsyncHandleTest extends HandleTest
 {
-    public function testSimultaneousReads()
+    public function testSimultaneousReads(): \Generator
     {
         $this->expectException(PendingOperationError::class);
 
-        $this->execute(function () {
-            /** @var \Amp\File\Handle $handle */
-            $handle = yield File\open(__FILE__, "r");
+        /** @var \Amp\File\Handle $handle */
+        $handle = yield File\open(__FILE__, "r");
 
-            $promise1 = $handle->read();
-            $promise2 = $handle->read();
+        $promise1 = $handle->read();
+        $promise2 = $handle->read();
 
-            $expected = \substr(yield File\get(__FILE__), 0, 20);
-            $this->assertSame($expected, yield $promise1);
+        $expected = \substr(yield File\get(__FILE__), 0, 20);
+        $this->assertSame($expected, yield $promise1);
 
-            yield $promise2;
-        });
+        yield $promise2;
     }
 
-    public function testSeekWhileReading()
+    public function testSeekWhileReading(): \Generator
     {
         $this->expectException(PendingOperationError::class);
 
-        $this->execute(function () {
-            /** @var \Amp\File\Handle $handle */
-            $handle = yield File\open(__FILE__, "r");
+        /** @var \Amp\File\Handle $handle */
+        $handle = yield File\open(__FILE__, "r");
 
-            $promise1 = $handle->read(10);
-            $promise2 = $handle->seek(0);
+        $promise1 = $handle->read(10);
+        $promise2 = $handle->seek(0);
 
-            $expected = \substr(yield File\get(__FILE__), 0, 10);
-            $this->assertSame($expected, yield $promise1);
+        $expected = \substr(yield File\get(__FILE__), 0, 10);
+        $this->assertSame($expected, yield $promise1);
 
-            yield $promise2;
-        });
+        yield $promise2;
     }
 
-    public function testReadWhileWriting()
+    public function testReadWhileWriting(): \Generator
     {
         $this->expectException(PendingOperationError::class);
 
-        $this->execute(function () {
-            /** @var \Amp\File\Handle $handle */
-            $handle = yield File\open(__FILE__, "r");
+        /** @var \Amp\File\Handle $handle */
+        $handle = yield File\open(__FILE__, "r");
 
-            $data = "test";
+        $data = "test";
 
-            $promise1 = $handle->write($data);
-            $promise2 = $handle->read(10);
+        $promise1 = $handle->write($data);
+        $promise2 = $handle->read(10);
 
-            $this->assertSame(\strlen($data), yield $promise1);
+        $this->assertSame(\strlen($data), yield $promise1);
 
-            yield $promise2;
-        });
+        yield $promise2;
     }
 
-    public function testWriteWhileReading()
+    public function testWriteWhileReading(): \Generator
     {
         $this->expectException(PendingOperationError::class);
 
-        $this->execute(function () {
-            /** @var \Amp\File\Handle $handle */
-            $handle = yield File\open(__FILE__, "r");
+        /** @var \Amp\File\Handle $handle */
+        $handle = yield File\open(__FILE__, "r");
 
-            $promise1 = $handle->read(10);
-            $promise2 = $handle->write("test");
+        $promise1 = $handle->read(10);
+        $promise2 = $handle->write("test");
 
-            $expected = \substr(yield File\get(__FILE__), 0, 10);
-            $this->assertSame($expected, yield $promise1);
+        $expected = \substr(yield File\get(__FILE__), 0, 10);
+        $this->assertSame($expected, yield $promise1);
 
-            yield $promise2;
-        });
+        yield $promise2;
     }
 }

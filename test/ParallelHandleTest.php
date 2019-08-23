@@ -3,21 +3,24 @@
 namespace Amp\File\Test;
 
 use Amp\File;
-use Amp\Loop;
 use Amp\Parallel\Worker\DefaultPool;
-use function Amp\call;
+use Amp\Parallel\Worker\Pool;
 
 class ParallelHandleTest extends AsyncHandleTest
 {
-    protected function execute(callable $cb)
+    /** @var Pool */
+    private $pool;
+
+    protected function setUp(): void
     {
-        Loop::run(function () use ($cb) {
-            $pool = new DefaultPool;
+        parent::setUp();
+        $this->pool = new DefaultPool;
+        File\filesystem(new File\ParallelDriver($this->pool));
+    }
 
-            File\filesystem(new File\ParallelDriver($pool));
-            yield call($cb);
-
-            yield $pool->shutdown();
-        });
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        $this->pool->shutdown();
     }
 }

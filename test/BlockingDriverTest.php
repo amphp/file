@@ -3,16 +3,12 @@
 namespace Amp\File\Test;
 
 use Amp\File;
-use Amp\Loop;
-use function Amp\asyncCall;
 
 class BlockingDriverTest extends DriverTest
 {
-    protected function execute(callable $cb)
+    protected function setUp(): void
     {
-        Loop::run(function () use ($cb) {
-            File\filesystem(new File\BlockingDriver);
-            asyncCall($cb);
-        });
+        parent::setUp();
+        File\filesystem(new File\BlockingDriver);
     }
 }

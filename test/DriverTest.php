@@ -4,79 +4,56 @@ namespace Amp\File\Test;
 
 use Amp\File;
 use Amp\File\FilesystemException;
-use Amp\PHPUnit\TestCase;
+use Amp\Promise;
 
-abstract class DriverTest extends TestCase
+abstract class DriverTest extends FilesystemTest
 {
-    protected function setUp(): void
-    {
-        Fixture::init();
-        File\StatCache::clear();
-    }
-
-    protected function tearDown(): void
-    {
-        Fixture::clear();
-    }
-
-    abstract protected function execute(callable $cb);
-
     public function testScandir()
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $actual = yield File\scandir($fixtureDir);
-            $expected = ["dir", "small.txt"];
-            $this->assertSame($expected, $actual);
-        });
+        $fixtureDir = Fixture::path();
+        $actual = yield File\scandir($fixtureDir);
+        $expected = ["dir", "small.txt"];
+        $this->assertSame($expected, $actual);
     }
 
-    public function testScandirThrowsIfPathNotADirectory()
+    public function testScandirThrowsIfPathNotADirectory(): Promise
     {
         $this->expectException(FilesystemException::class);
 
-        $this->execute(function () {
-            (yield File\scandir(__FILE__));
-        });
+        return File\scandir(__FILE__);
     }
 
-    public function testScandirThrowsIfPathDoesntExist()
+    public function testScandirThrowsIfPathDoesntExist(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
-        $this->execute(function () {
-            $path = Fixture::path() . "/nonexistent";
-            (yield File\scandir($path));
-        });
+        $path = Fixture::path() . "/nonexistent";
+        (yield File\scandir($path));
     }
 
-    public function testSymlink()
+    public function testSymlink(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
+        $fixtureDir = Fixture::path();
 
-            $original = "{$fixtureDir}/small.txt";
-            $link = "{$fixtureDir}/symlink.txt";
-            $this->assertTrue(yield File\symlink($original, $link));
-            $this->assertTrue(\is_link($link));
-            yield File\unlink($link);
-        });
+        $original = "{$fixtureDir}/small.txt";
+        $link = "{$fixtureDir}/symlink.txt";
+        $this->assertTrue(yield File\symlink($original, $link));
+        $this->assertTrue(\is_link($link));
+        yield File\unlink($link);
     }
 
-    public function testReadlink()
+    public function testReadlink(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
+        $fixtureDir = Fixture::path();
 
-            $original = "{$fixtureDir}/small.txt";
-            $link = "{$fixtureDir}/symlink.txt";
-            \symlink($original, $link);
+        $original = "{$fixtureDir}/small.txt";
+        $link = "{$fixtureDir}/symlink.txt";
+        \symlink($original, $link);
 
-            $this->assertSame($original, yield File\readlink($link));
-        });
+        $this->assertSame($original, yield File\readlink($link));
     }
 
-    public function readlinkPathProvider()
+    public function readlinkPathProvider(): array
     {
         return [
             'nonExistingPath' => [function () {
@@ -93,311 +70,259 @@ abstract class DriverTest extends TestCase
      *
      * @param \Closure $linkResolver
      */
-    public function testReadlinkError(\Closure $linkResolver)
+    public function testReadlinkError(\Closure $linkResolver): \Generator
     {
         $this->expectException(FilesystemException::class);
 
-        $this->execute(function () use ($linkResolver) {
-            $link = $linkResolver();
+        $link = $linkResolver();
 
-            yield File\readlink($link);
-        });
+        yield File\readlink($link);
     }
 
-    public function testLstat()
+    public function testLstat(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
+        $fixtureDir = Fixture::path();
 
-            $target = "{$fixtureDir}/small.txt";
-            $link = "{$fixtureDir}/symlink.txt";
-            $this->assertTrue(yield File\symlink($target, $link));
-            $this->assertIsArray(yield File\lstat($link));
-            yield File\unlink($link);
-        });
+        $target = "{$fixtureDir}/small.txt";
+        $link = "{$fixtureDir}/symlink.txt";
+        $this->assertTrue(yield File\symlink($target, $link));
+        $this->assertIsArray(yield File\lstat($link));
+        yield File\unlink($link);
     }
 
-    public function testFileStat()
+    public function testFileStat(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $stat = (yield File\stat("{$fixtureDir}/small.txt"));
-            $this->assertIsArray($stat);
-            $this->assertStatSame(\stat("{$fixtureDir}/small.txt"), $stat);
-        });
+        $fixtureDir = Fixture::path();
+        $stat = (yield File\stat("{$fixtureDir}/small.txt"));
+        $this->assertIsArray($stat);
+        $this->assertStatSame(\stat("{$fixtureDir}/small.txt"), $stat);
     }
 
-    public function testDirStat()
+    public function testDirStat(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $stat = (yield File\stat("{$fixtureDir}/dir"));
-            $this->assertIsArray($stat);
-            $this->assertStatSame(\stat("{$fixtureDir}/dir"), $stat);
-        });
+        $fixtureDir = Fixture::path();
+        $stat = (yield File\stat("{$fixtureDir}/dir"));
+        $this->assertIsArray($stat);
+        $this->assertStatSame(\stat("{$fixtureDir}/dir"), $stat);
     }
 
-    public function testNonexistentPathStatResolvesToNull()
+    public function testNonexistentPathStatResolvesToNull(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $stat = (yield File\stat("{$fixtureDir}/nonexistent"));
-            $this->assertNull($stat);
-        });
+        $fixtureDir = Fixture::path();
+        $stat = (yield File\stat("{$fixtureDir}/nonexistent"));
+        $this->assertNull($stat);
     }
 
-    public function testExists()
+    public function testExists(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $this->assertFalse(yield File\exists("{$fixtureDir}/nonexistent"));
-            $this->assertTrue(yield File\exists("{$fixtureDir}/small.txt"));
-        });
+        $fixtureDir = Fixture::path();
+        $this->assertFalse(yield File\exists("{$fixtureDir}/nonexistent"));
+        $this->assertTrue(yield File\exists("{$fixtureDir}/small.txt"));
     }
 
-    public function testGet()
+    public function testGet(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $this->assertSame("small", yield File\get("{$fixtureDir}/small.txt"));
-        });
+        $fixtureDir = Fixture::path();
+        $this->assertSame("small", yield File\get("{$fixtureDir}/small.txt"));
     }
 
-    public function testSize()
+    public function testSize(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/small.txt";
-            $stat = (yield File\stat($path));
-            $size = $stat["size"];
-            File\StatCache::clear($path);
-            $this->assertSame($size, (yield File\size($path)));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+        $stat = (yield File\stat($path));
+        $size = $stat["size"];
+        File\StatCache::clear($path);
+        $this->assertSame($size, (yield File\size($path)));
     }
 
-    public function testSizeFailsOnNonexistentPath()
+    public function testSizeFailsOnNonexistentPath(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/nonexistent";
-            yield File\size($path);
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+        yield File\size($path);
     }
 
-    public function testSizeFailsOnDirectoryPath()
+    public function testSizeFailsOnDirectoryPath(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/dir";
-            $this->assertTrue(yield File\isdir($path));
-            File\StatCache::clear($path);
-            yield File\size($path);
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/dir";
+        $this->assertTrue(yield File\isdir($path));
+        File\StatCache::clear($path);
+        yield File\size($path);
     }
 
-    public function testIsdirResolvesTrueOnDirectoryPath()
+    public function testIsdirResolvesTrueOnDirectoryPath(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/dir";
-            $this->assertTrue(yield File\isdir($path));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/dir";
+        $this->assertTrue(yield File\isdir($path));
     }
 
-    public function testIsdirResolvesFalseOnFilePath()
+    public function testIsdirResolvesFalseOnFilePath(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/small.txt";
-            $this->assertFalse(yield File\isdir($path));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+        $this->assertFalse(yield File\isdir($path));
     }
 
-    public function testIsdirResolvesFalseOnNonexistentPath()
+    public function testIsdirResolvesFalseOnNonexistentPath(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/nonexistent";
-            $this->assertFalse(yield File\isdir($path));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+        $this->assertFalse(yield File\isdir($path));
     }
 
-    public function testIsfileResolvesTrueOnFilePath()
+    public function testIsfileResolvesTrueOnFilePath(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/small.txt";
-            $this->assertTrue(yield File\isfile($path));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+        $this->assertTrue(yield File\isfile($path));
     }
 
-    public function testIsfileResolvesFalseOnDirectoryPath()
+    public function testIsfileResolvesFalseOnDirectoryPath(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/dir";
-            $this->assertFalse(yield File\isfile($path));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/dir";
+        $this->assertFalse(yield File\isfile($path));
     }
 
-    public function testIsfileResolvesFalseOnNonexistentPath()
+    public function testIsfileResolvesFalseOnNonexistentPath(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/nonexistent";
-            $this->assertFalse(yield File\isfile($path));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+        $this->assertFalse(yield File\isfile($path));
     }
 
-    public function testRename()
+    public function testRename(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
+        $fixtureDir = Fixture::path();
 
-            $contents1 = "rename test";
-            $old = "{$fixtureDir}/rename1.txt";
-            $new = "{$fixtureDir}/rename2.txt";
+        $contents1 = "rename test";
+        $old = "{$fixtureDir}/rename1.txt";
+        $new = "{$fixtureDir}/rename2.txt";
 
-            yield File\put($old, $contents1);
-            yield File\rename($old, $new);
-            $contents2 = (yield File\get($new));
-            yield File\unlink($new);
+        yield File\put($old, $contents1);
+        yield File\rename($old, $new);
+        $contents2 = (yield File\get($new));
+        yield File\unlink($new);
 
-            $this->assertSame($contents1, $contents2);
-        });
+        $this->assertSame($contents1, $contents2);
     }
 
-    public function testUnlink()
+    public function testUnlink(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $toUnlink = "{$fixtureDir}/unlink";
-            yield File\put($toUnlink, "unlink me");
-            yield File\unlink($toUnlink);
-            $this->assertNull(yield File\stat($toUnlink));
-        });
+        $fixtureDir = Fixture::path();
+        $toUnlink = "{$fixtureDir}/unlink";
+        yield File\put($toUnlink, "unlink me");
+        yield File\unlink($toUnlink);
+        $this->assertNull(yield File\stat($toUnlink));
     }
 
-    public function testMkdirRmdir()
+    public function testMkdirRmdir(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
+        $fixtureDir = Fixture::path();
 
-            $dir = "{$fixtureDir}/newdir";
+        $dir = "{$fixtureDir}/newdir";
 
-            \umask(0022);
+        \umask(0022);
 
-            yield File\mkdir($dir);
-            $stat = yield File\stat($dir);
-            $this->assertSame('0755', $this->getPermissionsFromStat($stat));
-            yield File\rmdir($dir);
-            $this->assertNull(yield File\stat($dir));
+        yield File\mkdir($dir);
+        $stat = yield File\stat($dir);
+        $this->assertSame('0755', $this->getPermissionsFromStat($stat));
+        yield File\rmdir($dir);
+        $this->assertNull(yield File\stat($dir));
 
-            // test for 0, because previous array_filter made that not work
-            $dir = "{$fixtureDir}/newdir/with/recursive/creation/0/1/2";
+        // test for 0, because previous array_filter made that not work
+        $dir = "{$fixtureDir}/newdir/with/recursive/creation/0/1/2";
 
-            yield File\mkdir($dir, 0764, true);
-            $stat = yield File\stat($dir);
-            $this->assertSame('0744', $this->getPermissionsFromStat($stat));
-        });
+        yield File\mkdir($dir, 0764, true);
+        $stat = yield File\stat($dir);
+        $this->assertSame('0744', $this->getPermissionsFromStat($stat));
     }
 
-    public function testMtime()
+    public function testMtime(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/small.txt";
-            $stat = (yield File\stat($path));
-            $statMtime = $stat["mtime"];
-            File\StatCache::clear($path);
-            $this->assertSame($statMtime, (yield File\mtime($path)));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+        $stat = (yield File\stat($path));
+        $statMtime = $stat["mtime"];
+        File\StatCache::clear($path);
+        $this->assertSame($statMtime, (yield File\mtime($path)));
     }
 
-    public function testMtimeFailsOnNonexistentPath()
+    public function testMtimeFailsOnNonexistentPath(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/nonexistent";
-            yield File\mtime($path);
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+        yield File\mtime($path);
     }
 
-    public function testAtime()
+    public function testAtime(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/small.txt";
-            $stat = (yield File\stat($path));
-            $statAtime = $stat["atime"];
-            File\StatCache::clear($path);
-            $this->assertSame($statAtime, (yield File\atime($path)));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+        $stat = (yield File\stat($path));
+        $statAtime = $stat["atime"];
+        File\StatCache::clear($path);
+        $this->assertSame($statAtime, (yield File\atime($path)));
     }
 
-    public function testAtimeFailsOnNonexistentPath()
+    public function testAtimeFailsOnNonexistentPath(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/nonexistent";
-            yield File\atime($path);
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+        yield File\atime($path);
     }
 
-    public function testCtime()
+    public function testCtime(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/small.txt";
-            $stat = (yield File\stat($path));
-            $statCtime = $stat["ctime"];
-            File\StatCache::clear($path);
-            $this->assertSame($statCtime, (yield File\ctime($path)));
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+        $stat = (yield File\stat($path));
+        $statCtime = $stat["ctime"];
+        File\StatCache::clear($path);
+        $this->assertSame($statCtime, (yield File\ctime($path)));
     }
 
-    public function testCtimeFailsOnNonexistentPath()
+    public function testCtimeFailsOnNonexistentPath(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
-            $path = "{$fixtureDir}/nonexistent";
-            yield File\ctime($path);
-        });
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+        yield File\ctime($path);
     }
 
     /**
      * @group slow
      */
-    public function testTouch()
+    public function testTouch(): \Generator
     {
-        $this->execute(function () {
-            $fixtureDir = Fixture::path();
+        $fixtureDir = Fixture::path();
 
-            $touch = "{$fixtureDir}/touch";
-            yield File\put($touch, "touch me");
+        $touch = "{$fixtureDir}/touch";
+        yield File\put($touch, "touch me");
 
-            $oldStat = (yield File\stat($touch));
-            yield File\touch($touch, \time() + 10, \time() + 20);
-            File\StatCache::clear($touch);
-            $newStat = (yield File\stat($touch));
-            yield File\unlink($touch);
+        $oldStat = (yield File\stat($touch));
+        yield File\touch($touch, \time() + 10, \time() + 20);
+        File\StatCache::clear($touch);
+        $newStat = (yield File\stat($touch));
+        yield File\unlink($touch);
 
-            $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
-            $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
-        });
+        $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
+        $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
     }
 
-    private function assertStatSame(array $expected, array $actual)
+    private function assertStatSame(array $expected, array $actual): void
     {
         $filter = function (array $stat) {
             $filtered = \array_filter(

@@ -6,7 +6,7 @@ final class Fixture
 {
     private static $fixtureId;
 
-    public static function path()
+    public static function path(): string
     {
         if (empty(self::$fixtureId)) {
             self::$fixtureId = \uniqid();
@@ -15,7 +15,7 @@ final class Fixture
         return \sys_get_temp_dir() . "/amphp_file_fixture/" . \strtr(__CLASS__, "\\", ".") . self::$fixtureId;
     }
 
-    public static function init()
+    public static function init(): void
     {
         $fixtureDir = self::path();
         self::clear();
@@ -36,7 +36,7 @@ final class Fixture
         }
     }
 
-    public static function clear()
+    public static function clear(): void
     {
         $fixtureDir = self::path();
         if (!\file_exists($fixtureDir)) {
