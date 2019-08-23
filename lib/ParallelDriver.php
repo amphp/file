@@ -40,7 +40,7 @@ final class ParallelDriver implements Driver
             } catch (WorkerException $exception) {
                 throw new FilesystemException("Could not send open request to worker", $exception);
             }
-            return new ParallelHandle($worker, $id, $path, $size, $mode);
+            return new ParallelFile($worker, $id, $path, $size, $mode);
         });
     }
 

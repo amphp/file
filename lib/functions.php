@@ -62,7 +62,7 @@ function createDefaultDriver(): Driver
  *
  * @param string $path
  * @param string $mode
- * @return \Amp\Promise<\Amp\File\Handle>
+ * @return \Amp\Promise<\Amp\File\File>
  */
 function open(string $path, string $mode): Promise
 {

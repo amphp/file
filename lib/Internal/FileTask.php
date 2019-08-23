@@ -3,7 +3,7 @@
 namespace Amp\File\Internal;
 
 use Amp\File\BlockingDriver;
-use Amp\File\BlockingHandle;
+use Amp\File\BlockingFile;
 use Amp\File\FilesystemException;
 use Amp\File\StatCache;
 use Amp\Parallel\Worker\Environment;
@@ -85,7 +85,7 @@ final class FileTask implements Task
                     throw new FilesystemException($message);
                 }
 
-                $file = new BlockingHandle($handle, $path, $mode);
+                $file = new BlockingFile($handle, $path, $mode);
                 $id = (int) $handle;
                 $size = \fstat($handle)["size"];
                 $environment->set(self::makeId($id), $file);
@@ -103,8 +103,8 @@ final class FileTask implements Task
                 throw new FilesystemException(\sprintf("No file handle with the ID %d has been opened on the worker", $this->id));
             }
 
-            /** @var \Amp\File\BlockingHandle $file */
-            if (!($file = $environment->get($id)) instanceof BlockingHandle) {
+            /** @var \Amp\File\BlockingFile $file */
+            if (!($file = $environment->get($id)) instanceof BlockingFile) {
                 throw new FilesystemException("File storage found in inconsistent state");
             }
 

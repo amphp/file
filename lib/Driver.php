@@ -11,7 +11,7 @@ interface Driver
      *
      * @param string $path
      * @param string $mode
-     * @return \Amp\Promise<\Amp\File\Handle>
+     * @return \Amp\Promise<\Amp\File\File>
      */
     public function open(string $path, string $mode): Promise;
 

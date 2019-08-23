@@ -6,7 +6,7 @@ use Amp\File;
 use Amp\Parallel\Worker\DefaultPool;
 use Amp\Parallel\Worker\Pool;
 
-class ParallelHandleTest extends AsyncHandleTest
+class ParallelHandleTest extends AsyncFileTest
 {
     /** @var Pool */
     private $pool;

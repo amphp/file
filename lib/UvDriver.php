@@ -120,7 +120,7 @@ class UvDriver implements Driver
     private function finalizeHandle($fh, $size, array $openArr): void
     {
         list($mode, $path, $deferred) = $openArr;
-        $handle = new UvHandle($this->driver, $this->poll, $fh, $path, $mode, $size);
+        $handle = new UvFile($this->driver, $this->poll, $fh, $path, $mode, $size);
         $deferred->resolve($handle);
     }
 

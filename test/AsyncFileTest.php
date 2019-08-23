@@ -5,13 +5,13 @@ namespace Amp\File\Test;
 use Amp\File;
 use Amp\File\PendingOperationError;
 
-abstract class AsyncHandleTest extends HandleTest
+abstract class AsyncFileTest extends FileTest
 {
     public function testSimultaneousReads(): \Generator
     {
         $this->expectException(PendingOperationError::class);
 
-        /** @var \Amp\File\Handle $handle */
+        /** @var \Amp\File\File $handle */
         $handle = yield File\open(__FILE__, "r");
 
         $promise1 = $handle->read();
@@ -27,7 +27,7 @@ abstract class AsyncHandleTest extends HandleTest
     {
         $this->expectException(PendingOperationError::class);
 
-        /** @var \Amp\File\Handle $handle */
+        /** @var \Amp\File\File $handle */
         $handle = yield File\open(__FILE__, "r");
 
         $promise1 = $handle->read(10);
@@ -43,7 +43,7 @@ abstract class AsyncHandleTest extends HandleTest
     {
         $this->expectException(PendingOperationError::class);
 
-        /** @var \Amp\File\Handle $handle */
+        /** @var \Amp\File\File $handle */
         $handle = yield File\open(__FILE__, "r");
 
         $data = "test";
@@ -60,7 +60,7 @@ abstract class AsyncHandleTest extends HandleTest
     {
         $this->expectException(PendingOperationError::class);
 
-        /** @var \Amp\File\Handle $handle */
+        /** @var \Amp\File\File $handle */
         $handle = yield File\open(__FILE__, "r");
 
         $promise1 = $handle->read(10);

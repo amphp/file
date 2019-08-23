@@ -84,7 +84,7 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $handle = new EioHandle($this->poll, $fh, $path, $mode, $size = 0);
+            $handle = new EioFile($this->poll, $fh, $path, $mode, $size = 0);
             $deferred->resolve($handle);
         }
     }
@@ -96,7 +96,7 @@ final class EioDriver implements Driver
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
             StatCache::set($path, $result);
-            $handle = new EioHandle($this->poll, $fh, $path, $mode, $result["size"]);
+            $handle = new EioFile($this->poll, $fh, $path, $mode, $result["size"]);
             $deferred->resolve($handle);
         }
     }

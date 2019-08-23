@@ -4,7 +4,7 @@ namespace Amp\File\Test;
 
 use Amp\File;
 
-class EioHandleTest extends AsyncHandleTest
+class EioHandleTest extends AsyncFileTest
 {
     protected function setUp(): void
     {

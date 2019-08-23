@@ -38,7 +38,7 @@ final class BlockingDriver implements Driver
             ));
         }
 
-        return new Success(new BlockingHandle($fh, $path, $mode));
+        return new Success(new BlockingFile($fh, $path, $mode));
     }
 
     /**

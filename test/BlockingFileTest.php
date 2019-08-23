@@ -4,7 +4,7 @@ namespace Amp\File\Test;
 
 use Amp\File;
 
-class BlockingHandleTest extends HandleTest
+class BlockingFileTest extends FileTest
 {
     protected function setUp(): void
     {
