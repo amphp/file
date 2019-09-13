@@ -11,7 +11,7 @@ use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
-final class ParallelFile implements File
+final class ParallelFile implements File, Handle
 {
     /** @var \Amp\Parallel\Worker\Worker */
     private $worker;

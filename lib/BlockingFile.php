@@ -9,7 +9,7 @@ use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
-final class BlockingFile implements File
+final class BlockingFile implements File, Handle
 {
     private $fh;
     private $path;
