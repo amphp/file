@@ -9,7 +9,7 @@ use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
-final class EioFile implements File, Handle
+final class EioFile implements File
 {
     /** @var \Amp\File\Internal\EioPoll */
     private $poll;

@@ -11,7 +11,7 @@ use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
-final class UvFile implements File, Handle
+final class UvFile implements File
 {
     /** @var UvPoll */
     private $poll;
