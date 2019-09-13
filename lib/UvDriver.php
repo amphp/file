@@ -9,7 +9,7 @@ use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
 
-class UvDriver implements Driver
+final class UvDriver implements Driver
 {
     /** @var \Amp\Loop\Driver */
     private $driver;
