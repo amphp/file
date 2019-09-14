@@ -52,5 +52,13 @@
         "psr-4": {
             "Amp\\File\\Test\\": "test"
         }
+    },
+    "scripts": {
+        "check": [
+            "@code-style",
+            "@test"
+        ],
+        "code-style": "php-cs-fixer fix -v --diff",
+        "test": "@php -dzend.assertions=1 -dassert.exception=1 ./vendor/bin/phpunit --coverage-text"
     }
 }
