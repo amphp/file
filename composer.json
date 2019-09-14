@@ -44,9 +44,9 @@
     },
     "autoload": {
         "psr-4": {
-            "Amp\\File\\": "lib"
+            "Amp\\File\\": "src"
         },
-        "files": ["lib/functions.php"]
+        "files": ["src/functions.php"]
     },
     "autoload-dev": {
         "psr-4": {
