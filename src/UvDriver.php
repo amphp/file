@@ -4,24 +4,26 @@ namespace Amp\File;
 
 use Amp\Coroutine;
 use Amp\Deferred;
-use Amp\File\Internal\UvPoll;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
 
 final class UvDriver implements Driver
 {
-    /** @var \Amp\Loop\Driver */
+    /** @var Loop\UvDriver */
     private $driver;
 
     /** @var \UVLoop|resource Loop resource of type uv_loop or instance of \UVLoop. */
     private $loop;
 
-    /** @var UvPoll */
+    /** @var Internal\UvPoll */
     private $poll;
 
+    /** @var bool True if ext-uv version is < 0.3.0. */
+    private $priorVersion;
+
     /**
-     * @param \Amp\Loop\Driver The currently active loop driver.
+     * @param Loop\Driver The currently active loop driver.
      *
      * @return bool Determines if this driver can be used based on the environment.
      */
@@ -31,13 +33,15 @@ final class UvDriver implements Driver
     }
 
     /**
-     * @param \Amp\Loop\UvDriver $driver
+     * @param Loop\UvDriver $driver
      */
     public function __construct(Loop\UvDriver $driver)
     {
         $this->driver = $driver;
         $this->loop = $driver->getHandle();
-        $this->poll = new UvPoll;
+        $this->poll = new Internal\UvPoll;
+
+        $this->priorVersion = \version_compare('0.3.0', \phpversion('uv')) < 0;
     }
 
     /**
@@ -136,23 +140,36 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_stat($this->loop, $path, function ($fh, $stat) use ($deferred, $path): void {
-            if (empty($fh)) {
-                $stat = null;
-            } else {
-                // link is not a valid stat type but returned by the uv extension
-                // change link to nlink
-                if (isset($stat['link'])) {
-                    $stat['nlink'] = $stat['link'];
-
-                    unset($stat['link']);
-                }
-
-                StatCache::set($path, $stat);
+        $callback = function ($stat) use ($deferred, $path): void {
+            if (\is_int($stat)) {
+                $deferred->resolve(null);
+                return;
             }
 
+            // link is not a valid stat type but returned by the uv extension
+            // change link to nlink
+            if (isset($stat['link'])) {
+                $stat['nlink'] = $stat['link'];
+
+                unset($stat['link']);
+            }
+
+            StatCache::set($path, $stat);
+
             $deferred->resolve($stat);
-        });
+        };
+
+        if ($this->priorVersion) {
+            $callback = function ($fh, $stat) use ($callback): void {
+                if (empty($fh)) {
+                    $stat = 0;
+                }
+
+                $callback($stat);
+            };
+        }
+
+        \uv_fs_stat($this->loop, $path, $callback);
 
         return $deferred->promise();
     }
@@ -299,13 +316,17 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_lstat($this->loop, $path, function ($fh, $stat) use ($deferred): void {
-            if (empty($fh)) {
-                $stat = null;
-            }
+        if ($this->priorVersion) {
+            $callback = function ($fh, $stat) use ($deferred): void {
+                $deferred->resolve(empty($fh) ? null : $stat);
+            };
+        } else {
+            $callback = function ($stat) use ($deferred): void {
+                $deferred->resolve(\is_int($stat) ? null : $stat);
+            };
+        }
 
-            $deferred->resolve($stat);
-        });
+        \uv_fs_lstat($this->loop, $path, $callback);
 
         return $deferred->promise();
     }
@@ -319,6 +340,10 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function ($fh) use ($deferred): void {
+            if (\is_int($fh)) {
+                $fh = $fh === 0; // php-uv v0.3.0 changed the callback to receive an int.
+            }
+
             $deferred->resolve((bool) $fh);
         });
 
@@ -334,6 +359,10 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_link($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, function ($fh) use ($deferred): void {
+            if (\is_int($fh)) {
+                $fh = $fh === 0; // php-uv v0.3.0 changed the callback to receive an int.
+            }
+
             $deferred->resolve((bool) $fh);
         });
 
@@ -348,15 +377,27 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_readlink($this->loop, $path, function ($fh, $target) use ($deferred): void {
-            if (!(bool) $fh) {
-                $deferred->fail(new FilesystemException("Could not read symbolic link"));
+        if ($this->priorVersion) {
+            $callback = function ($fh, $target) use ($deferred): void {
+                if (!(bool) $fh) {
+                    $deferred->fail(new FilesystemException("Could not read symbolic link"));
+                    return;
+                }
 
-                return;
-            }
+                $deferred->resolve($target);
+            };
+        } else {
+            $callback = function ($target) use ($deferred): void {
+                if (\is_int($target)) {
+                    $deferred->fail(new FilesystemException("Could not read symbolic link"));
+                    return;
+                }
 
-            $deferred->resolve($target);
-        });
+                $deferred->resolve($target);
+            };
+        }
+
+        \uv_fs_readlink($this->loop, $path, $callback);
 
         return $deferred->promise();
     }
@@ -462,15 +503,27 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_readdir($this->loop, $path, 0, function ($fh, $data) use ($deferred, $path): void {
-            if (empty($fh) && $data !== 0) {
-                $deferred->fail(new FilesystemException("Failed reading contents from {$path}"));
-            } elseif ($data === 0) {
-                $deferred->resolve([]);
-            } else {
-                $deferred->resolve($data);
-            }
-        });
+        if ($this->priorVersion) {
+            \uv_fs_readdir($this->loop, $path, 0, function ($fh, $data) use ($deferred, $path): void {
+                if (empty($fh) && $data !== 0) {
+                    $deferred->fail(new FilesystemException("Failed reading contents from {$path}"));
+                } elseif ($data === 0) {
+                    $deferred->resolve([]);
+                } else {
+                    $deferred->resolve($data);
+                }
+            });
+        } else {
+            \uv_fs_scandir($this->loop, $path, function ($data) use ($deferred, $path): void {
+                if (\is_int($data) && $data !== 0) {
+                    $deferred->fail(new FilesystemException("Failed reading contents from {$path}"));
+                } elseif ($data === 0) {
+                    $deferred->resolve([]);
+                } else {
+                    $deferred->resolve($data);
+                }
+            });
+        }
 
         return $deferred->promise();
     }
@@ -602,9 +655,17 @@ final class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        \uv_fs_read($this->loop, $fh, $offset, $len, function ($fh, $nread, $buffer) use ($deferred): void {
-            $deferred->resolve($nread < 0 ? false : $buffer);
-        });
+        if ($this->priorVersion) {
+            $callback = function ($fh, $nread, $buffer) use ($deferred): void {
+                $deferred->resolve($nread < 0 ? false : $buffer);
+            };
+        } else {
+            $callback = function ($nread, $buffer) use ($deferred): void {
+                $deferred->resolve($nread < 0 ? false : $buffer);
+            };
+        }
+
+        \uv_fs_read($this->loop, $fh, $offset, $len, $callback);
 
         return $deferred->promise();
     }

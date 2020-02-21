@@ -5,7 +5,6 @@ namespace Amp\File;
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Deferred;
-use Amp\File\Internal\UvPoll;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
@@ -13,7 +12,7 @@ use function Amp\call;
 
 final class UvFile implements File
 {
-    /** @var UvPoll */
+    /** @var Internal\UvPoll */
     private $poll;
 
     /** @var \UVLoop */
@@ -43,18 +42,21 @@ final class UvFile implements File
     /** @var bool */
     private $writable = true;
 
-    /** @var \Amp\Promise|null */
+    /** @var Promise|null */
     private $closing;
+
+    /** @var bool True if ext-uv version is < 0.3.0. */
+    private $priorVersion;
 
     /**
      * @param \Amp\Loop\UvDriver $driver
-     * @param UvPoll $poll Poll for keeping the loop active.
+     * @param Internal\UvPoll $poll Poll for keeping the loop active.
      * @param resource $fh File handle.
      * @param string $path
      * @param string $mode
      * @param int $size
      */
-    public function __construct(Loop\UvDriver $driver, UvPoll $poll, $fh, string $path, string $mode, int $size)
+    public function __construct(Loop\UvDriver $driver, Internal\UvPoll $poll, $fh, string $path, string $mode, int $size)
     {
         $this->poll = $poll;
         $this->fh = $fh;
@@ -65,6 +67,8 @@ final class UvFile implements File
         $this->position = ($mode[0] === "a") ? $size : 0;
 
         $this->queue = new \SplQueue;
+
+        $this->priorVersion = \version_compare('0.3.0', \phpversion('uv')) < 0;
     }
 
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
@@ -78,22 +82,33 @@ final class UvFile implements File
 
         $this->isActive = true;
 
-        $onRead = function ($fh, $result, $buffer) use ($deferred): void {
+        $onRead = function ($result, $buffer) use ($deferred): void {
             $this->isActive = false;
 
-            if ($result < 0) {
-                $error = \uv_strerror($result);
+            if (\is_int($buffer)) {
+                $error = \uv_strerror($buffer);
                 if ($error === "bad file descriptor") {
                     $deferred->fail(new ClosedException("Reading from the file failed due to a closed handle"));
                 } else {
                     $deferred->fail(new StreamException("Reading from the file failed: " . $error));
                 }
-            } else {
-                $length = \strlen($buffer);
-                $this->position = $this->position + $length;
-                $deferred->resolve($length ? $buffer : null);
+                return;
             }
+
+            $length = \strlen($buffer);
+            $this->position = $this->position + $length;
+            $deferred->resolve($length ? $buffer : null);
         };
+
+        if ($this->priorVersion) {
+            $onRead = function ($fh, $result, $buffer) use ($onRead): void {
+                if ($result < 0) {
+                    $buffer = $result; // php-uv v0.3.0 changed the callback to put an int in $buffer on error.
+                }
+
+                $onRead($result, $buffer);
+            };
+        }
 
         \uv_fs_read($this->loop, $this->fh, $this->position, $length, $onRead);
 
@@ -319,7 +334,7 @@ final class UvFile implements File
         $deferred = new Deferred;
         $this->poll->listen($this->closing = $deferred->promise());
 
-        \uv_fs_close($this->loop, $this->fh, function ($fh) use ($deferred): void {
+        \uv_fs_close($this->loop, $this->fh, function () use ($deferred): void {
             // Ignore errors when closing file, as the handle will become invalid anyway.
             $deferred->resolve();
         });
