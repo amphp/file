@@ -30,7 +30,7 @@ final class BlockingFile implements File
     public function __destruct()
     {
         if ($this->fh !== null) {
-            \fclose($this->fh);
+            @\fclose($this->fh);
         }
     }
 
@@ -43,14 +43,15 @@ final class BlockingFile implements File
             throw new ClosedException("The file has been closed");
         }
 
-        $data = \fread($this->fh, $length);
+        $data = @\fread($this->fh, $length);
 
         if ($data !== false) {
             return new Success(\strlen($data) ? $data : null);
         }
 
+        $error = \error_get_last();
         return new Failure(new StreamException(
-            "Failed reading from file handle"
+            "Failed writing to file handle: " . ($error['message'] ?? 'Unknown error')
         ));
     }
 
@@ -63,14 +64,15 @@ final class BlockingFile implements File
             throw new ClosedException("The file has been closed");
         }
 
-        $len = \fwrite($this->fh, $data);
+        $length = @\fwrite($this->fh, $data);
 
-        if ($len !== false) {
-            return new Success($len);
+        if ($length !== false) {
+            return new Success($length);
         }
 
+        $error = \error_get_last();
         return new Failure(new StreamException(
-            "Failed writing to file handle"
+            "Failed writing to file handle: " . ($error['message'] ?? 'Unknown error')
         ));
     }
 
@@ -105,8 +107,9 @@ final class BlockingFile implements File
             return new Success;
         }
 
+        $error = \error_get_last();
         return new Failure(new StreamException(
-            "Failed closing file handle"
+            "Failed writing to file handle: " . ($error['message'] ?? 'Unknown error')
         ));
     }
 
@@ -116,11 +119,14 @@ final class BlockingFile implements File
     public function truncate(int $size): Promise
     {
         if ($this->fh === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         if (!@\ftruncate($this->fh, $size)) {
-            return new Failure(new StreamException("Could not truncate file"));
+            $error = \error_get_last();
+            return new Failure(new StreamException(
+                "Could not truncate file: " . ($error['message'] ?? 'Unknown error')
+            ));
         }
 
         return new Success;
@@ -132,7 +138,7 @@ final class BlockingFile implements File
     public function seek(int $position, int $whence = \SEEK_SET): Promise
     {
         if ($this->fh === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         switch ($whence) {
@@ -140,7 +146,10 @@ final class BlockingFile implements File
             case \SEEK_CUR:
             case \SEEK_END:
                 if (@\fseek($this->fh, $position, $whence) === -1) {
-                    return new Failure(new StreamException("Could not seek in file"));
+                    $error = \error_get_last();
+                    return new Failure(new StreamException(
+                        "Could not seek in file: " . ($error['message'] ?? 'Unknown error')
+                    ));
                 }
                 return new Success($this->tell());
             default:
