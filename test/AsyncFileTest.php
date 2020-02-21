@@ -43,8 +43,10 @@ abstract class AsyncFileTest extends FileTest
     {
         $this->expectException(PendingOperationError::class);
 
+        $path = Fixture::path() . "/temp";
+
         /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        $handle = yield File\open($path, "c+");
 
         $data = "test";
 
@@ -53,15 +55,17 @@ abstract class AsyncFileTest extends FileTest
 
         $this->assertSame(\strlen($data), yield $promise1);
 
-        yield $promise2;
+        yield $promise2; // Should throw.
     }
 
     public function testWriteWhileReading(): \Generator
     {
         $this->expectException(PendingOperationError::class);
 
+        $path = Fixture::path() . "/temp";
+
         /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        $handle = yield File\open($path, "c+");
 
         $promise1 = $handle->read(10);
         $promise2 = $handle->write("test");
@@ -69,6 +73,6 @@ abstract class AsyncFileTest extends FileTest
         $expected = \substr(yield File\get(__FILE__), 0, 10);
         $this->assertSame($expected, yield $promise1);
 
-        yield $promise2;
+        yield $promise2; // Should throw.
     }
 }
