@@ -6,12 +6,11 @@ php:
   - 7.1
   - 7.2
   - 7.3
-  - 7.4snapshot
+  - 7.4
   - nightly
 
-matrix:
+jobs:
   allow_failures:
-    - php: 7.4snapshot
     - php: nightly
   fast_finish: true
 
@@ -19,26 +18,28 @@ env:
   - AMP_DEBUG=true
 
 before_install:
-  - phpenv config-rm xdebug.ini || echo "No xdebug config."
-
-install:
-  - composer update -n --prefer-dist
+  - if [ "$TRAVIS_PHP_VERSION" != "7.1" ]; then
+      phpenv config-rm xdebug.ini || echo "No xdebug config.";
+      travis/install-pcov.sh;
+    fi
   - travis/install-eio.sh
   - travis/install-uv.sh
-  - wget https://github.com/php-coveralls/php-coveralls/releases/download/v1.0.2/coveralls.phar
-  - chmod +x coveralls.phar
+  - wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.2.0/php-coveralls.phar
+
+install:
+  - if [ "$TRAVIS_PHP_VERSION" = "nightly" ]; then
+      composer update -n --prefer-dist --ignore-platform-reqs;
+    else
+      composer update -n --prefer-dist;
+    fi
+  - composer show
 
 script:
-    # PHPDBG segfaults on versions other than 7.0 currently
-  - if [ "$TRAVIS_PHP_VERSION" = "7.0" ]; then
-      phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml;
-    else
-      vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml;
-    fi
+  - vendor/bin/phpunit --coverage-text --verbose --coverage-clover build/logs/clover.xml;
   - PHP_CS_FIXER_IGNORE_ENV=1 php vendor/bin/php-cs-fixer --diff --dry-run -v fix
 
 after_script:
-  - if [ "$TRAVIS_PHP_VERSION" = "7.0" ]; then ./coveralls.phar; fi
+  - travis_retry php php-coveralls.phar -v
 
 cache:
   directories:
