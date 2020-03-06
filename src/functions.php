@@ -196,7 +196,7 @@ function lstat(string $path): Promise
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function symlink(string $original, string $link): Promise
 {
@@ -209,7 +209,7 @@ function symlink(string $original, string $link): Promise
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function link(string $original, string $link): Promise
 {
@@ -234,7 +234,7 @@ function readlink(string $path): Promise
  * @param string $from
  * @param string $to
  * @fails \Amp\Files\FilesystemException If the operation fails
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function rename(string $from, string $to): Promise
 {
@@ -245,7 +245,7 @@ function rename(string $from, string $to): Promise
  * Delete a file.
  *
  * @param string $path
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function unlink(string $path): Promise
 {
@@ -258,7 +258,7 @@ function unlink(string $path): Promise
  * @param string $path
  * @param int $mode
  * @param bool $recursive
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
 {
@@ -269,7 +269,7 @@ function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
  * Delete a directory.
  *
  * @param string $path
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function rmdir(string $path): Promise
 {
@@ -282,7 +282,7 @@ function rmdir(string $path): Promise
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
  * @param string $path
- * @return \Amp\Promise<array>
+ * @return \Amp\Promise<array<int, string>>
  */
 function scandir(string $path): Promise
 {
@@ -294,7 +294,7 @@ function scandir(string $path): Promise
  *
  * @param string $path
  * @param int $mode
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function chmod(string $path, int $mode): Promise
 {
@@ -307,7 +307,7 @@ function chmod(string $path, int $mode): Promise
  * @param string $path
  * @param int $uid -1 to ignore
  * @param int $gid -1 to ignore
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function chown(string $path, int $uid, int $gid = -1): Promise
 {
@@ -322,7 +322,7 @@ function chown(string $path, int $uid, int $gid = -1): Promise
  * @param string $path
  * @param int $time The touch time. If $time is not supplied, the current system time is used.
  * @param int $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
- * @return \Amp\Promise<null>
+ * @return \Amp\Promise<bool>
  */
 function touch(string $path, int $time = null, int $atime = null): Promise
 {
@@ -345,7 +345,7 @@ function get(string $path): Promise
  *
  * @param string $path The file path to which to $contents should be written
  * @param string $contents The data to write to the specified $path
- * @return \Amp\Promise A promise resolving to the integer length written upon success
+ * @return \Amp\Promise<int> A promise resolving to the integer length written upon success
  */
 function put(string $path, string $contents): Promise
 {

@@ -97,7 +97,7 @@ interface Driver
      * Same as stat() except if the path is a link then the link's data is returned.
      *
      * @param string $path The file system path to stat
-     * @return \Amp\Promise A promise resolving to an associative array upon successful resolution
+     * @return \Amp\Promise<array|null> A promise resolving to an associative array upon successful resolution
      */
     public function lstat(string $path): Promise;
 
@@ -106,7 +106,7 @@ interface Driver
      *
      * @param string $target
      * @param string $link
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function symlink(string $target, string $link): Promise;
 
@@ -115,7 +115,7 @@ interface Driver
      *
      * @param string $target
      * @param string $link
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function link(string $target, string $link): Promise;
 
@@ -123,7 +123,7 @@ interface Driver
      * Read the symlink at $path.
      *
      * @param string $target
-     * @return \Amp\Promise
+     * @return \Amp\Promise<string>
      */
     public function readlink(string $target): Promise;
 
@@ -132,7 +132,7 @@ interface Driver
      *
      * @param string $from
      * @param string $to
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function rename(string $from, string $to): Promise;
 
@@ -140,7 +140,7 @@ interface Driver
      * Delete a file.
      *
      * @param string $path
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function unlink(string $path): Promise;
 
@@ -150,7 +150,7 @@ interface Driver
      * @param string $path
      * @param int $mode
      * @param bool $recursive
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise;
 
@@ -158,7 +158,7 @@ interface Driver
      * Delete a directory.
      *
      * @param string $path
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function rmdir(string $path): Promise;
 
@@ -168,7 +168,7 @@ interface Driver
      * Dot entries are not included in the resulting array (i.e. "." and "..").
      *
      * @param string $path
-     * @return \Amp\Promise
+     * @return \Amp\Promise<array<int, string>>
      */
     public function scandir(string $path): Promise;
 
@@ -177,7 +177,7 @@ interface Driver
      *
      * @param string $path
      * @param int $mode
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function chmod(string $path, int $mode): Promise;
 
@@ -187,7 +187,7 @@ interface Driver
      * @param string $path
      * @param int $uid
      * @param int $gid
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function chown(string $path, int $uid, int $gid): Promise;
 
@@ -199,7 +199,7 @@ interface Driver
      * @param string $path
      * @param int $time The touch time. If $time is not supplied, the current system time is used.
      * @param int $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
-     * @return \Amp\Promise
+     * @return \Amp\Promise<bool>
      */
     public function touch(string $path, int $time = null, int $atime = null): Promise;
 
@@ -207,7 +207,7 @@ interface Driver
      * Buffer the specified file's contents.
      *
      * @param string $path The file path from which to buffer contents
-     * @return \Amp\Promise A promise resolving to a string upon successful resolution
+     * @return \Amp\Promise<string> A promise resolving to a string upon successful resolution
      */
     public function get(string $path): Promise;
 
@@ -216,7 +216,7 @@ interface Driver
      *
      * @param string $path The file path to which to $contents should be written
      * @param string $contents The data to write to the specified $path
-     * @return \Amp\Promise A promise resolving to the integer length written upon success
+     * @return \Amp\Promise<int> A promise resolving to the integer length written upon success
      */
     public function put(string $path, string $contents): Promise;
 }
