@@ -60,7 +60,7 @@ final class UvDriver implements Driver
             if ($fh) {
                 $this->onOpenHandle($fh, $openArr);
             } else {
-                list(, $path, $deferred) = $openArr;
+                [, $path, $deferred] = $openArr;
                 $deferred->fail(new FilesystemException(
                     "Failed opening file handle to $path"
                 ));
@@ -93,14 +93,14 @@ final class UvDriver implements Driver
 
     private function onOpenHandle($fh, array $openArr): void
     {
-        list($mode) = $openArr;
+        [$mode] = $openArr;
 
         if ($mode[0] === "w") {
             \uv_fs_ftruncate($this->loop, $fh, $length = 0, function ($fh) use ($openArr): void {
                 if ($fh) {
                     $this->finalizeHandle($fh, $size = 0, $openArr);
                 } else {
-                    list(, $path, $deferred) = $openArr;
+                    [, $path, $deferred] = $openArr;
                     $deferred->fail(new FilesystemException(
                         "Failed truncating file $path"
                     ));
@@ -112,7 +112,7 @@ final class UvDriver implements Driver
                     StatCache::set($openArr[1], $stat);
                     $this->finalizeHandle($fh, $stat["size"], $openArr);
                 } else {
-                    list(, $path, $deferred) = $openArr;
+                    [, $path, $deferred] = $openArr;
                     $deferred->fail(new FilesystemException(
                         "Failed reading file size from open handle pointing to $path"
                     ));
@@ -123,7 +123,7 @@ final class UvDriver implements Driver
 
     private function finalizeHandle($fh, $size, array $openArr): void
     {
-        list($mode, $path, $deferred) = $openArr;
+        [$mode, $path, $deferred] = $openArr;
         $handle = new UvFile($this->driver, $this->poll, $fh, $path, $mode, $size);
         $deferred->resolve($handle);
     }
