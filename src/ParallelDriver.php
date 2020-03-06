@@ -34,7 +34,7 @@ final class ParallelDriver implements Driver
         return call(function () use ($path, $mode) {
             $worker = $this->pool->getWorker();
             try {
-                list($id, $size, $mode) = yield $worker->enqueue(new Internal\FileTask("fopen", [$path, $mode]));
+                [$id, $size, $mode] = yield $worker->enqueue(new Internal\FileTask("fopen", [$path, $mode]));
             } catch (TaskException $exception) {
                 throw new FilesystemException("Could not open file", $exception);
             } catch (WorkerException $exception) {

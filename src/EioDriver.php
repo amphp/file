@@ -64,7 +64,7 @@ final class EioDriver implements Driver
 
     private function onOpenHandle(array $openArr, $result, $req): void
     {
-        list($mode, $path, $deferred) = $openArr;
+        [$mode, $path, $deferred] = $openArr;
 
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -79,7 +79,7 @@ final class EioDriver implements Driver
 
     private function onOpenFtruncate(array $openArr, $result, $req): void
     {
-        list($fh, $mode, $path, $deferred) = $openArr;
+        [$fh, $mode, $path, $deferred] = $openArr;
 
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -91,7 +91,7 @@ final class EioDriver implements Driver
 
     private function onOpenFstat(array $openArr, $result, $req): void
     {
-        list($fh, $mode, $path, $deferred) = $openArr;
+        [$fh, $mode, $path, $deferred] = $openArr;
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
@@ -122,7 +122,7 @@ final class EioDriver implements Driver
 
     private function onStat(array $data, $result, $req): void
     {
-        list($deferred, $path) = $data;
+        [$deferred, $path] = $data;
         if ($result === -1) {
             $deferred->resolve(null);
         } else {
@@ -379,7 +379,7 @@ final class EioDriver implements Driver
 
     private function onUnlink(array $data, $result, $req): void
     {
-        list($deferred, $path) = $data;
+        [$deferred, $path] = $data;
 
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -449,7 +449,7 @@ final class EioDriver implements Driver
 
     private function onRmdir(array $data, $result, $req): void
     {
-        list($deferred, $path) = $data;
+        [$deferred, $path] = $data;
 
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -559,7 +559,7 @@ final class EioDriver implements Driver
 
     private function onGetFstat(array $fhAndPromisor, $result, $req): void
     {
-        list($fh, $deferred) = $fhAndPromisor;
+        [$fh, $deferred] = $fhAndPromisor;
 
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -574,7 +574,7 @@ final class EioDriver implements Driver
 
     private function onGetRead(array $fhAndPromisor, $result, $req): void
     {
-        list($fh, $deferred) = $fhAndPromisor;
+        [$fh, $deferred] = $fhAndPromisor;
 
         \eio_close($fh);
 
@@ -605,7 +605,7 @@ final class EioDriver implements Driver
 
     private function onPutOpen(array $data, $result, $req): void
     {
-        list($contents, $deferred) = $data;
+        [$contents, $deferred] = $data;
 
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
@@ -621,7 +621,7 @@ final class EioDriver implements Driver
 
     private function onPutWrite(array $fhAndPromisor, $result, $req): void
     {
-        list($fh, $deferred) = $fhAndPromisor;
+        [$fh, $deferred] = $fhAndPromisor;
 
         \eio_close($fh);
 
