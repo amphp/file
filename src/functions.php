@@ -213,7 +213,7 @@ function symlink(string $original, string $link): Promise
  */
 function link(string $original, string $link): Promise
 {
-    return filesystem()->symlink($original, $link);
+    return filesystem()->link($original, $link);
 }
 
 /**
