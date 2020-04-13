@@ -216,7 +216,7 @@ final class ParallelDriver implements Driver
             if ($stat["mode"] & 0100000) {
                 return $stat["size"];
             }
-            throw new FilesystemException(sprintf('Specified path "%s" is not a regular file', $path));
+            throw new FilesystemException(\sprintf('Specified path "%s" is not a regular file', $path));
         });
     }
 

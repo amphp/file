@@ -9,7 +9,7 @@ class PathDoesNotExistException extends FileSystemException
     public function __construct(string $path)
     {
         $this->path = $path;
-        parent::__construct(sprintf('Specified path "%s" does not exist', $path));
+        parent::__construct(\sprintf('Specified path "%s" does not exist', $path));
     }
 
     public function getPath(): string
