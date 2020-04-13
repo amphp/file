@@ -211,12 +211,12 @@ final class ParallelDriver implements Driver
         return call(function () use ($path) {
             $stat = yield $this->stat($path);
             if (empty($stat)) {
-                throw new FilesystemException("Specified path does not exist");
+                throw new PathDoesNotExistException($path);
             }
             if ($stat["mode"] & 0100000) {
                 return $stat["size"];
             }
-            throw new FilesystemException("Specified path is not a regular file");
+            throw new FilesystemException(sprintf('Specified path "%s" is not a regular file', $path));
         });
     }
 
@@ -228,7 +228,7 @@ final class ParallelDriver implements Driver
         return call(function () use ($path) {
             $stat = yield $this->stat($path);
             if (empty($stat)) {
-                throw new FilesystemException("Specified path does not exist");
+                throw new PathDoesNotExistException($path);
             }
             return $stat["mtime"];
         });
@@ -242,7 +242,7 @@ final class ParallelDriver implements Driver
         return call(function () use ($path) {
             $stat = yield $this->stat($path);
             if (empty($stat)) {
-                throw new FilesystemException("Specified path does not exist");
+                throw new PathDoesNotExistException($path);
             }
             return $stat["atime"];
         });
@@ -256,7 +256,7 @@ final class ParallelDriver implements Driver
         return call(function () use ($path) {
             $stat = yield $this->stat($path);
             if (empty($stat)) {
-                throw new FilesystemException("Specified path does not exist");
+                throw new PathDoesNotExistException($path);
             }
             return $stat["ctime"];
         });
