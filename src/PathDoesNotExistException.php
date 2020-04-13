@@ -2,7 +2,7 @@
 
 namespace Amp\File;
 
-class PathDoesNotExistException extends FileSystemException
+class PathDoesNotExistException extends FilesystemException
 {
     private $path;
 
