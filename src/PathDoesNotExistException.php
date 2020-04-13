@@ -2,8 +2,6 @@
 
 namespace Amp\File;
 
-use Exception;
-
 class PathDoesNotExistException extends FileSystemException
 {
     public function __construct(string $path)
