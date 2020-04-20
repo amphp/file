@@ -30,6 +30,9 @@ final class EioDriver implements Driver
     public function open(string $path, string $mode): Promise
     {
         $flags = \EIO_O_NONBLOCK | $this->parseMode($mode);
+        if (defined('\EIO_O_FSYNC')) {
+            $flags |= \EIO_O_FSYNC;
+        }
         $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
 
         $deferred = new Deferred;
