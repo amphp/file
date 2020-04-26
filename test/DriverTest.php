@@ -349,4 +349,13 @@ abstract class DriverTest extends FilesystemTest
     {
         return \substr(\decoct($stat["mode"]), 1);
     }
+
+    public function testChown(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+
+        $original = "{$fixtureDir}/small.txt";
+        $user = fileowner($original);
+        $this->assertTrue(yield File\chown($original, $user));
+    }
 }
