@@ -55,6 +55,11 @@
             "Amp\\File\\Test\\": "test"
         }
     },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.x-dev"
+        }
+    },
     "scripts": {
         "check": [
             "@code-style",
