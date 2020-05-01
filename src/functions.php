@@ -282,7 +282,7 @@ function rmdir(string $path): Promise
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
  * @param string $path
- * @return \Amp\Promise<array<int, string>>
+ * @return \Amp\Promise<list<string>>
  */
 function scandir(string $path): Promise
 {
