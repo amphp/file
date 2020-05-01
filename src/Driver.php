@@ -168,7 +168,7 @@ interface Driver
      * Dot entries are not included in the resulting array (i.e. "." and "..").
      *
      * @param string $path
-     * @return \Amp\Promise<array<int, string>>
+     * @return \Amp\Promise<list<string>>
      */
     public function scandir(string $path): Promise;
 
