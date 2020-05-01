@@ -2,6 +2,7 @@
 
 namespace Amp\File\Internal;
 
+use Amp\CancellationToken;
 use Amp\File\BlockingDriver;
 use Amp\File\BlockingFile;
 use Amp\File\FilesystemException;
@@ -51,7 +52,7 @@ final class FileTask implements Task
      * @throws \Amp\File\FilesystemException
      * @throws \Error
      */
-    public function run(Environment $environment)
+    public function run(Environment $environment, ?CancellationToken $token = null)
     {
         if ('f' === $this->operation[0]) {
             if ("fopen" === $this->operation) {
@@ -103,8 +104,8 @@ final class FileTask implements Task
                 throw new FilesystemException(\sprintf("No file handle with the ID %d has been opened on the worker", $this->id));
             }
 
-            /** @var \Amp\File\BlockingFile $file */
-            if (!($file = $environment->get($id)) instanceof BlockingFile) {
+            $file = $environment->get($id);
+            if (!$file instanceof BlockingFile) {
                 throw new FilesystemException("File storage found in inconsistent state");
             }
 

@@ -4,6 +4,7 @@ namespace Amp\File;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
+use Amp\Failure;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
@@ -13,7 +14,7 @@ use function Amp\call;
 
 final class ParallelFile implements File
 {
-    /** @var \Amp\Parallel\Worker\Worker */
+    /** @var Worker */
     private $worker;
 
     /** @var int|null */
@@ -40,11 +41,11 @@ final class ParallelFile implements File
     /** @var bool */
     private $writable = true;
 
-    /** @var \Amp\Promise|null */
+    /** @var Promise|null */
     private $closing;
 
     /**
-     * @param \Amp\Parallel\Worker\Worker $worker
+     * @param Worker $worker
      * @param int $id
      * @param string $path
      * @param int $size
@@ -102,7 +103,7 @@ final class ParallelFile implements File
     public function truncate(int $size): Promise
     {
         if ($this->id === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         if ($this->busy) {
@@ -110,10 +111,10 @@ final class ParallelFile implements File
         }
 
         if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
+            return new Failure(new ClosedException("The file is no longer writable"));
         }
 
-        return call(function () use ($size) {
+        return call(function () use ($size): \Generator {
             ++$this->pendingWrites;
             $this->busy = true;
 
@@ -142,14 +143,14 @@ final class ParallelFile implements File
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
     {
         if ($this->id === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         if ($this->busy) {
             throw new PendingOperationError;
         }
 
-        return call(function () use ($length) {
+        return call(function () use ($length): \Generator {
             $this->busy = true;
 
             try {
@@ -173,7 +174,7 @@ final class ParallelFile implements File
     public function write(string $data): Promise
     {
         if ($this->id === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         if ($this->busy && $this->pendingWrites === 0) {
@@ -181,10 +182,10 @@ final class ParallelFile implements File
         }
 
         if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
+            return new Failure(new ClosedException("The file is no longer writable"));
         }
 
-        return call(function () use ($data) {
+        return call(function () use ($data): \Generator {
             ++$this->pendingWrites;
             $this->busy = true;
 
@@ -210,7 +211,7 @@ final class ParallelFile implements File
      */
     public function end(string $data = ""): Promise
     {
-        return call(function () use ($data) {
+        return call(function () use ($data): \Generator {
             $promise = $this->write($data);
             $this->writable = false;
 

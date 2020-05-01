@@ -23,4 +23,22 @@ class ParallelHandleTest extends AsyncFileTest
         parent::tearDown();
         $this->pool->shutdown();
     }
+
+    public function testMultipleOpenFiles(): \Generator
+    {
+        $maxCount = File\ParallelDriver::DEFAULT_WORKER_LIMIT;
+
+        $files = [];
+        for ($i = 0; $i < $maxCount * 3; ++$i) {
+            $files[] = yield File\open(__FILE__, 'r');
+        }
+
+        try {
+            $this->assertSame($maxCount, $this->pool->getWorkerCount());
+        } finally {
+            foreach ($files as $file) {
+                $file->close();
+            }
+        }
+    }
 }
