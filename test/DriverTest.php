@@ -350,6 +350,17 @@ abstract class DriverTest extends FilesystemTest
         return \substr(\decoct($stat["mode"]), 1);
     }
 
+    public function testChmod(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+
+        $original = "{$fixtureDir}/small.txt";
+        $this->assertNotSame('0777', substr(sprintf('%o', fileperms($original)), -4));
+        $this->assertTrue(yield File\chmod($original, 0777));
+        clearstatcache();
+        $this->assertSame('0777', substr(sprintf('%o', fileperms($original)), -4));
+    }
+
     public function testChown(): \Generator
     {
         $fixtureDir = Fixture::path();
