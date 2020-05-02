@@ -61,12 +61,16 @@ final class AsyncFileMutex implements Mutex
      *
      * @throws SyncException If the unlock operation failed.
      */
-    protected function release(): void
+    private function release(): void
     {
         unlink($this->fileName)->onResolve(
             function (?\Throwable $exception) {
                 if ($exception !== null) {
-                    throw new SyncException('Failed to unlock the mutex file.', 0, $exception);
+                    throw new SyncException(
+                        'Failed to unlock the mutex file: ' . $this->file,
+                        0,
+                        $exception
+                    );
                 }
             }
         );
