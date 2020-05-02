@@ -355,7 +355,7 @@ abstract class DriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
 
         $original = "{$fixtureDir}/small.txt";
-        $user = fileowner($original);
+        $user = \fileowner($original);
         $this->assertTrue(yield File\chown($original, $user));
     }
 }
