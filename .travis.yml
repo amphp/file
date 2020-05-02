@@ -13,6 +13,9 @@ jobs:
   allow_failures:
     - php: nightly
   fast_finish: true
+  include:
+    - php: 7.1
+    - env: UV_VERSION=v0.2.2
 
 env:
   - AMP_DEBUG=true
@@ -23,7 +26,7 @@ before_install:
       travis/install-pcov.sh;
     fi
   - travis/install-eio.sh
-  - travis/install-uv.sh
+  - travis/install-uv.sh $UV_VERSION
   - wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.2.0/php-coveralls.phar
 
 install:
