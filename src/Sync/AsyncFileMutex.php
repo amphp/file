@@ -5,6 +5,7 @@ namespace Amp\File\Sync;
 use Amp\Coroutine;
 use Amp\Delayed;
 use Amp\Promise;
+use Amp\Sync\Lock;
 use Amp\Sync\Mutex;
 use Amp\Sync\SyncException;
 use function Amp\File\open;
