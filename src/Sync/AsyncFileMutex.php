@@ -4,6 +4,7 @@ namespace Amp\File\Sync;
 
 use Amp\Coroutine;
 use Amp\Delayed;
+use Amp\File\FilesystemException;
 use Amp\Promise;
 use Amp\Sync\Lock;
 use Amp\Sync\Mutex;
@@ -43,8 +44,14 @@ final class AsyncFileMutex implements Mutex
     {
         // Try to create the lock file. If the file already exists, someone else
         // has the lock, so set an asynchronous timer and try again.
-        while (($file = yield open($this->fileName, 'x')) === false) {
-            yield new Delayed(self::LATENCY_TIMEOUT);
+        while (true) {
+            try {
+                $file = yield open($this->fileName, 'x');
+
+                break;
+            } catch (FilesystemException $exception) {
+                yield new Delayed(self::LATENCY_TIMEOUT);
+            }
         }
 
         // Return a lock object that can be used to release the lock on the mutex.
@@ -68,7 +75,7 @@ final class AsyncFileMutex implements Mutex
             function (?\Throwable $exception): void {
                 if ($exception !== null) {
                     throw new SyncException(
-                        'Failed to unlock the mutex file: ' . $this->file,
+                        'Failed to unlock the mutex file: ' . $this->fileName,
                         0,
                         $exception
                     );
