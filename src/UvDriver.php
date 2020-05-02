@@ -41,7 +41,7 @@ final class UvDriver implements Driver
         $this->loop = $driver->getHandle();
         $this->poll = new Internal\UvPoll;
 
-        $this->priorVersion = \version_compare('0.3.0', \phpversion('uv')) < 0;
+        $this->priorVersion = \version_compare('0.3.0', \phpversion('uv'), '>');
     }
 
     /**
