@@ -53,7 +53,13 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Amp\\File\\Test\\": "test"
+            "Amp\\File\\Test\\": "test",
+            "Amp\\Sync\\Test\\": "vendor/amphp/sync/test"
+        }
+    },
+    "config": {
+        "preferred-install": {
+            "amphp/sync": "source"
         }
     },
     "extra": {
