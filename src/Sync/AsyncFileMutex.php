@@ -10,7 +10,7 @@ use Amp\Sync\SyncException;
 use function Amp\File\open;
 use function Amp\File\unlink;
 
-class AsyncFileMutex implements Mutex
+final class AsyncFileMutex implements Mutex
 {
     public const LATENCY_TIMEOUT = 10;
 
