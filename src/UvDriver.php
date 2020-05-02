@@ -97,7 +97,7 @@ final class UvDriver implements Driver
 
         if ($mode[0] === "w") {
             \uv_fs_ftruncate($this->loop, $fh, $length = 0, function ($fh) use ($openArr): void {
-                if ($fh) {
+                if (\is_resource($fh)) {
                     $this->finalizeHandle($fh, $size = 0, $openArr);
                 } else {
                     [, $path, $deferred] = $openArr;
@@ -108,7 +108,7 @@ final class UvDriver implements Driver
             });
         } else {
             \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($openArr): void {
-                if ($fh) {
+                if (\is_resource($fh)) {
                     StatCache::set($openArr[1], $stat);
                     $this->finalizeHandle($fh, $stat["size"], $openArr);
                 } else {
@@ -639,7 +639,7 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
 
         \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($deferred): void {
-            if ($fh) {
+            if (\is_resource($fh)) {
                 $stat["isdir"] = (bool) ($stat["mode"] & \UV::S_IFDIR);
                 $stat["isfile"] = !$stat["isdir"];
                 $deferred->resolve($stat);
