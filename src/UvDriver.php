@@ -536,9 +536,17 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_chmod($this->loop, $path, $mode, function ($fh) use ($deferred): void {
-            $deferred->resolve((bool) $fh);
-        });
+        if ($this->priorVersion) {
+            $callback = function (bool $result) use ($deferred): void {
+                $deferred->resolve($result);
+            };
+        } else {
+            $callback = function (int $result) use ($deferred): void {
+                $deferred->resolve($result === 0);
+            };
+        }
+
+        \uv_fs_chmod($this->loop, $path, $mode, $callback);
 
         return $deferred->promise();
     }
@@ -552,9 +560,17 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_chown($this->loop, $path, $uid, $gid, function ($fh) use ($deferred): void {
-            $deferred->resolve((bool) $fh);
-        });
+        if ($this->priorVersion) {
+            $callback = function (bool $result) use ($deferred): void {
+                $deferred->resolve($result);
+            };
+        } else {
+            $callback = function (int $result) use ($deferred): void {
+                $deferred->resolve($result === 0);
+            };
+        }
+
+        \uv_fs_chown($this->loop, $path, $uid, $gid, $callback);
 
         return $deferred->promise();
     }
