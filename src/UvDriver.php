@@ -57,9 +57,7 @@ final class UvDriver implements Driver
 
         $openArr = [$mode, $path, $deferred];
         \uv_fs_open($this->loop, $path, $flags, $chmod, function ($fh) use ($openArr): void {
-            var_export(array_map('gettype', func_get_args()));
-            var_export(func_get_args());
-            if ($fh) {
+            if (\is_resource($fh)) {
                 $this->onOpenHandle($fh, $openArr);
             } else {
                 [, $path, $deferred] = $openArr;
