@@ -12,7 +12,7 @@ use function Amp\File\unlink;
 
 final class AsyncFileMutex implements Mutex
 {
-    public const LATENCY_TIMEOUT = 10;
+    private const LATENCY_TIMEOUT = 10;
 
     /** @var string The full path to the lock file. */
     private $fileName;
