@@ -37,9 +37,18 @@ abstract class DriverTest extends FilesystemTest
 
         $original = "{$fixtureDir}/small.txt";
         $link = "{$fixtureDir}/symlink.txt";
-        $this->assertTrue(yield File\symlink($original, $link));
+        $this->assertNull(yield File\symlink($original, $link));
         $this->assertTrue(\is_link($link));
         yield File\unlink($link);
+    }
+
+    public function testSymlinkFailWhenLinkExists(): \Generator
+    {
+        $this->expectException(FilesystemException::class);
+
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+        yield File\symlink($path, $path);
     }
 
     public function testReadlink(): \Generator
@@ -85,7 +94,7 @@ abstract class DriverTest extends FilesystemTest
 
         $target = "{$fixtureDir}/small.txt";
         $link = "{$fixtureDir}/symlink.txt";
-        $this->assertTrue(yield File\symlink($target, $link));
+        yield File\symlink($target, $link);
         $this->assertIsArray(yield File\lstat($link));
         yield File\unlink($link);
     }
@@ -207,11 +216,21 @@ abstract class DriverTest extends FilesystemTest
         $new = "{$fixtureDir}/rename2.txt";
 
         yield File\put($old, $contents1);
-        yield File\rename($old, $new);
+        $this->assertNull(yield File\rename($old, $new));
         $contents2 = (yield File\get($new));
         yield File\unlink($new);
 
         $this->assertSame($contents1, $contents2);
+    }
+
+    public function testRenameFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\rename($path, $path);
     }
 
     public function testUnlink(): \Generator
@@ -219,8 +238,29 @@ abstract class DriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
         $toUnlink = "{$fixtureDir}/unlink";
         yield File\put($toUnlink, "unlink me");
-        yield File\unlink($toUnlink);
+        $this->assertNull(yield File\unlink($toUnlink));
         $this->assertNull(yield File\stat($toUnlink));
+    }
+
+    public function testUnlinkFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\unlink($path);
+    }
+
+    public function testUnlinkFailsOnDirectory(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $dir = "{$fixtureDir}/newdir";
+        yield File\mkdir($dir);
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\unlink($dir);
     }
 
     public function testMkdirRmdir(): \Generator
@@ -231,18 +271,48 @@ abstract class DriverTest extends FilesystemTest
 
         \umask(0022);
 
-        yield File\mkdir($dir);
+        $this->assertNull(yield File\mkdir($dir));
         $stat = yield File\stat($dir);
         $this->assertSame('0755', $this->getPermissionsFromStat($stat));
-        yield File\rmdir($dir);
+        $this->assertNull(yield File\rmdir($dir));
         $this->assertNull(yield File\stat($dir));
 
         // test for 0, because previous array_filter made that not work
         $dir = "{$fixtureDir}/newdir/with/recursive/creation/0/1/2";
 
-        yield File\mkdir($dir, 0764, true);
+        $this->assertNull(yield File\mkdir($dir, 0764, true));
         $stat = yield File\stat($dir);
         $this->assertSame('0744', $this->getPermissionsFromStat($stat));
+    }
+
+    public function testMkdirFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\mkdir($path);
+    }
+
+    public function testRmdirFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\rmdir($path);
+    }
+
+    public function testRmdirFailsOnFile(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\rmdir($path);
     }
 
     public function testMtime(): \Generator
@@ -257,10 +327,11 @@ abstract class DriverTest extends FilesystemTest
 
     public function testMtimeFailsOnNonexistentPath(): \Generator
     {
-        $this->expectException(FilesystemException::class);
-
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
         yield File\mtime($path);
     }
 
@@ -276,10 +347,11 @@ abstract class DriverTest extends FilesystemTest
 
     public function testAtimeFailsOnNonexistentPath(): \Generator
     {
-        $this->expectException(FilesystemException::class);
-
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
         yield File\atime($path);
     }
 
@@ -295,10 +367,11 @@ abstract class DriverTest extends FilesystemTest
 
     public function testCtimeFailsOnNonexistentPath(): \Generator
     {
-        $this->expectException(FilesystemException::class);
-
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
         yield File\ctime($path);
     }
 
@@ -313,13 +386,23 @@ abstract class DriverTest extends FilesystemTest
         yield File\put($touch, "touch me");
 
         $oldStat = (yield File\stat($touch));
-        yield File\touch($touch, \time() + 10, \time() + 20);
+        $this->assertNull(yield File\touch($touch, \time() + 10, \time() + 20));
         File\StatCache::clear($touch);
         $newStat = (yield File\stat($touch));
         yield File\unlink($touch);
 
         $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
         $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
+    }
+
+    public function testTouchFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\touch($path);
     }
 
     private function assertStatSame(array $expected, array $actual): void
@@ -354,19 +437,39 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
 
-        $original = "{$fixtureDir}/small.txt";
-        $this->assertNotSame('0777', \substr(\sprintf('%o', \fileperms($original)), -4));
-        $this->assertTrue(yield File\chmod($original, 0777));
+        $path = "{$fixtureDir}/small.txt";
+        $this->assertNotSame('0777', \substr(\sprintf('%o', \fileperms($path)), -4));
+        $this->assertNull(yield File\chmod($path, 0777));
         \clearstatcache();
-        $this->assertSame('0777', \substr(\sprintf('%o', \fileperms($original)), -4));
+        $this->assertSame('0777', \substr(\sprintf('%o', \fileperms($path)), -4));
+    }
+
+    public function testChmodFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\chmod($path, 0777);
     }
 
     public function testChown(): \Generator
     {
         $fixtureDir = Fixture::path();
 
-        $original = "{$fixtureDir}/small.txt";
-        $user = \fileowner($original);
-        $this->assertTrue(yield File\chown($original, $user));
+        $path = "{$fixtureDir}/small.txt";
+        $user = \fileowner($path);
+        $this->assertNull(yield File\chown($path, $user));
+    }
+
+    public function testChownFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\chown($path, 0);
     }
 }
