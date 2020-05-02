@@ -35,7 +35,8 @@
         "php": ">=7.1",
         "amphp/amp": "^2.2",
         "amphp/byte-stream": "^1.6.1",
-        "amphp/parallel": "^1.2"
+        "amphp/parallel": "^1.2",
+        "amphp/sync": "^1.3"
     },
     "require-dev": {
         "ext-eio": "^2",
@@ -52,7 +53,13 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Amp\\File\\Test\\": "test"
+            "Amp\\File\\Test\\": "test",
+            "Amp\\Sync\\Test\\": "vendor/amphp/sync/test"
+        }
+    },
+    "config": {
+        "preferred-install": {
+            "amphp/sync": "source"
         }
     },
     "extra": {
