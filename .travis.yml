@@ -28,9 +28,9 @@ before_install:
 
 install:
   - if [ "$TRAVIS_PHP_VERSION" = "nightly" ]; then
-      composer update -n --prefer-dist --ignore-platform-reqs;
+      composer update -n --ignore-platform-reqs;
     else
-      composer update -n --prefer-dist;
+      composer update -n;
     fi
   - composer show
 
