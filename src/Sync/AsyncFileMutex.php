@@ -66,8 +66,6 @@ final class AsyncFileMutex implements Mutex
 
     /**
      * Releases the lock on the mutex.
-     *
-     * @throws SyncException If the unlock operation failed.
      */
     private function release(): void
     {
