@@ -355,10 +355,10 @@ abstract class DriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
 
         $original = "{$fixtureDir}/small.txt";
-        $this->assertNotSame('0777', substr(sprintf('%o', fileperms($original)), -4));
+        $this->assertNotSame('0777', \substr(\sprintf('%o', \fileperms($original)), -4));
         $this->assertTrue(yield File\chmod($original, 0777));
-        clearstatcache();
-        $this->assertSame('0777', substr(sprintf('%o', fileperms($original)), -4));
+        \clearstatcache();
+        $this->assertSame('0777', \substr(\sprintf('%o', \fileperms($original)), -4));
     }
 
     public function testChown(): \Generator
