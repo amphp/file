@@ -29,7 +29,7 @@ class UvDriverTest extends DriverTest
      */
     public function testReadlinkError(\Closure $linkResolver): \Generator
     {
-        if (\version_compare('0.3.0', \phpversion('uv'), '>')) {
+        if (\version_compare(\phpversion('uv'), '0.3.0', '<')) {
             $this->markTestSkipped('UvDriver Test Skipped: Causes Crash');
         }
 
