@@ -68,7 +68,7 @@ final class UvFile implements File
 
         $this->queue = new \SplQueue;
 
-        $this->priorVersion = \version_compare('0.3.0', \phpversion('uv')) < 0;
+        $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
     }
 
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
