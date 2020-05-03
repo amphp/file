@@ -180,7 +180,7 @@ function ctime(string $path): Promise
  * Same as stat() except if the path is a link then the link's data is returned.
  *
  * If the requested path does not exist the resulting Promise will resolve to NULL.
- * The returned Promise whould never resolve as a failure.
+ * The returned Promise should never resolve as a failure.
  *
  * @param string $path An absolute file system path
  * @return Promise<array|null>
@@ -254,7 +254,7 @@ function unlink(string $path): Promise
 }
 
 /**
- * Create a director.
+ * Create a directory.
  *
  * @param string $path
  * @param int $mode
