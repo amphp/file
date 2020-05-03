@@ -348,7 +348,7 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve(true);
+            $deferred->resolve();
         }
     }
 
@@ -376,7 +376,11 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         $data = [$deferred, $path];
-        \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
+        $result = \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
+        // For a non-existent file eio_unlink immediately returns true and the callback is never called.
+        if ($result === true) {
+            $deferred->fail(new FilesystemException('File does not exist.'));
+        }
 
         return $deferred->promise();
     }
@@ -389,7 +393,7 @@ final class EioDriver implements Driver
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
             StatCache::clear($path);
-            $deferred->resolve(true);
+            $deferred->resolve();
         }
     }
 
@@ -459,7 +463,7 @@ final class EioDriver implements Driver
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
             StatCache::clear($path);
-            $deferred->resolve(true);
+            $deferred->resolve();
         }
     }
 
