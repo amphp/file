@@ -51,6 +51,27 @@ abstract class DriverTest extends FilesystemTest
         yield File\symlink($path, $path);
     }
 
+    public function testLink(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+
+        $original = "{$fixtureDir}/small.txt";
+        $link = "{$fixtureDir}/hardlink.txt";
+        $this->assertNull(yield File\link($original, $link));
+        $this->assertTrue(\file_exists($link));
+        $this->assertFalse(\is_link($link));
+        yield File\unlink($link);
+    }
+
+    public function testLinkFailWhenLinkExists(): \Generator
+    {
+        $this->expectException(FilesystemException::class);
+
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/small.txt";
+        yield File\link($path, $path);
+    }
+
     public function testReadlink(): \Generator
     {
         $fixtureDir = Fixture::path();
