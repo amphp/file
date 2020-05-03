@@ -230,7 +230,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException("Could not create symbolic link"));
         }
 
-        return new Success(true);
+        return new Success();
     }
 
     /**
@@ -242,7 +242,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException("Could not create hard link"));
         }
 
-        return new Success(true);
+        return new Success();
     }
 
     /**
@@ -266,7 +266,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException("Could not rename file"));
         }
 
-        return new Success(true);
+        return new Success();
     }
 
     /**
@@ -275,7 +275,12 @@ final class BlockingDriver implements Driver
     public function unlink(string $path): Promise
     {
         StatCache::clear($path);
-        return new Success((bool) @\unlink($path));
+
+        if (!@\unlink($path)) {
+            return new Failure(new FilesystemException("Could not unlink file"));
+        }
+
+        return new Success();
     }
 
     /**
@@ -283,7 +288,11 @@ final class BlockingDriver implements Driver
      */
     public function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
     {
-        return new Success((bool) @\mkdir($path, $mode, $recursive));
+        if (!@\mkdir($path, $mode, $recursive)) {
+            return new Failure(new FilesystemException("Could not create directory"));
+        }
+
+        return new Success();
     }
 
     /**
@@ -292,7 +301,12 @@ final class BlockingDriver implements Driver
     public function rmdir(string $path): Promise
     {
         StatCache::clear($path);
-        return new Success((bool) @\rmdir($path));
+
+        if (!@\rmdir($path)) {
+            return new Failure(new FilesystemException("Could not remove directory"));
+        }
+
+        return new Success();
     }
 
     /**
@@ -322,7 +336,11 @@ final class BlockingDriver implements Driver
      */
     public function chmod(string $path, int $mode): Promise
     {
-        return new Success((bool) @\chmod($path, $mode));
+        if (!@\chmod($path, $mode)) {
+            return new Failure(new FilesystemException("Could not change file permissions"));
+        }
+
+        return new Success();
     }
 
     /**
@@ -348,7 +366,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException($message));
         }
 
-        return new Success(true);
+        return new Success();
     }
 
     /**
@@ -358,7 +376,15 @@ final class BlockingDriver implements Driver
     {
         $time = $time ?? \time();
         $atime = $atime ?? $time;
-        return new Success((bool) \touch($path, $time, $atime));
+        if (! @\touch($path, $time, $atime)) {
+            $message = 'Could not touch file.';
+            if ($error = \error_get_last()) {
+                $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
+            }
+            return new Failure(new FilesystemException($message));
+        }
+
+        return new Success();
     }
 
     /**
@@ -374,6 +400,7 @@ final class BlockingDriver implements Driver
             }
             return new Failure(new FilesystemException($message));
         }
+
         return new Success($result);
     }
 
@@ -390,6 +417,7 @@ final class BlockingDriver implements Driver
             }
             return new Failure(new FilesystemException($message));
         }
+
         return new Success($result);
     }
 }
