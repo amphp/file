@@ -141,6 +141,32 @@ function isfile(string $path): Promise
 }
 
 /**
+ * Does the specified path exist and is it a symlink?
+ *
+ * If the path does not exist the returned Promise will resolve
+ * to FALSE and will not reject with an error.
+ *
+ * @param string $path An absolute file system path
+ * @return Promise<bool>
+ */
+function islink(string $path): Promise
+{
+    return filesystem()->islink($path);
+}
+
+/**
+ * Retrieve the path's file permissions.
+ *
+ * @param string $path An absolute file system path
+ * @fails \Amp\Files\FilesystemException If the path does not exist
+ * @return Promise<int>
+ */
+function fileperms(string $path): Promise
+{
+    return filesystem()->fileperms($path);
+}
+
+/**
  * Retrieve the path's last modification time as a unix timestamp.
  *
  * @param string $path An absolute file system path
