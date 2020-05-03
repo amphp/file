@@ -20,7 +20,7 @@ Extensions allow to use threading in the background instead of using multiple pr
  
  - [eio](https://pecl.php.net/package/eio)
  - [php-uv](https://github.com/bwoebi/php-uv)
- - [amphp/parallel](https://github.com/amphp/parallel)
+ - [parallel](https://github.com/krakjoe/parallel)
 
 `amphp/file` works out of the box without any PHP extensions. It uses multi-processing by default, but also comes with a blocking driver that just uses PHP's blocking functions in the current process.
 
