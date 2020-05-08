@@ -407,7 +407,7 @@ final class EioDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path, int $time = null, int $atime = null): Promise
+    public function touch(string $path, ?int $time = null, ?int $atime = null): Promise
     {
         $time = $time ?? \time();
         $atime = $atime ?? $time;

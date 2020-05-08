@@ -172,7 +172,7 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path, int $time = null, int $atime = null): Promise
+    public function touch(string $path, ?int $time = null, ?int $atime = null): Promise
     {
         $promise = new Coroutine($this->runFileTask(new Internal\FileTask("touch", [$path, $time, $atime])));
         StatCache::clearOn($promise, $path);

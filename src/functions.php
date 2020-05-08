@@ -15,7 +15,7 @@ const LOOP_STATE_IDENTIFIER = Driver::class;
  * @param Driver $driver Use the specified object as the application-wide filesystem instance
  * @return Driver
  */
-function filesystem(Driver $driver = null): Driver
+function filesystem(?Driver $driver = null): Driver
 {
     if ($driver === null) {
         $driver = Loop::getState(LOOP_STATE_IDENTIFIER);
@@ -429,12 +429,12 @@ function chown(string $path, int $uid, int $gid = -1): Promise
  * If the file does not exist it will be created automatically.
  *
  * @param string $path
- * @param int $time The touch time. If $time is not supplied, the current system time is used.
- * @param int $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
+ * @param int|null $time The touch time. If $time is not supplied, the current system time is used.
+ * @param int|null $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
  * @fails \Amp\Files\FilesystemException If the operation fails
  * @return Promise<void>
  */
-function touch(string $path, int $time = null, int $atime = null): Promise
+function touch(string $path, ?int $time = null, ?int $atime = null): Promise
 {
     return filesystem()->touch($path, $time, $atime);
 }
