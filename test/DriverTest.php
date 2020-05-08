@@ -123,9 +123,11 @@ abstract class DriverTest extends FilesystemTest
     public function testFileStat(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $stat = (yield File\stat("{$fixtureDir}/small.txt"));
+        $path = "{$fixtureDir}/small.txt";
+        $stat = (yield File\stat($path));
+        $this->assertNotNull(File\StatCache::get($path));
         $this->assertIsArray($stat);
-        $this->assertStatSame(\stat("{$fixtureDir}/small.txt"), $stat);
+        $this->assertStatSame(\stat($path), $stat);
     }
 
     public function testDirStat(): \Generator
@@ -258,7 +260,9 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
         $toUnlink = "{$fixtureDir}/unlink";
+        yield File\stat($toUnlink);
         yield File\put($toUnlink, "unlink me");
+        $this->assertNull(File\StatCache::get($toUnlink));
         $this->assertNull(yield File\unlink($toUnlink));
         $this->assertNull(yield File\stat($toUnlink));
     }
@@ -296,6 +300,7 @@ abstract class DriverTest extends FilesystemTest
         $stat = yield File\stat($dir);
         $this->assertSame('0755', $this->getPermissionsFromStat($stat));
         $this->assertNull(yield File\rmdir($dir));
+        $this->assertNull(File\StatCache::get($dir));
         $this->assertNull(yield File\stat($dir));
 
         // test for 0, because previous array_filter made that not work
@@ -408,7 +413,7 @@ abstract class DriverTest extends FilesystemTest
 
         $oldStat = (yield File\stat($touch));
         $this->assertNull(yield File\touch($touch, \time() + 10, \time() + 20));
-        File\StatCache::clear($touch);
+        $this->assertNull(File\StatCache::get($touch));
         $newStat = (yield File\stat($touch));
         yield File\unlink($touch);
 
@@ -459,8 +464,10 @@ abstract class DriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
 
         $path = "{$fixtureDir}/small.txt";
+        yield File\stat($path);
         $this->assertNotSame('0777', \substr(\sprintf('%o', \fileperms($path)), -4));
         $this->assertNull(yield File\chmod($path, 0777));
+        $this->assertNull(File\StatCache::get($path));
         \clearstatcache();
         $this->assertSame('0777', \substr(\sprintf('%o', \fileperms($path)), -4));
     }
@@ -480,8 +487,10 @@ abstract class DriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
 
         $path = "{$fixtureDir}/small.txt";
+        yield File\stat($path);
         $user = \fileowner($path);
         $this->assertNull(yield File\chown($path, $user));
+        $this->assertNull(File\StatCache::get($path));
     }
 
     public function testChownFailsOnNonexistentPath(): \Generator

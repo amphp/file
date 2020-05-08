@@ -60,11 +60,9 @@ final class ParallelDriver implements Driver
      */
     public function unlink(string $path): Promise
     {
-        return call(function () use ($path) {
-            $result = yield from $this->runFileTask(new Internal\FileTask("unlink", [$path]));
-            StatCache::clear($path);
-            return $result;
-        });
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("unlink", [$path])));
+        StatCache::clearOn($promise, $path);
+        return $promise;
     }
 
     /**
@@ -172,11 +170,9 @@ final class ParallelDriver implements Driver
      */
     public function rmdir(string $path): Promise
     {
-        return call(function () use ($path) {
-            $result = yield from $this->runFileTask(new Internal\FileTask("rmdir", [$path]));
-            StatCache::clear($path);
-            return $result;
-        });
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("rmdir", [$path])));
+        StatCache::clearOn($promise, $path);
+        return $promise;
     }
 
     /**
@@ -184,7 +180,9 @@ final class ParallelDriver implements Driver
      */
     public function chmod(string $path, int $mode): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("chmod", [$path, $mode])));
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("chmod", [$path, $mode])));
+        StatCache::clearOn($promise, $path);
+        return $promise;
     }
 
     /**
@@ -192,7 +190,9 @@ final class ParallelDriver implements Driver
      */
     public function chown(string $path, int $uid, int $gid): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("chown", [$path, $uid, $gid])));
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("chown", [$path, $uid, $gid])));
+        StatCache::clearOn($promise, $path);
+        return $promise;
     }
 
     /**
@@ -275,7 +275,9 @@ final class ParallelDriver implements Driver
      */
     public function touch(string $path, int $time = null, int $atime = null): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("touch", [$path, $time, $atime])));
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("touch", [$path, $time, $atime])));
+        StatCache::clearOn($promise, $path);
+        return $promise;
     }
 
     /**

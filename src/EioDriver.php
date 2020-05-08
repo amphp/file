@@ -503,6 +503,7 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -517,6 +518,7 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_chown($path, $uid, $gid, $priority, [$this, "onGenericResult"], $deferred);
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -534,6 +536,7 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_utime($path, $atime, $time, $priority, [$this, "onGenericResult"], $deferred);
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }

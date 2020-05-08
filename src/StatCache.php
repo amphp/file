@@ -3,6 +3,8 @@
 namespace Amp\File;
 
 use Amp\Loop;
+use Amp\Promise;
+use Throwable;
 
 final class StatCache
 {
@@ -72,7 +74,7 @@ final class StatCache
         self::$ttl = $seconds;
     }
 
-    public static function clear(string $path = null): void
+    public static function clear(?string $path = null): void
     {
         if (isset($path)) {
             unset(
@@ -83,5 +85,16 @@ final class StatCache
             self::$cache = [];
             self::$timeouts = [];
         }
+    }
+
+    public static function clearOn(Promise $promise, ?string $path = null): void
+    {
+        $promise->onResolve(
+            function (?Throwable $exception) use ($path): void {
+                if ($exception === null) {
+                    self::clear($path);
+                }
+            }
+        );
     }
 }

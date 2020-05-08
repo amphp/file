@@ -400,7 +400,7 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_rename($this->loop, $from, $to, $this->createGenericCallback($deferred, "Could not rename file"));
-        $this->clearStatCache($deferred->promise(), $from);
+        StatCache::clearOn($deferred->promise(), $from);
 
         return $deferred->promise();
     }
@@ -414,7 +414,7 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_unlink($this->loop, $path, $this->createGenericCallback($deferred, "Could not unlink file"));
-        $this->clearStatCache($deferred->promise(), $path);
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -469,7 +469,7 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_rmdir($this->loop, $path, $this->createGenericCallback($deferred, "Could not remove directory"));
-        $this->clearStatCache($deferred->promise(), $path);
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -516,6 +516,7 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_chmod($this->loop, $path, $mode, $this->createGenericCallback($deferred, "Could not change file permissions"));
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -530,6 +531,7 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_chown($this->loop, $path, $uid, $gid, $this->createGenericCallback($deferred, "Could not change file owner"));
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -546,6 +548,7 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_utime($this->loop, $path, $time, $atime, $this->createGenericCallback($deferred, "Could not touch file"));
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -698,14 +701,5 @@ final class UvDriver implements Driver
         }
 
         return $callback;
-    }
-
-    private function clearStatCache(Promise $promise, string $path): void
-    {
-        $promise->onResolve(
-            function () use ($path) {
-                StatCache::clear($path);
-            }
-        );
     }
 }

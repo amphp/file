@@ -340,6 +340,8 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException("Could not change file permissions"));
         }
 
+        StatCache::clear();
+
         return new Success();
     }
 
@@ -366,6 +368,8 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException($message));
         }
 
+        StatCache::clear();
+
         return new Success();
     }
 
@@ -383,6 +387,8 @@ final class BlockingDriver implements Driver
             }
             return new Failure(new FilesystemException($message));
         }
+
+        StatCache::clear();
 
         return new Success();
     }
