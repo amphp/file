@@ -20,7 +20,7 @@ interface Driver
      *
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *
-     * @param string $path The file system path to stat
+     * @param string $path The file system path to stat.
      * @return Promise<array|null>
      */
     public function stat(string $path): Promise;
@@ -28,8 +28,8 @@ interface Driver
     /**
      * Same as stat() except if the path is a link then the link's data is returned.
      *
-     * @param string $path The file system path to stat
-     * @return Promise<array|null> A promise resolving to an associative array upon successful resolution
+     * @param string $path The file system path to stat.
+     * @return Promise<array|null> A promise resolving to an associative array upon successful resolution.
      */
     public function lstat(string $path): Promise;
 
@@ -138,16 +138,16 @@ interface Driver
     /**
      * Buffer the specified file's contents.
      *
-     * @param string $path The file path from which to buffer contents
-     * @return Promise<string> A promise resolving to a string upon successful resolution
+     * @param string $path The file path from which to buffer contents.
+     * @return Promise<string> A promise resolving to a string upon successful resolution.
      */
     public function get(string $path): Promise;
 
     /**
      * Write the contents string to the specified path.
      *
-     * @param string $path The file path to which to $contents should be written
-     * @param string $contents The data to write to the specified $path
+     * @param string $path The file path to which to $contents should be written.
+     * @param string $contents The data to write to the specified $path.
      * @return Promise<void>
      */
     public function put(string $path, string $contents): Promise;

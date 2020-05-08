@@ -12,7 +12,7 @@ const LOOP_STATE_IDENTIFIER = Driver::class;
 /**
  * Retrieve the application-wide filesystem instance.
  *
- * @param Driver $driver Use the specified object as the application-wide filesystem instance
+ * @param Driver|null $driver Use the specified object as the application-wide filesystem instance.
  * @return Driver
  */
 function filesystem(?Driver $driver = null): Driver
@@ -77,7 +77,7 @@ function open(string $path, string $mode): Promise
  * If the requested path does not exist the resulting Promise will resolve to NULL.
  * The returned Promise whould never resolve as a failure.
  *
- * @param string $path An absolute file system path
+ * @param string $path An absolute file system path.
  * @return Promise<array|null>
  */
 function stat(string $path): Promise
@@ -91,7 +91,7 @@ function stat(string $path): Promise
  * This function should never resolve as a failure -- only a successfull bool value
  * indicating the existence of the specified path.
  *
- * @param string $path An absolute file system path
+ * @param string $path An absolute file system path.
  * @return Promise<bool>
  */
 function exists(string $path): Promise
@@ -111,8 +111,8 @@ function exists(string $path): Promise
  * If the path does not exist or is not a regular file this
  * function's returned Promise WILL resolve as a failure.
  *
- * @param string $path An absolute file system path
- * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file
+ * @param string $path An absolute file system path.
+ * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file.
  * @return Promise<int>
  */
 function size(string $path): Promise
@@ -142,7 +142,7 @@ function size(string $path): Promise
  * If the path does not exist the returned Promise will resolve
  * to FALSE and will not reject with an error.
  *
- * @param string $path An absolute file system path
+ * @param string $path An absolute file system path.
  * @return Promise<bool>
  */
 function isdir(string $path): Promise
@@ -166,7 +166,7 @@ function isdir(string $path): Promise
  * If the path does not exist the returned Promise will resolve
  * to FALSE and will not reject with an error.
  *
- * @param string $path An absolute file system path
+ * @param string $path An absolute file system path.
  * @return Promise<bool>
  */
 function isfile(string $path): Promise
@@ -190,7 +190,7 @@ function isfile(string $path): Promise
  * If the path does not exist the returned Promise will resolve
  * to FALSE and will not reject with an error.
  *
- * @param string $path An absolute file system path
+ * @param string $path An absolute file system path.
  * @return Promise<bool>
  */
 function islink(string $path): Promise
@@ -211,8 +211,8 @@ function islink(string $path): Promise
 /**
  * Retrieve the path's last modification time as a unix timestamp.
  *
- * @param string $path An absolute file system path
- * @fails \Amp\Files\FilesystemException If the path does not exist
+ * @param string $path An absolute file system path.
+ * @fails \Amp\Files\FilesystemException If the path does not exist.
  * @return Promise<int>
  */
 function mtime(string $path): Promise
@@ -235,8 +235,8 @@ function mtime(string $path): Promise
 /**
  * Retrieve the path's last access time as a unix timestamp.
  *
- * @param string $path An absolute file system path
- * @fails \Amp\Files\FilesystemException If the path does not exist
+ * @param string $path An absolute file system path.
+ * @fails \Amp\Files\FilesystemException If the path does not exist.
  * @return Promise<int>
  */
 function atime(string $path): Promise
@@ -259,8 +259,8 @@ function atime(string $path): Promise
 /**
  * Retrieve the path's creation time as a unix timestamp.
  *
- * @param string $path An absolute file system path
- * @fails \Amp\Files\FilesystemException If the path does not exist
+ * @param string $path An absolute file system path.
+ * @fails \Amp\Files\FilesystemException If the path does not exist.
  * @return Promise<int>
  */
 function ctime(string $path): Promise
@@ -286,7 +286,7 @@ function ctime(string $path): Promise
  * If the requested path does not exist the resulting Promise will resolve to NULL.
  * The returned Promise should never resolve as a failure.
  *
- * @param string $path An absolute file system path
+ * @param string $path An absolute file system path.
  * @return Promise<array|null>
  */
 function lstat(string $path): Promise
@@ -299,7 +299,7 @@ function lstat(string $path): Promise
  *
  * @param string $original
  * @param string $link
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function symlink(string $original, string $link): Promise
@@ -312,7 +312,7 @@ function symlink(string $original, string $link): Promise
  *
  * @param string $original
  * @param string $link
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function link(string $original, string $link): Promise
@@ -324,7 +324,7 @@ function link(string $original, string $link): Promise
  * Read the symlink at $path.
  *
  * @param string $path
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<string>
  */
 function readlink(string $path): Promise
@@ -337,7 +337,7 @@ function readlink(string $path): Promise
  *
  * @param string $from
  * @param string $to
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function rename(string $from, string $to): Promise
@@ -349,7 +349,7 @@ function rename(string $from, string $to): Promise
  * Delete a file.
  *
  * @param string $path
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function unlink(string $path): Promise
@@ -363,7 +363,7 @@ function unlink(string $path): Promise
  * @param string $path
  * @param int $mode
  * @param bool $recursive
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
@@ -375,7 +375,7 @@ function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
  * Delete a directory.
  *
  * @param string $path
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function rmdir(string $path): Promise
@@ -401,7 +401,7 @@ function scandir(string $path): Promise
  *
  * @param string $path
  * @param int $mode
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function chmod(string $path, int $mode): Promise
@@ -415,7 +415,7 @@ function chmod(string $path, int $mode): Promise
  * @param string $path
  * @param int $uid -1 to ignore
  * @param int $gid -1 to ignore
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function chown(string $path, int $uid, int $gid = -1): Promise
@@ -431,7 +431,7 @@ function chown(string $path, int $uid, int $gid = -1): Promise
  * @param string $path
  * @param int|null $time The touch time. If $time is not supplied, the current system time is used.
  * @param int|null $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
- * @fails \Amp\Files\FilesystemException If the operation fails
+ * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
 function touch(string $path, ?int $time = null, ?int $atime = null): Promise
@@ -442,7 +442,7 @@ function touch(string $path, ?int $time = null, ?int $atime = null): Promise
 /**
  * Buffer the specified file's contents.
  *
- * @param string $path The file path from which to buffer contents
+ * @param string $path The file path from which to buffer contents.
  * @return Promise<string>
  */
 function get(string $path): Promise
@@ -453,8 +453,8 @@ function get(string $path): Promise
 /**
  * Write the contents string to the specified path.
  *
- * @param string $path The file path to which to $contents should be written
- * @param string $contents The data to write to the specified $path
+ * @param string $path The file path to which to $contents should be written.
+ * @param string $contents The data to write to the specified $path.
  * @return Promise<void>
  */
 function put(string $path, string $contents): Promise
