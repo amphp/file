@@ -58,7 +58,7 @@ abstract class DriverTest extends FilesystemTest
         $original = "{$fixtureDir}/small.txt";
         $link = "{$fixtureDir}/hardlink.txt";
         $this->assertNull(yield File\link($original, $link));
-        $this->assertTrue(\file_exists($link));
+        $this->assertFileExists($link);
         $this->assertFalse(\is_link($link));
         yield File\unlink($link);
     }
