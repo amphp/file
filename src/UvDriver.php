@@ -178,140 +178,6 @@ final class UvDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function exists(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            $deferred->resolve((bool) $result);
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isdir(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve(!($result["mode"] & \UV::S_IFREG));
-            } else {
-                $deferred->resolve(false);
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isfile(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve((bool) ($result["mode"] & \UV::S_IFREG));
-            } else {
-                $deferred->resolve(false);
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function size(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if (empty($result)) {
-                $deferred->fail(new FilesystemException(
-                    "Specified path does not exist"
-                ));
-            } elseif (($result["mode"] & \UV::S_IFREG)) {
-                $deferred->resolve($result["size"]);
-            } else {
-                $deferred->fail(new FilesystemException(
-                    "Specified path is not a regular file"
-                ));
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function mtime(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve($result["mtime"]);
-            } else {
-                $deferred->fail(new FilesystemException(
-                    "Specified path does not exist"
-                ));
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function atime(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve($result["atime"]);
-            } else {
-                $deferred->fail(new FilesystemException(
-                    "Specified path does not exist"
-                ));
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function ctime(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve($result["ctime"]);
-            } else {
-                $deferred->fail(new FilesystemException(
-                    "Specified path does not exist"
-                ));
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function lstat(string $path): Promise
     {
         $deferred = new Deferred;
@@ -456,6 +322,21 @@ final class UvDriver implements Driver
         } else {
             \uv_fs_mkdir($this->loop, $path, $mode, $this->createGenericCallback($deferred, "Could not create directory"));
         }
+
+        return $deferred->promise();
+    }
+
+    private function isdir(string $path): Promise
+    {
+        $deferred = new Deferred;
+
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
+            if ($result) {
+                $deferred->resolve(!($result["mode"] & \UV::S_IFREG));
+            } else {
+                $deferred->resolve(false);
+            }
+        });
 
         return $deferred->promise();
     }

@@ -94,40 +94,6 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function isfile(string $path): Promise
-    {
-        return call(function () use ($path) {
-            $stat = yield $this->stat($path);
-            if (empty($stat)) {
-                return false;
-            }
-            if ($stat["mode"] & 0100000) {
-                return true;
-            }
-            return false;
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isdir(string $path): Promise
-    {
-        return call(function () use ($path) {
-            $stat = yield $this->stat($path);
-            if (empty($stat)) {
-                return false;
-            }
-            if ($stat["mode"] & 0040000) {
-                return true;
-            }
-            return false;
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function link(string $target, string $link): Promise
     {
         return new Coroutine($this->runFileTask(new Internal\FileTask("link", [$target, $link])));
@@ -193,73 +159,6 @@ final class ParallelDriver implements Driver
         $promise = new Coroutine($this->runFileTask(new Internal\FileTask("chown", [$path, $uid, $gid])));
         StatCache::clearOn($promise, $path);
         return $promise;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function exists(string $path): Promise
-    {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("exists", [$path])));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function size(string $path): Promise
-    {
-        return call(function () use ($path) {
-            $stat = yield $this->stat($path);
-            if (empty($stat)) {
-                throw new FilesystemException("Specified path does not exist");
-            }
-            if ($stat["mode"] & 0100000) {
-                return $stat["size"];
-            }
-            throw new FilesystemException("Specified path is not a regular file");
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function mtime(string $path): Promise
-    {
-        return call(function () use ($path) {
-            $stat = yield $this->stat($path);
-            if (empty($stat)) {
-                throw new FilesystemException("Specified path does not exist");
-            }
-            return $stat["mtime"];
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function atime(string $path): Promise
-    {
-        return call(function () use ($path) {
-            $stat = yield $this->stat($path);
-            if (empty($stat)) {
-                throw new FilesystemException("Specified path does not exist");
-            }
-            return $stat["atime"];
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function ctime(string $path): Promise
-    {
-        return call(function () use ($path) {
-            $stat = yield $this->stat($path);
-            if (empty($stat)) {
-                throw new FilesystemException("Specified path does not exist");
-            }
-            return $stat["ctime"];
-        });
     }
 
     /**
