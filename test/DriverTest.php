@@ -464,12 +464,12 @@ abstract class DriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
 
         $path = "{$fixtureDir}/small.txt";
-        yield File\stat($path);
-        $this->assertNotSame('0777', \substr(\sprintf('%o', \fileperms($path)), -4));
+        $stat = yield File\stat($path);
+        $this->assertNotSame('0777', \substr(\decoct($stat['mode']), -4));
         $this->assertNull(yield File\chmod($path, 0777));
         $this->assertNull(File\StatCache::get($path));
-        \clearstatcache();
-        $this->assertSame('0777', \substr(\sprintf('%o', \fileperms($path)), -4));
+        $stat = yield File\stat($path);
+        $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
     }
 
     public function testChmodFailsOnNonexistentPath(): \Generator
