@@ -2,8 +2,10 @@
 
 namespace Amp\File;
 
+use Amp\Deferred;
 use Amp\Loop;
 use Amp\Promise;
+use Throwable;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
@@ -94,7 +96,13 @@ function stat(string $path): Promise
  */
 function exists(string $path): Promise
 {
-    return filesystem()->exists($path);
+    $deferred = new Deferred;
+
+    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+        $deferred->resolve($result !== null);
+    });
+
+    return $deferred->promise();
 }
 
 /**
@@ -109,7 +117,23 @@ function exists(string $path): Promise
  */
 function size(string $path): Promise
 {
-    return filesystem()->size($path);
+    $deferred = new Deferred;
+
+    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+        if ($result === null) {
+            $deferred->fail(new FilesystemException(
+                "Specified path does not exist"
+            ));
+        } elseif ($result["mode"] & 0100000) {
+            $deferred->resolve($result["size"]);
+        } else {
+            $deferred->fail(new FilesystemException(
+                "Specified path is not a regular file"
+            ));
+        }
+    });
+
+    return $deferred->promise();
 }
 
 /**
@@ -123,7 +147,17 @@ function size(string $path): Promise
  */
 function isdir(string $path): Promise
 {
-    return filesystem()->isdir($path);
+    $deferred = new Deferred;
+
+    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+        if ($result !== null) {
+            $deferred->resolve(! ($result["mode"] & 0100000));
+        } else {
+            $deferred->resolve(false);
+        }
+    });
+
+    return $deferred->promise();
 }
 
 /**
@@ -137,7 +171,17 @@ function isdir(string $path): Promise
  */
 function isfile(string $path): Promise
 {
-    return filesystem()->isfile($path);
+    $deferred = new Deferred;
+
+    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+        if ($result !== null) {
+            $deferred->resolve((bool) ($result["mode"] & 0100000));
+        } else {
+            $deferred->resolve(false);
+        }
+    });
+
+    return $deferred->promise();
 }
 
 /**
@@ -151,19 +195,17 @@ function isfile(string $path): Promise
  */
 function islink(string $path): Promise
 {
-    return filesystem()->islink($path);
-}
+    $deferred = new Deferred;
 
-/**
- * Retrieve the path's file permissions.
- *
- * @param string $path An absolute file system path
- * @fails \Amp\Files\FilesystemException If the path does not exist
- * @return Promise<int>
- */
-function fileperms(string $path): Promise
-{
-    return filesystem()->fileperms($path);
+    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+        if ($result !== null) {
+            $deferred->resolve((bool) ($result["mode"] & 0120000));
+        } else {
+            $deferred->resolve(false);
+        }
+    });
+
+    return $deferred->promise();
 }
 
 /**
@@ -175,7 +217,19 @@ function fileperms(string $path): Promise
  */
 function mtime(string $path): Promise
 {
-    return filesystem()->mtime($path);
+    $deferred = new Deferred;
+
+    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+        if ($result !== null) {
+            $deferred->resolve($result["mtime"]);
+        } else {
+            $deferred->fail(new FilesystemException(
+                "Specified path does not exist"
+            ));
+        }
+    });
+
+    return $deferred->promise();
 }
 
 /**
@@ -187,7 +241,19 @@ function mtime(string $path): Promise
  */
 function atime(string $path): Promise
 {
-    return filesystem()->atime($path);
+    $deferred = new Deferred;
+
+    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+        if ($result !== null) {
+            $deferred->resolve($result["atime"]);
+        } else {
+            $deferred->fail(new FilesystemException(
+                "Specified path does not exist"
+            ));
+        }
+    });
+
+    return $deferred->promise();
 }
 
 /**
@@ -199,7 +265,19 @@ function atime(string $path): Promise
  */
 function ctime(string $path): Promise
 {
-    return filesystem()->ctime($path);
+    $deferred = new Deferred;
+
+    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+        if ($result !== null) {
+            $deferred->resolve($result["ctime"]);
+        } else {
+            $deferred->fail(new FilesystemException(
+                "Specified path does not exist"
+            ));
+        }
+    });
+
+    return $deferred->promise();
 }
 
 /**
