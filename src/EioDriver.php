@@ -520,7 +520,7 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve($result);
+            $deferred->resolve();
         }
     }
 }

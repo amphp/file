@@ -275,6 +275,6 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException($message));
         }
 
-        return new Success($result);
+        return new Success();
     }
 }

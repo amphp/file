@@ -549,14 +549,13 @@ final class UvDriver implements Driver
         }
 
         $deferred = new Deferred;
-        $len = \strlen($contents);
 
-        \uv_fs_write($this->loop, $fh, $contents, $offset = 0, function ($fh, $result) use ($deferred, $len): void {
-            \uv_fs_close($this->loop, $fh, function () use ($deferred, $result, $len): void {
+        \uv_fs_write($this->loop, $fh, $contents, $offset = 0, function ($fh, $result) use ($deferred): void {
+            \uv_fs_close($this->loop, $fh, function () use ($deferred, $result): void {
                 if ($result < 0) {
                     $deferred->fail(new FilesystemException(\uv_strerror($result)));
                 } else {
-                    $deferred->resolve($len);
+                    $deferred->resolve();
                 }
             });
         });

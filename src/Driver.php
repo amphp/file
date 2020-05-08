@@ -148,7 +148,7 @@ interface Driver
      *
      * @param string $path The file path to which to $contents should be written
      * @param string $contents The data to write to the specified $path
-     * @return Promise<int> A promise resolving to the integer length written upon success
+     * @return Promise<void>
      */
     public function put(string $path, string $contents): Promise;
 }
