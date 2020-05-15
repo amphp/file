@@ -4,7 +4,6 @@ namespace Amp\File\Test;
 
 use Amp\File;
 use Amp\File\FilesystemException;
-use Amp\Promise;
 
 abstract class DriverTest extends FilesystemTest
 {
@@ -12,15 +11,15 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
         $actual = yield File\scandir($fixtureDir);
-        $expected = ["dir", "small.txt"];
+        $expected = ["dir", "dirlink", "fifo", "fifolink", "file", "filelink", "linkloop"];
         $this->assertSame($expected, $actual);
     }
 
-    public function testScandirThrowsIfPathNotADirectory(): Promise
+    public function testScandirThrowsIfPathNotADirectory(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
-        return File\scandir(__FILE__);
+        yield File\scandir(__FILE__);
     }
 
     public function testScandirThrowsIfPathDoesntExist(): \Generator
@@ -28,14 +27,14 @@ abstract class DriverTest extends FilesystemTest
         $this->expectException(FilesystemException::class);
 
         $path = Fixture::path() . "/nonexistent";
-        (yield File\scandir($path));
+        yield File\scandir($path);
     }
 
     public function testSymlink(): \Generator
     {
         $fixtureDir = Fixture::path();
 
-        $original = "{$fixtureDir}/small.txt";
+        $original = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/symlink.txt";
         $this->assertNull(yield File\symlink($original, $link));
         $this->assertTrue(\is_link($link));
@@ -47,7 +46,7 @@ abstract class DriverTest extends FilesystemTest
         $this->expectException(FilesystemException::class);
 
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         yield File\symlink($path, $path);
     }
 
@@ -55,7 +54,7 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
 
-        $original = "{$fixtureDir}/small.txt";
+        $original = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/hardlink.txt";
         $this->assertNull(yield File\link($original, $link));
         $this->assertFileExists($link);
@@ -68,7 +67,7 @@ abstract class DriverTest extends FilesystemTest
         $this->expectException(FilesystemException::class);
 
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         yield File\link($path, $path);
     }
 
@@ -76,7 +75,7 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
 
-        $original = "{$fixtureDir}/small.txt";
+        $original = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/symlink.txt";
         \symlink($original, $link);
 
@@ -113,7 +112,7 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
 
-        $target = "{$fixtureDir}/small.txt";
+        $target = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/symlink.txt";
         yield File\symlink($target, $link);
         $this->assertIsArray(yield File\lstat($link));
@@ -123,7 +122,7 @@ abstract class DriverTest extends FilesystemTest
     public function testFileStat(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         $stat = (yield File\stat($path));
         $this->assertNotNull(File\StatCache::get($path));
         $this->assertIsArray($stat);
@@ -149,19 +148,19 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
         $this->assertFalse(yield File\exists("{$fixtureDir}/nonexistent"));
-        $this->assertTrue(yield File\exists("{$fixtureDir}/small.txt"));
+        $this->assertTrue(yield File\exists("{$fixtureDir}/file"));
     }
 
     public function testGet(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $this->assertSame("small", yield File\get("{$fixtureDir}/small.txt"));
+        $this->assertSame("small", yield File\get("{$fixtureDir}/file"));
     }
 
     public function testSize(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         $stat = (yield File\stat($path));
         $size = $stat["size"];
         File\StatCache::clear($path);
@@ -188,46 +187,70 @@ abstract class DriverTest extends FilesystemTest
         yield File\size($path);
     }
 
-    public function testIsdirResolvesTrueOnDirectoryPath(): \Generator
+    /**
+     * @dataProvider dataForIsdir
+     */
+    public function testIsdir(bool $expectedResult, string $name): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/dir";
-        $this->assertTrue(yield File\isdir($path));
+        $path = "{$fixtureDir}/{$name}";
+        $this->assertSame($expectedResult, yield File\isdir($path));
     }
 
-    public function testIsdirResolvesFalseOnFilePath(): \Generator
+    public function dataForIsdir(): \Generator
     {
-        $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
-        $this->assertFalse(yield File\isdir($path));
+        yield 'file' => [false, 'file'];
+        yield 'dir' => [true, 'dir'];
+        yield 'fifo' => [false, 'fifo'];
+        yield 'filelink' => [false, 'filelink'];
+        yield 'dirlink' => [true, 'dirlink'];
+        yield 'fifolink' => [false, 'fifolink'];
+        yield 'linkloop' => [false, 'linkloop'];
+        yield 'nonexistent' => [false, 'nonexistent'];
     }
 
-    public function testIsdirResolvesFalseOnNonexistentPath(): \Generator
+    /**
+     * @dataProvider dataForIsfile
+     */
+    public function testIsfile(bool $expectedResult, string $name): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/nonexistent";
-        $this->assertFalse(yield File\isdir($path));
+        $path = "{$fixtureDir}/{$name}";
+        $this->assertSame($expectedResult, yield File\isfile($path));
     }
 
-    public function testIsfileResolvesTrueOnFilePath(): \Generator
+    public function dataForIsfile(): \Generator
     {
-        $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
-        $this->assertTrue(yield File\isfile($path));
+        yield 'file' => [true, 'file'];
+        yield 'dir' => [false, 'dir'];
+        yield 'fifo' => [false, 'fifo'];
+        yield 'filelink' => [true, 'filelink'];
+        yield 'dirlink' => [false, 'dirlink'];
+        yield 'fifolink' => [false, 'fifolink'];
+        yield 'linkloop' => [false, 'linkloop'];
+        yield 'nonexistent' => [false, 'nonexistent'];
     }
 
-    public function testIsfileResolvesFalseOnDirectoryPath(): \Generator
+    /**
+     * @dataProvider dataForIsSymlink
+     */
+    public function testIsSymlink(bool $expectedResult, string $name): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/dir";
-        $this->assertFalse(yield File\isfile($path));
+        $path = "{$fixtureDir}/{$name}";
+        $this->assertSame($expectedResult, yield File\isSymlink($path));
     }
 
-    public function testIsfileResolvesFalseOnNonexistentPath(): \Generator
+    public function dataForIsSymlink(): \Generator
     {
-        $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/nonexistent";
-        $this->assertFalse(yield File\isfile($path));
+        yield 'file' => [false, 'file'];
+        yield 'dir' => [false, 'dir'];
+        yield 'fifo' => [false, 'fifo'];
+        yield 'filelink' => [true, 'filelink'];
+        yield 'dirlink' => [true, 'dirlink'];
+        yield 'fifolink' => [true, 'fifolink'];
+        yield 'linkloop' => [true, 'linkloop'];
+        yield 'nonexistent' => [false, 'nonexistent'];
     }
 
     public function testRename(): \Generator
@@ -334,7 +357,7 @@ abstract class DriverTest extends FilesystemTest
     public function testRmdirFailsOnFile(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
 
         $this->expectException(FilesystemException::class);
 
@@ -344,7 +367,7 @@ abstract class DriverTest extends FilesystemTest
     public function testMtime(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         $stat = (yield File\stat($path));
         $statMtime = $stat["mtime"];
         File\StatCache::clear($path);
@@ -364,7 +387,7 @@ abstract class DriverTest extends FilesystemTest
     public function testAtime(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         $stat = (yield File\stat($path));
         $statAtime = $stat["atime"];
         File\StatCache::clear($path);
@@ -384,7 +407,7 @@ abstract class DriverTest extends FilesystemTest
     public function testCtime(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         $stat = (yield File\stat($path));
         $statCtime = $stat["ctime"];
         File\StatCache::clear($path);
@@ -463,7 +486,7 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
 
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         $stat = yield File\stat($path);
         $this->assertNotSame('0777', \substr(\decoct($stat['mode']), -4));
         $this->assertNull(yield File\chmod($path, 0777));
@@ -486,7 +509,7 @@ abstract class DriverTest extends FilesystemTest
     {
         $fixtureDir = Fixture::path();
 
-        $path = "{$fixtureDir}/small.txt";
+        $path = "{$fixtureDir}/file";
         yield File\stat($path);
         $user = \fileowner($path);
         $this->assertNull(yield File\chown($path, $user));

@@ -29,9 +29,34 @@ final class Fixture
                 "Failed creating temporary test fixture directory"
             );
         }
-        if (!\file_put_contents($fixtureDir . "/small.txt", "small")) {
+        if (!\file_put_contents($fixtureDir . "/file", "small")) {
             throw new \RuntimeException(
                 "Failed creating temporary test fixture file"
+            );
+        }
+        if (!\posix_mkfifo($fixtureDir . "/fifo", 0777)) {
+            throw new \RuntimeException(
+                "Failed creating temporary test fixture fifo"
+            );
+        }
+        if (!\symlink($fixtureDir . "/dir", $fixtureDir . "/dirlink")) {
+            throw new \RuntimeException(
+                "Failed creating temporary test fixture symlink to directory"
+            );
+        }
+        if (!\symlink($fixtureDir . "/file", $fixtureDir . "/filelink")) {
+            throw new \RuntimeException(
+                "Failed creating temporary test fixture symlink to file"
+            );
+        }
+        if (!\symlink($fixtureDir . "/fifo", $fixtureDir . "/fifolink")) {
+            throw new \RuntimeException(
+                "Failed creating temporary test fixture symlink to file"
+            );
+        }
+        if (!\symlink($fixtureDir . "/linkloop", $fixtureDir . "/linkloop")) {
+            throw new \RuntimeException(
+                "Failed creating temporary test fixture symlink loop"
             );
         }
     }

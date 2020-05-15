@@ -5,7 +5,6 @@ namespace Amp\File;
 use Amp\Deferred;
 use Amp\Loop;
 use Amp\Promise;
-use Throwable;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
@@ -75,7 +74,7 @@ function open(string $path, string $mode): Promise
  * Execute a file stat operation.
  *
  * If the requested path does not exist the resulting Promise will resolve to NULL.
- * The returned Promise whould never resolve as a failure.
+ * The returned Promise should never resolve as a failure.
  *
  * @param string $path An absolute file system path.
  * @return Promise<array|null>
@@ -98,7 +97,7 @@ function exists(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         $deferred->resolve($result !== null);
     });
 
@@ -119,7 +118,7 @@ function size(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result === null) {
             $deferred->fail(new FilesystemException(
                 "Specified path does not exist"
@@ -149,9 +148,9 @@ function isdir(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
-            $deferred->resolve(! ($result["mode"] & 0100000));
+            $deferred->resolve((bool) ($result["mode"] & 0040000));
         } else {
             $deferred->resolve(false);
         }
@@ -173,7 +172,7 @@ function isfile(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
             $deferred->resolve((bool) ($result["mode"] & 0100000));
         } else {
@@ -193,13 +192,13 @@ function isfile(string $path): Promise
  * @param string $path An absolute file system path.
  * @return Promise<bool>
  */
-function islink(string $path): Promise
+function isSymlink(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+    lstat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
-            $deferred->resolve((bool) ($result["mode"] & 0120000));
+            $deferred->resolve((bool) ($result["mode"] & 0020000));
         } else {
             $deferred->resolve(false);
         }
@@ -219,7 +218,7 @@ function mtime(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
             $deferred->resolve($result["mtime"]);
         } else {
@@ -243,7 +242,7 @@ function atime(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
             $deferred->resolve($result["atime"]);
         } else {
@@ -267,7 +266,7 @@ function ctime(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
             $deferred->resolve($result["ctime"]);
         } else {
