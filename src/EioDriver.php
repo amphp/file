@@ -392,13 +392,13 @@ final class EioDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Promise
+    public function chown(string $path, ?int $uid, ?int $gid = null): Promise
     {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
         $priority = \EIO_PRI_DEFAULT;
-        \eio_chown($path, $uid, $gid, $priority, [$this, "onGenericResult"], $deferred);
+        \eio_chown($path, $uid ?? -1, $gid ?? -1, $priority, [$this, "onGenericResult"], $deferred);
         StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();

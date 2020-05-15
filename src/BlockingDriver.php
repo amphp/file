@@ -199,9 +199,9 @@ final class BlockingDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Promise
+    public function chown(string $path, ?int $uid, ?int $gid = null): Promise
     {
-        if ($uid !== -1 && !@\chown($path, $uid)) {
+        if (($uid ?? -1) !== -1 && !@\chown($path, $uid)) {
             $message = 'Could not open the file.';
             if ($error = \error_get_last()) {
                 $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
@@ -210,7 +210,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException($message));
         }
 
-        if ($gid !== -1 && !@\chgrp($path, $gid)) {
+        if (($gid ?? -1) !== -1 && !@\chgrp($path, $gid)) {
             $message = 'Could not open the file.';
             if ($error = \error_get_last()) {
                 $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);

@@ -413,12 +413,12 @@ function chmod(string $path, int $mode): Promise
  * chown a file or directory.
  *
  * @param string $path
- * @param int $uid -1 to ignore
- * @param int $gid -1 to ignore
+ * @param int|null $uid null to ignore
+ * @param int|null $gid null to ignore
  * @fails \Amp\Files\FilesystemException If the operation fails.
  * @return Promise<void>
  */
-function chown(string $path, int $uid, int $gid = -1): Promise
+function chown(string $path, ?int $uid, ?int $gid = null): Promise
 {
     return filesystem()->chown($path, $uid, $gid);
 }

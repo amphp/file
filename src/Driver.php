@@ -117,11 +117,11 @@ interface Driver
      * chown a file or directory.
      *
      * @param string $path
-     * @param int $uid
-     * @param int $gid
+     * @param int|null $uid
+     * @param int|null $gid
      * @return Promise<void>
      */
-    public function chown(string $path, int $uid, int $gid): Promise;
+    public function chown(string $path, ?int $uid, ?int $gid = null): Promise;
 
     /**
      * Update the access and modification time of the specified path.

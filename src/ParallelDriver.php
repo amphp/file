@@ -154,7 +154,7 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Promise
+    public function chown(string $path, ?int $uid, ?int $gid = null): Promise
     {
         $promise = new Coroutine($this->runFileTask(new Internal\FileTask("chown", [$path, $uid, $gid])));
         StatCache::clearOn($promise, $path);

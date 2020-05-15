@@ -405,13 +405,13 @@ final class UvDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Promise
+    public function chown(string $path, ?int $uid, ?int $gid = null): Promise
     {
         // @TODO Return a failure in windows environments
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_chown($this->loop, $path, $uid, $gid, $this->createGenericCallback($deferred, "Could not change file owner"));
+        \uv_fs_chown($this->loop, $path, $uid ?? -1, $gid ?? -1, $this->createGenericCallback($deferred, "Could not change file owner"));
         StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
