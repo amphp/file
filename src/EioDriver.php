@@ -312,7 +312,7 @@ final class EioDriver implements Driver
 
         $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
-                $deferred->resolve(!($result["mode"] & \EIO_S_IFREG));
+                $deferred->resolve(($result["mode"] & \EIO_S_IFDIR) === \EIO_S_IFDIR);
             } else {
                 $deferred->resolve(false);
             }
