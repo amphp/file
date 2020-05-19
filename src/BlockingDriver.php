@@ -191,7 +191,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException("Could not change file permissions"));
         }
 
-        StatCache::clear();
+        StatCache::clear($path);
 
         return new Success();
     }
@@ -199,7 +199,7 @@ final class BlockingDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, ?int $uid, ?int $gid = null): Promise
+    public function chown(string $path, ?int $uid, ?int $gid): Promise
     {
         if (($uid ?? -1) !== -1 && !@\chown($path, $uid)) {
             $message = 'Could not open the file.';
@@ -219,7 +219,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException($message));
         }
 
-        StatCache::clear();
+        StatCache::clear($path);
 
         return new Success();
     }
@@ -227,7 +227,7 @@ final class BlockingDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path, ?int $time = null, ?int $atime = null): Promise
+    public function touch(string $path, ?int $time, ?int $atime): Promise
     {
         $time = $time ?? \time();
         $atime = $atime ?? $time;
@@ -239,7 +239,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException($message));
         }
 
-        StatCache::clear();
+        StatCache::clear($path);
 
         return new Success();
     }

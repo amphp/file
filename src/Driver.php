@@ -121,7 +121,7 @@ interface Driver
      * @param int|null $gid
      * @return Promise<void>
      */
-    public function chown(string $path, ?int $uid, ?int $gid = null): Promise;
+    public function chown(string $path, ?int $uid, ?int $gid): Promise;
 
     /**
      * Update the access and modification time of the specified path.
@@ -133,7 +133,7 @@ interface Driver
      * @param int|null $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
      * @return Promise<void>
      */
-    public function touch(string $path, ?int $time = null, ?int $atime = null): Promise;
+    public function touch(string $path, ?int $time, ?int $atime): Promise;
 
     /**
      * Buffer the specified file's contents.

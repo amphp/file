@@ -392,7 +392,7 @@ final class EioDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, ?int $uid, ?int $gid = null): Promise
+    public function chown(string $path, ?int $uid, ?int $gid): Promise
     {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
@@ -407,7 +407,7 @@ final class EioDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path, ?int $time = null, ?int $atime = null): Promise
+    public function touch(string $path, ?int $time, ?int $atime): Promise
     {
         $time = $time ?? \time();
         $atime = $atime ?? $time;

@@ -123,7 +123,7 @@ function size(string $path): Promise
             $deferred->fail(new FilesystemException(
                 "Specified path does not exist"
             ));
-        } elseif ($result["mode"] & 0100000) {
+        } elseif (($result["mode"] & 0100000) === 0100000) {
             $deferred->resolve($result["size"]);
         } else {
             $deferred->fail(new FilesystemException(
@@ -150,7 +150,7 @@ function isdir(string $path): Promise
 
     stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
-            $deferred->resolve((bool) ($result["mode"] & 0040000));
+            $deferred->resolve(($result["mode"] & 0040000) === 0040000);
         } else {
             $deferred->resolve(false);
         }
@@ -174,7 +174,7 @@ function isfile(string $path): Promise
 
     stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
-            $deferred->resolve((bool) ($result["mode"] & 0100000));
+            $deferred->resolve(($result["mode"] & 0100000) === 0100000);
         } else {
             $deferred->resolve(false);
         }
@@ -198,7 +198,7 @@ function isSymlink(string $path): Promise
 
     lstat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
-            $deferred->resolve((bool) ($result["mode"] & 0020000));
+            $deferred->resolve(($result["mode"] & 0120000) === 0120000);
         } else {
             $deferred->resolve(false);
         }

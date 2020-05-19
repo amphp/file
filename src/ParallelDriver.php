@@ -154,7 +154,7 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, ?int $uid, ?int $gid = null): Promise
+    public function chown(string $path, ?int $uid, ?int $gid): Promise
     {
         $promise = new Coroutine($this->runFileTask(new Internal\FileTask("chown", [$path, $uid, $gid])));
         StatCache::clearOn($promise, $path);
@@ -172,7 +172,7 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path, ?int $time = null, ?int $atime = null): Promise
+    public function touch(string $path, ?int $time, ?int $atime): Promise
     {
         $promise = new Coroutine($this->runFileTask(new Internal\FileTask("touch", [$path, $time, $atime])));
         StatCache::clearOn($promise, $path);
