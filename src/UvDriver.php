@@ -332,7 +332,7 @@ final class UvDriver implements Driver
 
         $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
             if ($result) {
-                $deferred->resolve(!($result["mode"] & \UV::S_IFREG));
+                $deferred->resolve(($result["mode"] & \UV::S_IFDIR) === \UV::S_IFDIR);
             } else {
                 $deferred->resolve(false);
             }
