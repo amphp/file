@@ -200,11 +200,13 @@ abstract class DriverTest extends FilesystemTest
     public function dataForIsdir(): \Generator
     {
         yield 'file' => [false, 'file'];
-        yield 'dir' => [true, 'dir'];
-        yield 'fifo' => [false, 'fifo'];
         yield 'filelink' => [false, 'filelink'];
+        yield 'dir' => [true, 'dir'];
         yield 'dirlink' => [true, 'dirlink'];
-        yield 'fifolink' => [false, 'fifolink'];
+        if (extension_loaded('posix')) {
+            yield 'fifo' => [false, 'fifo'];
+            yield 'fifolink' => [false, 'fifolink'];
+        }
         yield 'linkloop' => [false, 'linkloop'];
         yield 'nonexistent' => [false, 'nonexistent'];
     }
@@ -222,11 +224,13 @@ abstract class DriverTest extends FilesystemTest
     public function dataForIsfile(): \Generator
     {
         yield 'file' => [true, 'file'];
-        yield 'dir' => [false, 'dir'];
-        yield 'fifo' => [false, 'fifo'];
         yield 'filelink' => [true, 'filelink'];
+        yield 'dir' => [false, 'dir'];
         yield 'dirlink' => [false, 'dirlink'];
-        yield 'fifolink' => [false, 'fifolink'];
+        if (extension_loaded('posix')) {
+            yield 'fifo' => [false, 'fifo'];
+            yield 'fifolink' => [false, 'fifolink'];
+        }
         yield 'linkloop' => [false, 'linkloop'];
         yield 'nonexistent' => [false, 'nonexistent'];
     }
@@ -244,11 +248,13 @@ abstract class DriverTest extends FilesystemTest
     public function dataForIsSymlink(): \Generator
     {
         yield 'file' => [false, 'file'];
-        yield 'dir' => [false, 'dir'];
-        yield 'fifo' => [false, 'fifo'];
         yield 'filelink' => [true, 'filelink'];
+        yield 'dir' => [false, 'dir'];
         yield 'dirlink' => [true, 'dirlink'];
-        yield 'fifolink' => [true, 'fifolink'];
+        if (extension_loaded('posix')) {
+            yield 'fifo' => [false, 'fifo'];
+            yield 'fifolink' => [true, 'fifolink'];
+        }
         yield 'linkloop' => [true, 'linkloop'];
         yield 'nonexistent' => [false, 'nonexistent'];
     }
