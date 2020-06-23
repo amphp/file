@@ -61,155 +61,6 @@ final class BlockingDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function exists(string $path): Promise
-    {
-        if ($exists = @\file_exists($path)) {
-            \clearstatcache(true, $path);
-        }
-
-        return new Success($exists);
-    }
-
-    /**
-     * Retrieve the size in bytes of the file at the specified path.
-     *
-     * If the path does not exist or is not a regular file this
-     * function's returned Promise WILL resolve as a failure.
-     *
-     * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
-     */
-    public function size(string $path): Promise
-    {
-        if (!@\file_exists($path)) {
-            return new Failure(new FilesystemException(
-                "Path does not exist"
-            ));
-        }
-
-        if (!@\is_file($path)) {
-            return new Failure(new FilesystemException(
-                "Path is not a regular file"
-            ));
-        }
-
-        if (($size = @\filesize($path)) === false) {
-            $message = 'Could not open the file.';
-            if ($error = \error_get_last()) {
-                $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
-            }
-
-            return new Failure(new FilesystemException($message));
-        }
-
-        \clearstatcache(true, $path);
-        return new Success($size);
-    }
-
-    /**
-     * Does the specified path exist and is it a directory?
-     *
-     * If the path does not exist the returned Promise will resolve
-     * to FALSE. It will NOT reject with an error.
-     *
-     * @param string $path An absolute file system path
-     * @return \Amp\Promise<bool>
-     */
-    public function isdir(string $path): Promise
-    {
-        if (!@\file_exists($path)) {
-            return new Success(false);
-        }
-
-        $isDir = @\is_dir($path);
-        \clearstatcache(true, $path);
-
-        return new Success($isDir);
-    }
-
-    /**
-     * Does the specified path exist and is it a file?
-     *
-     * If the path does not exist the returned Promise will resolve
-     * to FALSE. It will NOT reject with an error.
-     *
-     * @param string $path An absolute file system path
-     * @return \Amp\Promise<bool>
-     */
-    public function isfile(string $path): Promise
-    {
-        if (!@\file_exists($path)) {
-            return new Success(false);
-        }
-
-        $isFile = @\is_file($path);
-        \clearstatcache(true, $path);
-
-        return new Success($isFile);
-    }
-
-    /**
-     * Retrieve the path's last modification time as a unix timestamp.
-     *
-     * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
-     */
-    public function mtime(string $path): Promise
-    {
-        if (!@\file_exists($path)) {
-            return new Failure(new FilesystemException(
-                "Path does not exist"
-            ));
-        }
-
-        $mtime = @\filemtime($path);
-        \clearstatcache(true, $path);
-
-        return new Success($mtime);
-    }
-
-    /**
-     * Retrieve the path's last access time as a unix timestamp.
-     *
-     * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
-     */
-    public function atime(string $path): Promise
-    {
-        if (!@\file_exists($path)) {
-            return new Failure(new FilesystemException(
-                "Path does not exist"
-            ));
-        }
-        $atime = @\fileatime($path);
-        \clearstatcache(true, $path);
-
-        return new Success($atime);
-    }
-
-    /**
-     * Retrieve the path's creation time as a unix timestamp.
-     *
-     * @param string $path An absolute file system path
-     * @return \Amp\Promise<int>
-     */
-    public function ctime(string $path): Promise
-    {
-        if (!@\file_exists($path)) {
-            return new Failure(new FilesystemException(
-                "Path does not exist"
-            ));
-        }
-
-        $ctime = @\filectime($path);
-        \clearstatcache(true, $path);
-
-        return new Success($ctime);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function lstat(string $path): Promise
     {
         if ($stat = @\lstat($path)) {
@@ -230,7 +81,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException("Could not create symbolic link"));
         }
 
-        return new Success(true);
+        return new Success();
     }
 
     /**
@@ -242,7 +93,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException("Could not create hard link"));
         }
 
-        return new Success(true);
+        return new Success();
     }
 
     /**
@@ -266,7 +117,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException("Could not rename file"));
         }
 
-        return new Success(true);
+        return new Success();
     }
 
     /**
@@ -275,7 +126,12 @@ final class BlockingDriver implements Driver
     public function unlink(string $path): Promise
     {
         StatCache::clear($path);
-        return new Success((bool) @\unlink($path));
+
+        if (!@\unlink($path)) {
+            return new Failure(new FilesystemException("Could not unlink file"));
+        }
+
+        return new Success();
     }
 
     /**
@@ -283,7 +139,11 @@ final class BlockingDriver implements Driver
      */
     public function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
     {
-        return new Success((bool) @\mkdir($path, $mode, $recursive));
+        if (!@\mkdir($path, $mode, $recursive)) {
+            return new Failure(new FilesystemException("Could not create directory"));
+        }
+
+        return new Success();
     }
 
     /**
@@ -292,7 +152,12 @@ final class BlockingDriver implements Driver
     public function rmdir(string $path): Promise
     {
         StatCache::clear($path);
-        return new Success((bool) @\rmdir($path));
+
+        if (!@\rmdir($path)) {
+            return new Failure(new FilesystemException("Could not remove directory"));
+        }
+
+        return new Success();
     }
 
     /**
@@ -322,15 +187,21 @@ final class BlockingDriver implements Driver
      */
     public function chmod(string $path, int $mode): Promise
     {
-        return new Success((bool) @\chmod($path, $mode));
+        if (!@\chmod($path, $mode)) {
+            return new Failure(new FilesystemException("Could not change file permissions"));
+        }
+
+        StatCache::clear($path);
+
+        return new Success();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Promise
+    public function chown(string $path, ?int $uid, ?int $gid): Promise
     {
-        if ($uid !== -1 && !@\chown($path, $uid)) {
+        if (($uid ?? -1) !== -1 && !@\chown($path, $uid)) {
             $message = 'Could not open the file.';
             if ($error = \error_get_last()) {
                 $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
@@ -339,7 +210,7 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException($message));
         }
 
-        if ($gid !== -1 && !@\chgrp($path, $gid)) {
+        if (($gid ?? -1) !== -1 && !@\chgrp($path, $gid)) {
             $message = 'Could not open the file.';
             if ($error = \error_get_last()) {
                 $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
@@ -348,17 +219,29 @@ final class BlockingDriver implements Driver
             return new Failure(new FilesystemException($message));
         }
 
-        return new Success;
+        StatCache::clear($path);
+
+        return new Success();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path, int $time = null, int $atime = null): Promise
+    public function touch(string $path, ?int $time, ?int $atime): Promise
     {
         $time = $time ?? \time();
         $atime = $atime ?? $time;
-        return new Success((bool) \touch($path, $time, $atime));
+        if (! @\touch($path, $time, $atime)) {
+            $message = 'Could not touch file.';
+            if ($error = \error_get_last()) {
+                $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
+            }
+            return new Failure(new FilesystemException($message));
+        }
+
+        StatCache::clear($path);
+
+        return new Success();
     }
 
     /**
@@ -374,6 +257,7 @@ final class BlockingDriver implements Driver
             }
             return new Failure(new FilesystemException($message));
         }
+
         return new Success($result);
     }
 
@@ -390,6 +274,7 @@ final class BlockingDriver implements Driver
             }
             return new Failure(new FilesystemException($message));
         }
-        return new Success($result);
+
+        return new Success();
     }
 }

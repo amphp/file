@@ -138,140 +138,6 @@ final class EioDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function exists(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            $deferred->resolve((bool) $result);
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isdir(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve(!($result["mode"] & \EIO_S_IFREG));
-            } else {
-                $deferred->resolve(false);
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isfile(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve((bool) ($result["mode"] & \EIO_S_IFREG));
-            } else {
-                $deferred->resolve(false);
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function size(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if (empty($result)) {
-                $deferred->fail(new FilesystemException(
-                    "Specified path does not exist"
-                ));
-            } elseif ($result["mode"] & \EIO_S_IFREG) {
-                $deferred->resolve($result["size"]);
-            } else {
-                $deferred->fail(new FilesystemException(
-                    "Specified path is not a regular file"
-                ));
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function mtime(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve($result["mtime"]);
-            } else {
-                $deferred->fail(new FilesystemException(
-                    "Specified path does not exist"
-                ));
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function atime(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve($result["atime"]);
-            } else {
-                $deferred->fail(new FilesystemException(
-                    "Specified path does not exist"
-                ));
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function ctime(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve($result["ctime"]);
-            } else {
-                $deferred->fail(new FilesystemException(
-                    "Specified path does not exist"
-                ));
-            }
-        });
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function lstat(string $path): Promise
     {
         $deferred = new Deferred;
@@ -348,7 +214,7 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve(true);
+            $deferred->resolve();
         }
     }
 
@@ -376,7 +242,11 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         $data = [$deferred, $path];
-        \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
+        $result = \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
+        // For a non-existent file eio_unlink immediately returns true and the callback is never called.
+        if ($result === true) {
+            $deferred->fail(new FilesystemException('File does not exist.'));
+        }
 
         return $deferred->promise();
     }
@@ -389,7 +259,7 @@ final class EioDriver implements Driver
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
             StatCache::clear($path);
-            $deferred->resolve(true);
+            $deferred->resolve();
         }
     }
 
@@ -436,6 +306,21 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
+    private function isdir(string $path): Promise
+    {
+        $deferred = new Deferred;
+
+        $this->stat($path)->onResolve(function ($error, $result) use ($deferred): void {
+            if ($result) {
+                $deferred->resolve(($result["mode"] & 0040000) === 0040000);
+            } else {
+                $deferred->resolve(false);
+            }
+        });
+
+        return $deferred->promise();
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -459,7 +344,7 @@ final class EioDriver implements Driver
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
             StatCache::clear($path);
-            $deferred->resolve(true);
+            $deferred->resolve();
         }
     }
 
@@ -499,6 +384,7 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -506,13 +392,14 @@ final class EioDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, int $uid, int $gid): Promise
+    public function chown(string $path, ?int $uid, ?int $gid): Promise
     {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
         $priority = \EIO_PRI_DEFAULT;
-        \eio_chown($path, $uid, $gid, $priority, [$this, "onGenericResult"], $deferred);
+        \eio_chown($path, $uid ?? -1, $gid ?? -1, $priority, [$this, "onGenericResult"], $deferred);
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -520,7 +407,7 @@ final class EioDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function touch(string $path, int $time = null, int $atime = null): Promise
+    public function touch(string $path, ?int $time, ?int $atime): Promise
     {
         $time = $time ?? \time();
         $atime = $atime ?? $time;
@@ -530,6 +417,7 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_utime($path, $atime, $time, $priority, [$this, "onGenericResult"], $deferred);
+        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -632,7 +520,7 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve($result);
+            $deferred->resolve();
         }
     }
 }
