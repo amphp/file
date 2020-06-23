@@ -12,6 +12,7 @@ const LOOP_STATE_IDENTIFIER = Driver::class;
  * Retrieve the application-wide filesystem instance.
  *
  * @param Driver|null $driver Use the specified object as the application-wide filesystem instance.
+ *
  * @return Driver
  */
 function filesystem(?Driver $driver = null): Driver
@@ -63,6 +64,7 @@ function createDefaultDriver(): Driver
  *
  * @param string $path
  * @param string $mode
+ *
  * @return Promise<File>
  */
 function open(string $path, string $mode): Promise
@@ -77,6 +79,7 @@ function open(string $path, string $mode): Promise
  * The returned Promise should never resolve as a failure.
  *
  * @param string $path An absolute file system path.
+ *
  * @return Promise<array|null>
  */
 function stat(string $path): Promise
@@ -87,17 +90,18 @@ function stat(string $path): Promise
 /**
  * Does the specified path exist?
  *
- * This function should never resolve as a failure -- only a successfull bool value
+ * This function should never resolve as a failure -- only a successful bool value
  * indicating the existence of the specified path.
  *
  * @param string $path An absolute file system path.
+ *
  * @return Promise<bool>
  */
 function exists(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(static function (?\Throwable $error, ?array $result) use ($deferred): void {
         $deferred->resolve($result !== null);
     });
 
@@ -112,22 +116,25 @@ function exists(string $path): Promise
  *
  * @param string $path An absolute file system path.
  * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file.
+ *
  * @return Promise<int>
  */
 function size(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(static function (?\Throwable $error, ?array $result) use ($deferred, $path): void {
         if ($result === null) {
             $deferred->fail(new FilesystemException(
-                "Specified path does not exist"
+                "Specified path does not exist: {$path}",
+                $error
             ));
         } elseif (($result["mode"] & 0100000) === 0100000) {
             $deferred->resolve($result["size"]);
         } else {
             $deferred->fail(new FilesystemException(
-                "Specified path is not a regular file"
+                "Specified path is not a regular file: {$path}",
+                $error
             ));
         }
     });
@@ -142,13 +149,14 @@ function size(string $path): Promise
  * to FALSE and will not reject with an error.
  *
  * @param string $path An absolute file system path.
+ *
  * @return Promise<bool>
  */
-function isdir(string $path): Promise
+function isDir(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(static function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
             $deferred->resolve(($result["mode"] & 0040000) === 0040000);
         } else {
@@ -166,13 +174,14 @@ function isdir(string $path): Promise
  * to FALSE and will not reject with an error.
  *
  * @param string $path An absolute file system path.
+ *
  * @return Promise<bool>
  */
-function isfile(string $path): Promise
+function isFile(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(static function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
             $deferred->resolve(($result["mode"] & 0100000) === 0100000);
         } else {
@@ -190,13 +199,14 @@ function isfile(string $path): Promise
  * to FALSE and will not reject with an error.
  *
  * @param string $path An absolute file system path.
+ *
  * @return Promise<bool>
  */
 function isSymlink(string $path): Promise
 {
     $deferred = new Deferred;
 
-    lstat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
+    lstat($path)->onResolve(static function (?\Throwable $error, ?array $result) use ($deferred): void {
         if ($result !== null) {
             $deferred->resolve(($result["mode"] & 0120000) === 0120000);
         } else {
@@ -212,18 +222,20 @@ function isSymlink(string $path): Promise
  *
  * @param string $path An absolute file system path.
  * @fails \Amp\Files\FilesystemException If the path does not exist.
+ *
  * @return Promise<int>
  */
 function mtime(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(static function (?\Throwable $error, ?array $result) use ($deferred, $path): void {
         if ($result !== null) {
             $deferred->resolve($result["mtime"]);
         } else {
             $deferred->fail(new FilesystemException(
-                "Specified path does not exist"
+                "Specified path does not exist: {$path}",
+                $error
             ));
         }
     });
@@ -236,18 +248,20 @@ function mtime(string $path): Promise
  *
  * @param string $path An absolute file system path.
  * @fails \Amp\Files\FilesystemException If the path does not exist.
+ *
  * @return Promise<int>
  */
 function atime(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(static function (?\Throwable $error, ?array $result) use ($deferred, $path): void {
         if ($result !== null) {
             $deferred->resolve($result["atime"]);
         } else {
             $deferred->fail(new FilesystemException(
-                "Specified path does not exist"
+                "Specified path does not exist: {$path}",
+                $error
             ));
         }
     });
@@ -260,18 +274,20 @@ function atime(string $path): Promise
  *
  * @param string $path An absolute file system path.
  * @fails \Amp\Files\FilesystemException If the path does not exist.
+ *
  * @return Promise<int>
  */
 function ctime(string $path): Promise
 {
     $deferred = new Deferred;
 
-    stat($path)->onResolve(function (?\Throwable $error, ?array $result) use ($deferred): void {
+    stat($path)->onResolve(static function (?\Throwable $error, ?array $result) use ($deferred, $path): void {
         if ($result !== null) {
             $deferred->resolve($result["ctime"]);
         } else {
             $deferred->fail(new FilesystemException(
-                "Specified path does not exist"
+                "Specified path does not exist: {$path}",
+                $error
             ));
         }
     });
@@ -286,6 +302,7 @@ function ctime(string $path): Promise
  * The returned Promise should never resolve as a failure.
  *
  * @param string $path An absolute file system path.
+ *
  * @return Promise<array|null>
  */
 function lstat(string $path): Promise
@@ -299,6 +316,7 @@ function lstat(string $path): Promise
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function symlink(string $original, string $link): Promise
@@ -312,6 +330,7 @@ function symlink(string $original, string $link): Promise
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function link(string $original, string $link): Promise
@@ -324,9 +343,10 @@ function link(string $original, string $link): Promise
  *
  * @param string $path
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<string>
  */
-function readlink(string $path): Promise
+function readLink(string $path): Promise
 {
     return filesystem()->readlink($path);
 }
@@ -337,6 +357,7 @@ function readlink(string $path): Promise
  * @param string $from
  * @param string $to
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function rename(string $from, string $to): Promise
@@ -349,6 +370,7 @@ function rename(string $from, string $to): Promise
  *
  * @param string $path
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function unlink(string $path): Promise
@@ -360,9 +382,10 @@ function unlink(string $path): Promise
  * Create a directory.
  *
  * @param string $path
- * @param int $mode
- * @param bool $recursive
+ * @param int    $mode
+ * @param bool   $recursive
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
@@ -375,6 +398,7 @@ function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
  *
  * @param string $path
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function rmdir(string $path): Promise
@@ -388,6 +412,7 @@ function rmdir(string $path): Promise
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
  * @param string $path
+ *
  * @return Promise<list<string>>
  */
 function scandir(string $path): Promise
@@ -396,11 +421,12 @@ function scandir(string $path): Promise
 }
 
 /**
- * chmod a file or directory.
+ * Change permissions of a file or directory.
  *
  * @param string $path
- * @param int $mode
+ * @param int    $mode
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function chmod(string $path, int $mode): Promise
@@ -409,12 +435,13 @@ function chmod(string $path, int $mode): Promise
 }
 
 /**
- * chown a file or directory.
+ * Change ownership of a file or directory.
  *
- * @param string $path
+ * @param string   $path
  * @param int|null $uid null to ignore
  * @param int|null $gid null to ignore
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function chown(string $path, ?int $uid, ?int $gid = null): Promise
@@ -427,10 +454,11 @@ function chown(string $path, ?int $uid, ?int $gid = null): Promise
  *
  * If the file does not exist it will be created automatically.
  *
- * @param string $path
+ * @param string   $path
  * @param int|null $time The touch time. If $time is not supplied, the current system time is used.
  * @param int|null $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
  * @fails \Amp\Files\FilesystemException If the operation fails.
+ *
  * @return Promise<void>
  */
 function touch(string $path, ?int $time = null, ?int $atime = null): Promise
@@ -442,6 +470,7 @@ function touch(string $path, ?int $time = null, ?int $atime = null): Promise
  * Buffer the specified file's contents.
  *
  * @param string $path The file path from which to buffer contents.
+ *
  * @return Promise<string>
  */
 function get(string $path): Promise
@@ -454,6 +483,7 @@ function get(string $path): Promise
  *
  * @param string $path The file path to which to $contents should be written.
  * @param string $contents The data to write to the specified $path.
+ *
  * @return Promise<void>
  */
 function put(string $path, string $contents): Promise
