@@ -203,7 +203,7 @@ abstract class DriverTest extends FilesystemTest
         yield 'filelink' => [false, 'filelink'];
         yield 'dir' => [true, 'dir'];
         yield 'dirlink' => [true, 'dirlink'];
-        if (extension_loaded('posix')) {
+        if (\extension_loaded('posix')) {
             yield 'fifo' => [false, 'fifo'];
             yield 'fifolink' => [false, 'fifolink'];
         }
@@ -227,7 +227,7 @@ abstract class DriverTest extends FilesystemTest
         yield 'filelink' => [true, 'filelink'];
         yield 'dir' => [false, 'dir'];
         yield 'dirlink' => [false, 'dirlink'];
-        if (extension_loaded('posix')) {
+        if (\extension_loaded('posix')) {
             yield 'fifo' => [false, 'fifo'];
             yield 'fifolink' => [false, 'fifolink'];
         }
@@ -251,7 +251,7 @@ abstract class DriverTest extends FilesystemTest
         yield 'filelink' => [true, 'filelink'];
         yield 'dir' => [false, 'dir'];
         yield 'dirlink' => [true, 'dirlink'];
-        if (extension_loaded('posix')) {
+        if (\extension_loaded('posix')) {
             yield 'fifo' => [false, 'fifo'];
             yield 'fifolink' => [true, 'fifolink'];
         }
