@@ -5,6 +5,7 @@ namespace Amp\File\Internal;
 use Amp\Loop;
 use Amp\Promise;
 
+/** @internal */
 final class EioPoll
 {
     /** @var resource */
