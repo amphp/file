@@ -219,7 +219,7 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_link($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, $this->createGenericCallback($deferred, "Could not create hard link"));
+        \uv_fs_link($this->loop, $target, $link, $this->createGenericCallback($deferred, "Could not create hard link"));
 
         return $deferred->promise();
     }
