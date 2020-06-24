@@ -23,16 +23,16 @@ class UvDriverTest extends DriverTest
     }
 
     /**
-     * @dataProvider readlinkPathProvider
+     * @dataProvider symlinkPathProvider
      *
      * @param \Closure $linkResolver
      */
-    public function testReadlinkError(\Closure $linkResolver): \Generator
+    public function testResolveSymlinkError(\Closure $linkResolver): \Generator
     {
         if (\version_compare(\phpversion('uv'), '0.3.0', '<')) {
             $this->markTestSkipped('UvDriver Test Skipped: Causes Crash');
         }
 
-        yield from parent::testReadlinkError($linkResolver);
+        yield from parent::testResolveSymlinkError($linkResolver);
     }
 }

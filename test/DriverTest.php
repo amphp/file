@@ -7,7 +7,7 @@ use Amp\File\FilesystemException;
 
 abstract class DriverTest extends FilesystemTest
 {
-    public function testScandir()
+    public function testListFiles()
     {
         $fixtureDir = Fixture::path();
         $actual = yield File\scandir($fixtureDir);
@@ -15,14 +15,14 @@ abstract class DriverTest extends FilesystemTest
         $this->assertSame($expected, $actual);
     }
 
-    public function testScandirThrowsIfPathNotADirectory(): \Generator
+    public function testListFilesThrowsIfPathNotADirectory(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
         yield File\scandir(__FILE__);
     }
 
-    public function testScandirThrowsIfPathDoesntExist(): \Generator
+    public function testListFilesThrowsIfPathDoesntExist(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
@@ -30,7 +30,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\scandir($path);
     }
 
-    public function testSymlink(): \Generator
+    public function testCreateSymlink(): \Generator
     {
         $fixtureDir = Fixture::path();
 
@@ -41,7 +41,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\unlink($link);
     }
 
-    public function testSymlinkFailWhenLinkExists(): \Generator
+    public function testCreateSymlinkFailWhenLinkExists(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
@@ -50,7 +50,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\symlink($path, $path);
     }
 
-    public function testLink(): \Generator
+    public function testCreateHardlink(): \Generator
     {
         $fixtureDir = Fixture::path();
 
@@ -62,7 +62,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\unlink($link);
     }
 
-    public function testLinkFailWhenLinkExists(): \Generator
+    public function testCreateHardlinkFailWhenLinkExists(): \Generator
     {
         $this->expectException(FilesystemException::class);
 
@@ -71,7 +71,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\link($path, $path);
     }
 
-    public function testReadlink(): \Generator
+    public function testResolveSymlink(): \Generator
     {
         $fixtureDir = Fixture::path();
 
@@ -82,24 +82,29 @@ abstract class DriverTest extends FilesystemTest
         $this->assertSame($original, yield File\readlink($link));
     }
 
-    public function readlinkPathProvider(): array
+    public function symlinkPathProvider(): array
     {
         return [
-            'nonExistingPath' => [function () {
-                return Fixture::path() . '/' . \uniqid();
-            }],
-            'notLink' => [function () {
-                return Fixture::path();
-            }],
+            'nonExistingPath' => [
+                static function () {
+                    return Fixture::path() . '/' . \uniqid('amphp-test-', true);
+                },
+            ],
+            'notLink' => [
+                static function () {
+                    return Fixture::path();
+                },
+            ],
         ];
     }
 
     /**
-     * @dataProvider readlinkPathProvider
+     * @dataProvider symlinkPathProvider
      *
      * @param \Closure $linkResolver
+     * @return \Generator
      */
-    public function testReadlinkError(\Closure $linkResolver): \Generator
+    public function testResolveSymlinkError(\Closure $linkResolver): \Generator
     {
         $this->expectException(FilesystemException::class);
 
@@ -108,7 +113,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\readlink($link);
     }
 
-    public function testLstat(): \Generator
+    public function testLinkStatus(): \Generator
     {
         $fixtureDir = Fixture::path();
 
@@ -119,28 +124,28 @@ abstract class DriverTest extends FilesystemTest
         yield File\unlink($link);
     }
 
-    public function testFileStat(): \Generator
+    public function testStatus(): \Generator
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
-        $stat = (yield File\stat($path));
+        $stat = yield File\stat($path);
         $this->assertNotNull(File\StatCache::get($path));
         $this->assertIsArray($stat);
-        $this->assertStatSame(\stat($path), $stat);
+        $this->assertSameStatus(\stat($path), $stat);
     }
 
-    public function testDirStat(): \Generator
+    public function testDirectoryStatus(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $stat = (yield File\stat("{$fixtureDir}/dir"));
+        $stat = yield File\stat("{$fixtureDir}/dir");
         $this->assertIsArray($stat);
-        $this->assertStatSame(\stat("{$fixtureDir}/dir"), $stat);
+        $this->assertSameStatus(\stat("{$fixtureDir}/dir"), $stat);
     }
 
-    public function testNonexistentPathStatResolvesToNull(): \Generator
+    public function testNonexistentPathStatusResolvesToNull(): \Generator
     {
         $fixtureDir = Fixture::path();
-        $stat = (yield File\stat("{$fixtureDir}/nonexistent"));
+        $stat = yield File\stat("{$fixtureDir}/nonexistent");
         $this->assertNull($stat);
     }
 
@@ -151,7 +156,7 @@ abstract class DriverTest extends FilesystemTest
         $this->assertTrue(yield File\exists("{$fixtureDir}/file"));
     }
 
-    public function testGet(): \Generator
+    public function testRead(): \Generator
     {
         $fixtureDir = Fixture::path();
         $this->assertSame("small", yield File\get("{$fixtureDir}/file"));
@@ -188,16 +193,16 @@ abstract class DriverTest extends FilesystemTest
     }
 
     /**
-     * @dataProvider dataForIsdir
+     * @dataProvider dataForDirectoryCheck
      */
-    public function testIsdir(bool $expectedResult, string $name): \Generator
+    public function testIsDirectory(bool $expectedResult, string $name): \Generator
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/{$name}";
         $this->assertSame($expectedResult, yield File\isdir($path));
     }
 
-    public function dataForIsdir(): \Generator
+    public function dataForDirectoryCheck(): \Generator
     {
         yield 'file' => [false, 'file'];
         yield 'filelink' => [false, 'filelink'];
@@ -212,16 +217,16 @@ abstract class DriverTest extends FilesystemTest
     }
 
     /**
-     * @dataProvider dataForIsfile
+     * @dataProvider dataForFileCheck
      */
-    public function testIsfile(bool $expectedResult, string $name): \Generator
+    public function testIsFile(bool $expectedResult, string $name): \Generator
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/{$name}";
         $this->assertSame($expectedResult, yield File\isfile($path));
     }
 
-    public function dataForIsfile(): \Generator
+    public function dataForFileCheck(): \Generator
     {
         yield 'file' => [true, 'file'];
         yield 'filelink' => [true, 'filelink'];
@@ -236,7 +241,7 @@ abstract class DriverTest extends FilesystemTest
     }
 
     /**
-     * @dataProvider dataForIsSymlink
+     * @dataProvider dataForSymlinkCheck
      */
     public function testIsSymlink(bool $expectedResult, string $name): \Generator
     {
@@ -245,7 +250,7 @@ abstract class DriverTest extends FilesystemTest
         $this->assertSame($expectedResult, yield File\isSymlink($path));
     }
 
-    public function dataForIsSymlink(): \Generator
+    public function dataForSymlinkCheck(): \Generator
     {
         yield 'file' => [false, 'file'];
         yield 'filelink' => [true, 'filelink'];
@@ -259,7 +264,7 @@ abstract class DriverTest extends FilesystemTest
         yield 'nonexistent' => [false, 'nonexistent'];
     }
 
-    public function testRename(): \Generator
+    public function testMove(): \Generator
     {
         $fixtureDir = Fixture::path();
 
@@ -275,7 +280,7 @@ abstract class DriverTest extends FilesystemTest
         $this->assertSame($contents1, $contents2);
     }
 
-    public function testRenameFailsOnNonexistentPath(): \Generator
+    public function testMoveFailsOnNonexistentPath(): \Generator
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -285,7 +290,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\rename($path, $path);
     }
 
-    public function testUnlink(): \Generator
+    public function testDeleteFile(): \Generator
     {
         $fixtureDir = Fixture::path();
         $toUnlink = "{$fixtureDir}/unlink";
@@ -296,7 +301,7 @@ abstract class DriverTest extends FilesystemTest
         $this->assertNull(yield File\stat($toUnlink));
     }
 
-    public function testUnlinkFailsOnNonexistentPath(): \Generator
+    public function testDeleteFileFailsOnNonexistentPath(): \Generator
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -306,7 +311,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\unlink($path);
     }
 
-    public function testUnlinkFailsOnDirectory(): \Generator
+    public function testDeleteFileFailsOnDirectory(): \Generator
     {
         $fixtureDir = Fixture::path();
         $dir = "{$fixtureDir}/newdir";
@@ -317,7 +322,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\unlink($dir);
     }
 
-    public function testMkdirRmdir(): \Generator
+    public function testCreateAndDeleteDirectory(): \Generator
     {
         $fixtureDir = Fixture::path();
 
@@ -327,7 +332,7 @@ abstract class DriverTest extends FilesystemTest
 
         $this->assertNull(yield File\mkdir($dir));
         $stat = yield File\stat($dir);
-        $this->assertSame('0755', $this->getPermissionsFromStat($stat));
+        $this->assertSame('0755', $this->getPermissionsFromStatus($stat));
         $this->assertNull(yield File\rmdir($dir));
         $this->assertNull(File\StatCache::get($dir));
         $this->assertNull(yield File\stat($dir));
@@ -337,10 +342,10 @@ abstract class DriverTest extends FilesystemTest
 
         $this->assertNull(yield File\mkdir($dir, 0764, true));
         $stat = yield File\stat($dir);
-        $this->assertSame('0744', $this->getPermissionsFromStat($stat));
+        $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
     }
 
-    public function testMkdirFailsOnNonexistentPath(): \Generator
+    public function testCreateDirectoryFailsOnNonexistentPath(): \Generator
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent/nonexistent";
@@ -350,7 +355,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\mkdir($path);
     }
 
-    public function testRmdirFailsOnNonexistentPath(): \Generator
+    public function testDeleteDirectoryFailsOnNonexistentPath(): \Generator
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -360,7 +365,7 @@ abstract class DriverTest extends FilesystemTest
         yield File\rmdir($path);
     }
 
-    public function testRmdirFailsOnFile(): \Generator
+    public function testDeleteDirectoryFailsOnFile(): \Generator
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
@@ -440,10 +445,10 @@ abstract class DriverTest extends FilesystemTest
         $touch = "{$fixtureDir}/touch";
         yield File\put($touch, "touch me");
 
-        $oldStat = (yield File\stat($touch));
+        $oldStat = yield File\stat($touch);
         $this->assertNull(yield File\touch($touch, \time() + 10, \time() + 20));
         $this->assertNull(File\StatCache::get($touch));
-        $newStat = (yield File\stat($touch));
+        $newStat = yield File\stat($touch);
         yield File\unlink($touch);
 
         $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
@@ -460,7 +465,51 @@ abstract class DriverTest extends FilesystemTest
         yield File\touch($path);
     }
 
-    private function assertStatSame(array $expected, array $actual): void
+    public function testChangePermissions(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+
+        $path = "{$fixtureDir}/file";
+        $stat = yield File\stat($path);
+        $this->assertNotSame('0777', \substr(\decoct($stat['mode']), -4));
+        $this->assertNull(yield File\chmod($path, 0777));
+        $this->assertNull(File\StatCache::get($path));
+        $stat = yield File\stat($path);
+        $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
+    }
+
+    public function testChangePermissionsFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\chmod($path, 0777);
+    }
+
+    public function testChangeOwner(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+
+        $path = "{$fixtureDir}/file";
+        yield File\stat($path);
+        $user = \fileowner($path);
+        $this->assertNull(yield File\chown($path, $user));
+        $this->assertNull(File\StatCache::get($path));
+    }
+
+    public function testChangeOwnerFailsOnNonexistentPath(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+        $path = "{$fixtureDir}/nonexistent";
+
+        $this->expectException(FilesystemException::class);
+
+        yield File\chown($path, 0);
+    }
+
+    private function assertSameStatus(array $expected, array $actual): void
     {
         $filter = function (array $stat) {
             $filtered = \array_filter(
@@ -481,54 +530,11 @@ abstract class DriverTest extends FilesystemTest
 
     /**
      * @param array $stat
+     *
      * @return string
      */
-    private function getPermissionsFromStat(array $stat): string
+    private function getPermissionsFromStatus(array $stat): string
     {
         return \substr(\decoct($stat["mode"]), 1);
-    }
-
-    public function testChmod(): \Generator
-    {
-        $fixtureDir = Fixture::path();
-
-        $path = "{$fixtureDir}/file";
-        $stat = yield File\stat($path);
-        $this->assertNotSame('0777', \substr(\decoct($stat['mode']), -4));
-        $this->assertNull(yield File\chmod($path, 0777));
-        $this->assertNull(File\StatCache::get($path));
-        $stat = yield File\stat($path);
-        $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
-    }
-
-    public function testChmodFailsOnNonexistentPath(): \Generator
-    {
-        $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/nonexistent";
-
-        $this->expectException(FilesystemException::class);
-
-        yield File\chmod($path, 0777);
-    }
-
-    public function testChown(): \Generator
-    {
-        $fixtureDir = Fixture::path();
-
-        $path = "{$fixtureDir}/file";
-        yield File\stat($path);
-        $user = \fileowner($path);
-        $this->assertNull(yield File\chown($path, $user));
-        $this->assertNull(File\StatCache::get($path));
-    }
-
-    public function testChownFailsOnNonexistentPath(): \Generator
-    {
-        $fixtureDir = Fixture::path();
-        $path = "{$fixtureDir}/nonexistent";
-
-        $this->expectException(FilesystemException::class);
-
-        yield File\chown($path, 0);
     }
 }

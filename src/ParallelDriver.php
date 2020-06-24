@@ -13,13 +13,11 @@ use function Amp\call;
 
 final class ParallelDriver implements Driver
 {
-    /**
-     * @var \Amp\Parallel\Worker\Pool
-     */
+    /** @var Pool */
     private $pool;
 
     /**
-     * @param \Amp\Parallel\Worker\Pool|null $pool
+     * @param Pool|null $pool
      */
     public function __construct(Pool $pool = null)
     {
@@ -29,7 +27,7 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function open(string $path, string $mode): Promise
+    public function openFile(string $path, string $mode): Promise
     {
         return call(function () use ($path, $mode) {
             $worker = $this->pool->getWorker();
@@ -44,23 +42,12 @@ final class ParallelDriver implements Driver
         });
     }
 
-    private function runFileTask(Internal\FileTask $task): \Generator
-    {
-        try {
-            return yield $this->pool->enqueue($task);
-        } catch (TaskException $exception) {
-            throw new FilesystemException("The file operation failed", $exception);
-        } catch (WorkerException $exception) {
-            throw new FilesystemException("Could not send the file task to worker", $exception);
-        }
-    }
-
     /**
      * {@inheritdoc}
      */
-    public function unlink(string $path): Promise
+    public function deleteFile(string $path): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("unlink", [$path])));
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("deleteFile", [$path])));
         StatCache::clearOn($promise, $path);
         return $promise;
     }
@@ -68,14 +55,14 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function stat(string $path): Promise
+    public function getStatus(string $path): Promise
     {
         if ($stat = StatCache::get($path)) {
             return new Success($stat);
         }
 
         return call(function () use ($path) {
-            $stat = yield from $this->runFileTask(new Internal\FileTask("stat", [$path]));
+            $stat = yield from $this->runFileTask(new Internal\FileTask("getStatus", [$path]));
             if (!empty($stat)) {
                 StatCache::set($path, $stat);
             }
@@ -86,57 +73,57 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function rename(string $from, string $to): Promise
+    public function move(string $from, string $to): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("rename", [$from, $to])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("move", [$from, $to])));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function link(string $target, string $link): Promise
+    public function createHardlink(string $target, string $link): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("link", [$target, $link])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("createHardlink", [$target, $link])));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function symlink(string $target, string $link): Promise
+    public function createSymlink(string $target, string $link): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("symlink", [$target, $link])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("createSymlink", [$target, $link])));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function readlink(string $path): Promise
+    public function resolveSymlink(string $path): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("readlink", [$path])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("resolveSymlink", [$path])));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
+    public function createDirectory(string $path, int $mode = 0777, bool $recursive = false): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("mkdir", [$path, $mode, $recursive])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("createDirectory", [$path, $mode, $recursive])));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function scandir(string $path): Promise
+    public function listFiles(string $path): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("scandir", [$path])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("listFiles", [$path])));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rmdir(string $path): Promise
+    public function deleteDirectory(string $path): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("rmdir", [$path])));
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("deleteDirectory", [$path])));
         StatCache::clearOn($promise, $path);
         return $promise;
     }
@@ -144,9 +131,9 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chmod(string $path, int $mode): Promise
+    public function changePermissions(string $path, int $mode): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("chmod", [$path, $mode])));
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("changePermissions", [$path, $mode])));
         StatCache::clearOn($promise, $path);
         return $promise;
     }
@@ -154,9 +141,9 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function chown(string $path, ?int $uid, ?int $gid): Promise
+    public function changeOwner(string $path, ?int $uid, ?int $gid): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("chown", [$path, $uid, $gid])));
+        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("changeOwner", [$path, $uid, $gid])));
         StatCache::clearOn($promise, $path);
         return $promise;
     }
@@ -164,9 +151,9 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function lstat(string $path): Promise
+    public function getLinkStatus(string $path): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("lstat", [$path])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("getLinkStatus", [$path])));
     }
 
     /**
@@ -182,16 +169,27 @@ final class ParallelDriver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function get(string $path): Promise
+    public function read(string $path): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("get", [$path])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("read", [$path])));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function put(string $path, string $contents): Promise
+    public function write(string $path, string $contents): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("put", [$path, $contents])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("write", [$path, $contents])));
+    }
+
+    private function runFileTask(Internal\FileTask $task): \Generator
+    {
+        try {
+            return yield $this->pool->enqueue($task);
+        } catch (TaskException $exception) {
+            throw new FilesystemException("The file operation failed", $exception);
+        } catch (WorkerException $exception) {
+            throw new FilesystemException("Could not send the file task to worker", $exception);
+        }
     }
 }

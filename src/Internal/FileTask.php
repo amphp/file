@@ -128,22 +128,22 @@ final class FileTask implements Task
         StatCache::clear();
 
         switch ($this->operation) {
-            case "stat":
-            case "unlink":
-            case "rename":
-            case "link":
-            case "symlink":
-            case "readlink":
-            case "lstat":
+            case "getStatus":
+            case "deleteFile":
+            case "move":
+            case "createHardlink":
+            case "createSymlink":
+            case "resolveSymlink":
+            case "getLinkStatus":
             case "exists":
-            case "mkdir":
-            case "scandir":
-            case "rmdir":
-            case "chmod":
-            case "chown":
+            case "createDirectory":
+            case "listFiles":
+            case "deleteDirectory":
+            case "changePermissions":
+            case "changeOwner":
             case "touch":
-            case "get":
-            case "put":
+            case "read":
+            case "write":
                 return ([new BlockingDriver, $this->operation])(...$this->args);
 
             default:

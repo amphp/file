@@ -69,7 +69,7 @@ function createDefaultDriver(): Driver
  */
 function open(string $path, string $mode): Promise
 {
-    return filesystem()->open($path, $mode);
+    return filesystem()->openFile($path, $mode);
 }
 
 /**
@@ -84,7 +84,7 @@ function open(string $path, string $mode): Promise
  */
 function stat(string $path): Promise
 {
-    return filesystem()->stat($path);
+    return filesystem()->getStatus($path);
 }
 
 /**
@@ -307,7 +307,7 @@ function ctime(string $path): Promise
  */
 function lstat(string $path): Promise
 {
-    return filesystem()->lstat($path);
+    return filesystem()->getLinkStatus($path);
 }
 
 /**
@@ -321,7 +321,7 @@ function lstat(string $path): Promise
  */
 function symlink(string $original, string $link): Promise
 {
-    return filesystem()->symlink($original, $link);
+    return filesystem()->createSymlink($original, $link);
 }
 
 /**
@@ -335,7 +335,7 @@ function symlink(string $original, string $link): Promise
  */
 function link(string $original, string $link): Promise
 {
-    return filesystem()->link($original, $link);
+    return filesystem()->createHardlink($original, $link);
 }
 
 /**
@@ -348,7 +348,7 @@ function link(string $original, string $link): Promise
  */
 function readLink(string $path): Promise
 {
-    return filesystem()->readlink($path);
+    return filesystem()->resolveSymlink($path);
 }
 
 /**
@@ -362,7 +362,7 @@ function readLink(string $path): Promise
  */
 function rename(string $from, string $to): Promise
 {
-    return filesystem()->rename($from, $to);
+    return filesystem()->move($from, $to);
 }
 
 /**
@@ -375,7 +375,7 @@ function rename(string $from, string $to): Promise
  */
 function unlink(string $path): Promise
 {
-    return filesystem()->unlink($path);
+    return filesystem()->deleteFile($path);
 }
 
 /**
@@ -390,7 +390,7 @@ function unlink(string $path): Promise
  */
 function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
 {
-    return filesystem()->mkdir($path, $mode, $recursive);
+    return filesystem()->createDirectory($path, $mode, $recursive);
 }
 
 /**
@@ -403,7 +403,7 @@ function mkdir(string $path, int $mode = 0777, bool $recursive = false): Promise
  */
 function rmdir(string $path): Promise
 {
-    return filesystem()->rmdir($path);
+    return filesystem()->deleteDirectory($path);
 }
 
 /**
@@ -417,7 +417,7 @@ function rmdir(string $path): Promise
  */
 function scandir(string $path): Promise
 {
-    return filesystem()->scandir($path);
+    return filesystem()->listFiles($path);
 }
 
 /**
@@ -431,7 +431,7 @@ function scandir(string $path): Promise
  */
 function chmod(string $path, int $mode): Promise
 {
-    return filesystem()->chmod($path, $mode);
+    return filesystem()->changePermissions($path, $mode);
 }
 
 /**
@@ -446,7 +446,7 @@ function chmod(string $path, int $mode): Promise
  */
 function chown(string $path, ?int $uid, ?int $gid = null): Promise
 {
-    return filesystem()->chown($path, $uid, $gid);
+    return filesystem()->changeOwner($path, $uid, $gid);
 }
 
 /**
@@ -475,7 +475,7 @@ function touch(string $path, ?int $time = null, ?int $atime = null): Promise
  */
 function get(string $path): Promise
 {
-    return filesystem()->get($path);
+    return filesystem()->read($path);
 }
 
 /**
@@ -488,5 +488,5 @@ function get(string $path): Promise
  */
 function put(string $path, string $contents): Promise
 {
-    return filesystem()->put($path, $contents);
+    return filesystem()->write($path, $contents);
 }
