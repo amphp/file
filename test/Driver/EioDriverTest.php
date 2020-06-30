@@ -1,8 +1,10 @@
 <?php
 
-namespace Amp\File\Test;
+namespace Amp\File\Test\Driver;
 
 use Amp\File;
+use Amp\File\Driver\EioDriver;
+use Amp\File\Test\DriverTest;
 
 class EioDriverTest extends DriverTest
 {
@@ -12,6 +14,6 @@ class EioDriverTest extends DriverTest
             $this->markTestSkipped("eio extension not loaded");
         }
 
-        return new File\EioDriver;
+        return new EioDriver;
     }
 }
