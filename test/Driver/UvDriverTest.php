@@ -1,27 +1,14 @@
 <?php
 
-namespace Amp\File\Test;
+namespace Amp\File\Test\Driver;
 
 use Amp\File;
+use Amp\File\Driver\UvDriver;
+use Amp\File\Test\DriverTest;
 use Amp\Loop;
 
 class UvDriverTest extends DriverTest
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        if (!\extension_loaded("uv")) {
-            $this->markTestSkipped(
-                "php-uv extension not loaded"
-            );
-        }
-
-        $loop = new Loop\UvDriver;
-        Loop::set($loop);
-        File\filesystem(new File\UvDriver($loop));
-    }
-
     /**
      * @dataProvider symlinkPathProvider
      *
@@ -34,5 +21,18 @@ class UvDriverTest extends DriverTest
         }
 
         yield from parent::testResolveSymlinkError($linkResolver);
+    }
+
+    protected function createDriver(): File\Driver
+    {
+        if (!\extension_loaded("uv")) {
+            $this->markTestSkipped("php-uv extension not loaded");
+        }
+
+        $loop = new Loop\UvDriver;
+
+        Loop::set($loop);
+
+        return new UvDriver($loop);
     }
 }

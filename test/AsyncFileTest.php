@@ -11,13 +11,13 @@ abstract class AsyncFileTest extends FileTest
     {
         $this->expectException(PendingOperationError::class);
 
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        /** @var File\File $handle */
+        $handle = yield File\openFile(__FILE__, "r");
 
         $promise1 = $handle->read();
         $promise2 = $handle->read();
 
-        $expected = \substr(yield File\get(__FILE__), 0, 20);
+        $expected = \substr(yield File\read(__FILE__), 0, 20);
         $this->assertSame($expected, yield $promise1);
 
         yield $promise2;
@@ -27,13 +27,13 @@ abstract class AsyncFileTest extends FileTest
     {
         $this->expectException(PendingOperationError::class);
 
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        /** @var File\File $handle */
+        $handle = yield File\openFile(__FILE__, "r");
 
         $promise1 = $handle->read(10);
         $promise2 = $handle->seek(0);
 
-        $expected = \substr(yield File\get(__FILE__), 0, 10);
+        $expected = \substr(yield File\read(__FILE__), 0, 10);
         $this->assertSame($expected, yield $promise1);
 
         yield $promise2;
@@ -45,8 +45,8 @@ abstract class AsyncFileTest extends FileTest
 
         $path = Fixture::path() . "/temp";
 
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "c+");
+        /** @var File\File $handle */
+        $handle = yield File\openFile($path, "c+");
 
         $data = "test";
 
@@ -64,13 +64,13 @@ abstract class AsyncFileTest extends FileTest
 
         $path = Fixture::path() . "/temp";
 
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "c+");
+        /** @var File\File $handle */
+        $handle = yield File\openFile($path, "c+");
 
         $promise1 = $handle->read(10);
         $promise2 = $handle->write("test");
 
-        $expected = \substr(yield File\get(__FILE__), 0, 10);
+        $expected = \substr(yield File\read(__FILE__), 0, 10);
         $this->assertSame($expected, yield $promise1);
 
         yield $promise2; // Should throw.

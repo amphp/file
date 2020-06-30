@@ -9,10 +9,10 @@ final class Fixture
     public static function path(): string
     {
         if (empty(self::$fixtureId)) {
-            self::$fixtureId = \uniqid();
+            self::$fixtureId = \uniqid('amphp-test-', true);
         }
 
-        return \sys_get_temp_dir() . "/amphp_file_fixture/" . \strtr(__CLASS__, "\\", ".") . self::$fixtureId;
+        return \sys_get_temp_dir() . "/amphp_file_fixture/" . \str_replace("\\", ".", __CLASS__) . self::$fixtureId;
     }
 
     public static function init(): void

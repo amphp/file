@@ -2,8 +2,8 @@
 
 namespace Amp\File\Internal;
 
-use Amp\File\BlockingDriver;
-use Amp\File\BlockingFile;
+use Amp\File\Driver\BlockingDriver;
+use Amp\File\Driver\BlockingFile;
 use Amp\File\FilesystemException;
 use Amp\File\StatCache;
 use Amp\Parallel\Worker\Environment;
@@ -16,27 +16,30 @@ use Amp\Parallel\Worker\Task;
  */
 final class FileTask implements Task
 {
-    const ENV_PREFIX = "amp/file#";
+    private const ENV_PREFIX = "amphp/file#";
+
+    private static function makeId(int $id): string
+    {
+        return self::ENV_PREFIX . $id;
+    }
 
     /** @var string */
     private $operation;
-
     /** @var mixed[] */
     private $args;
-
     /**  @var string|null */
     private $id;
 
     /**
      * @param string $operation
-     * @param array $args
-     * @param int $id File ID.
+     * @param array  $args
+     * @param int    $id File ID.
      *
      * @throws \Error
      */
     public function __construct(string $operation, array $args = [], int $id = null)
     {
-        if (!\strlen($operation)) {
+        if ($operation === '') {
             throw new \Error('Operation must be a non-empty string');
         }
 
@@ -45,12 +48,6 @@ final class FileTask implements Task
         $this->id = $id;
     }
 
-    /**
-     * {@inheritdoc}
-     *
-     * @throws \Amp\File\FilesystemException
-     * @throws \Error
-     */
     public function run(Environment $environment)
     {
         if ('f' === $this->operation[0]) {
@@ -100,10 +97,13 @@ final class FileTask implements Task
             $id = self::makeId($this->id);
 
             if (!$environment->exists($id)) {
-                throw new FilesystemException(\sprintf("No file handle with the ID %d has been opened on the worker", $this->id));
+                throw new FilesystemException(\sprintf(
+                    "No file handle with the ID %d has been opened on the worker",
+                    $this->id
+                ));
             }
 
-            /** @var \Amp\File\BlockingFile $file */
+            /** @var BlockingFile $file */
             if (!($file = $environment->get($id)) instanceof BlockingFile) {
                 throw new FilesystemException("File storage found in inconsistent state");
             }
@@ -118,7 +118,7 @@ final class FileTask implements Task
                 case "fclose":
                     $environment->delete($id);
                     $file->close();
-                    return;
+                    return null;
 
                 default:
                     throw new \Error('Invalid operation');
@@ -137,6 +137,7 @@ final class FileTask implements Task
             case "getLinkStatus":
             case "exists":
             case "createDirectory":
+            case "createDirectories":
             case "listFiles":
             case "deleteDirectory":
             case "changePermissions":
@@ -149,15 +150,5 @@ final class FileTask implements Task
             default:
                 throw new \Error("Invalid operation");
         }
-    }
-
-    /**
-     * @param int $id
-     *
-     * @return string
-     */
-    private static function makeId(int $id): string
-    {
-        return self::ENV_PREFIX . $id;
     }
 }

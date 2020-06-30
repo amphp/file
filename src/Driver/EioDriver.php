@@ -1,8 +1,12 @@
 <?php
 
-namespace Amp\File;
+namespace Amp\File\Driver;
 
 use Amp\Deferred;
+use Amp\File\Driver;
+use Amp\File\FilesystemException;
+use Amp\File\Internal;
+use Amp\File\StatCache;
 use Amp\Promise;
 use Amp\Success;
 
@@ -15,7 +19,8 @@ final class EioDriver implements Driver
     {
         return \extension_loaded('eio');
     }
-    /** @var \Amp\File\Internal\EioPoll */
+
+    /** @var Internal\EioPoll */
     private $poll;
 
     public function __construct()
@@ -23,9 +28,6 @@ final class EioDriver implements Driver
         $this->poll = new Internal\EioPoll;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function openFile(string $path, string $mode): Promise
     {
         $flags = \EIO_O_NONBLOCK | $this->parseMode($mode);
@@ -44,9 +46,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getStatus(string $path): Promise
     {
         if ($stat = StatCache::get($path)) {
@@ -63,9 +62,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getLinkStatus(string $path): Promise
     {
         $deferred = new Deferred;
@@ -77,9 +73,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function createSymlink(string $target, string $link): Promise
     {
         $deferred = new Deferred;
@@ -91,9 +84,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function createHardlink(string $target, string $link): Promise
     {
         $deferred = new Deferred;
@@ -105,9 +95,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function resolveSymlink(string $path): Promise
     {
         $deferred = new Deferred;
@@ -119,9 +106,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function move(string $from, string $to): Promise
     {
         $deferred = new Deferred;
@@ -133,9 +117,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function deleteFile(string $path): Promise
     {
         $deferred = new Deferred;
@@ -152,60 +133,60 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function createDirectory(string $path, int $mode = 0777, bool $recursive = false): Promise
+    public function createDirectory(string $path, int $mode = 0777): Promise
+    {
+        $deferred = new Deferred;
+        $this->poll->listen($deferred->promise());
+
+        \eio_mkdir($path, $mode, \EIO_PRI_DEFAULT, [$this, "onGenericResult"], $deferred);
+
+        return $deferred->promise();
+    }
+
+    public function createDirectories(string $path, int $mode = 0777): Promise
     {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
         $priority = \EIO_PRI_DEFAULT;
 
-        if ($recursive) {
-            $path = \str_replace("/", DIRECTORY_SEPARATOR, $path);
-            $arrayPath = \explode(DIRECTORY_SEPARATOR, $path);
-            $tmpPath = "";
+        $path = \str_replace("/", DIRECTORY_SEPARATOR, $path);
+        $arrayPath = \explode(DIRECTORY_SEPARATOR, $path);
+        $tmpPath = "";
 
-            $callback = function () use (
-                &$callback,
-                &$arrayPath,
-                &$tmpPath,
-                $mode,
-                $priority,
-                $deferred
-            ): void {
-                $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
+        $callback = function () use (
+            &$callback,
+            &$arrayPath,
+            &$tmpPath,
+            $mode,
+            $priority,
+            $deferred
+        ): void {
+            $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
 
-                if (empty($arrayPath)) {
-                    \eio_mkdir($tmpPath, $mode, $priority, [$this, "onGenericResult"], $deferred);
-                } else {
-                    $this->isdir($tmpPath)->onResolve(function ($error, $result) use (
-                        $callback,
-                        $tmpPath,
-                        $mode,
-                        $priority
-                    ) {
-                        if ($result) {
-                            $callback();
-                        } else {
-                            \eio_mkdir($tmpPath, $mode, $priority, $callback);
-                        }
-                    });
-                }
-            };
+            if (empty($arrayPath)) {
+                \eio_mkdir($tmpPath, $mode, $priority, [$this, "onGenericResult"], $deferred);
+            } else {
+                $this->isdir($tmpPath)->onResolve(function ($error, $result) use (
+                    $callback,
+                    $tmpPath,
+                    $mode,
+                    $priority
+                ) {
+                    if ($result) {
+                        $callback();
+                    } else {
+                        \eio_mkdir($tmpPath, $mode, $priority, $callback);
+                    }
+                });
+            }
+        };
 
-            $callback();
-        } else {
-            \eio_mkdir($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
-        }
+        $callback();
 
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function deleteDirectory(string $path): Promise
     {
         $deferred = new Deferred;
@@ -218,9 +199,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function listFiles(string $path): Promise
     {
         $deferred = new Deferred;
@@ -233,9 +211,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function changePermissions(string $path, int $mode): Promise
     {
         $deferred = new Deferred;
@@ -248,9 +223,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function changeOwner(string $path, ?int $uid, ?int $gid): Promise
     {
         $deferred = new Deferred;
@@ -263,27 +235,21 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function touch(string $path, ?int $time, ?int $atime): Promise
+    public function touch(string $path, ?int $modificationTime, ?int $accessTime): Promise
     {
-        $time = $time ?? \time();
-        $atime = $atime ?? $time;
+        $modificationTime = $modificationTime ?? \time();
+        $accessTime = $accessTime ?? $modificationTime;
 
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
         $priority = \EIO_PRI_DEFAULT;
-        \eio_utime($path, $atime, $time, $priority, [$this, "onGenericResult"], $deferred);
+        \eio_utime($path, $accessTime, $modificationTime, $priority, [$this, "onGenericResult"], $deferred);
         StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function read(string $path): Promise
     {
         $flags = $flags = \EIO_O_RDONLY;
@@ -298,9 +264,6 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function write(string $path, string $contents): Promise
     {
         $flags = \EIO_O_RDWR | \EIO_O_CREAT;
@@ -341,9 +304,8 @@ final class EioDriver implements Driver
                 return \EIO_O_WRONLY | \EIO_O_CREAT;
             case 'c+':
                 return \EIO_O_RDWR | \EIO_O_CREAT;
-
             default:
-                throw new \Error('Invalid file mode');
+                throw new \Error('Invalid file mode: ' . $mode);
         }
     }
 

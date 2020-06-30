@@ -6,12 +6,16 @@ use Amp\ByteStream\ClosedException;
 use Amp\File;
 
 abstract class FileTest extends FilesystemTest
+
 {
+    /** @var File\Driver */
+    private $driver;
+
     public function testWrite(): \Generator
     {
         $path = Fixture::path() . "/write";
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "c+");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
 
         $handle->write("foo");
@@ -29,7 +33,7 @@ abstract class FileTest extends FilesystemTest
     {
         $path = Fixture::path() . "/write";
 
-        $handle = yield File\open($path, "c+");
+        $handle = yield $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
 
         yield $handle->write("");
@@ -41,8 +45,8 @@ abstract class FileTest extends FilesystemTest
     public function testWriteAfterClose(): \Generator
     {
         $path = Fixture::path() . "/write";
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "c+");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile($path, "c+");
         yield $handle->close();
 
         $this->expectException(ClosedException::class);
@@ -52,8 +56,8 @@ abstract class FileTest extends FilesystemTest
     public function testDoubleClose(): \Generator
     {
         $path = Fixture::path() . "/write";
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "c+");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile($path, "c+");
         yield $handle->close();
         $this->assertNull(yield $handle->close());
     }
@@ -61,8 +65,8 @@ abstract class FileTest extends FilesystemTest
     public function testWriteAfterEnd(): \Generator
     {
         $path = Fixture::path() . "/write";
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "c+");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
         yield $handle->end("foo");
 
@@ -73,8 +77,8 @@ abstract class FileTest extends FilesystemTest
     public function testWriteInAppendMode(): \Generator
     {
         $path = Fixture::path() . "/write";
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "a+");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile($path, "a+");
         $this->assertSame(0, $handle->tell());
         yield $handle->write("bar");
         yield $handle->write("foo");
@@ -87,12 +91,12 @@ abstract class FileTest extends FilesystemTest
 
     public function testReadingToEof(): \Generator
     {
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile(__FILE__, "r");
         $contents = "";
         $position = 0;
 
-        $stat = yield File\stat(__FILE__);
+        $stat = yield File\getStatus(__FILE__);
         $chunkSize = (int) \floor(($stat["size"] / 5));
 
         while (!$handle->eof()) {
@@ -103,21 +107,21 @@ abstract class FileTest extends FilesystemTest
         }
 
         $this->assertNull(yield $handle->read());
-        $this->assertSame(yield File\get(__FILE__), $contents);
+        $this->assertSame(yield File\read(__FILE__), $contents);
 
         yield $handle->close();
     }
 
     public function testSequentialReads(): \Generator
     {
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile(__FILE__, "r");
 
         $contents = "";
         $contents .= yield $handle->read(10);
         $contents .= yield $handle->read(10);
 
-        $expected = \substr(yield File\get(__FILE__), 0, 20);
+        $expected = \substr(yield File\read(__FILE__), 0, 20);
         $this->assertSame($expected, $contents);
 
         yield $handle->close();
@@ -125,14 +129,14 @@ abstract class FileTest extends FilesystemTest
 
     public function testReadingFromOffset(): \Generator
     {
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
         yield $handle->seek(10);
         $this->assertSame(10, $handle->tell());
         $chunk = yield $handle->read(90);
         $this->assertSame(100, $handle->tell());
-        $expected = \substr(yield File\get(__FILE__), 10, 90);
+        $expected = \substr(yield File\read(__FILE__), 10, 90);
         $this->assertSame($expected, $chunk);
 
         yield $handle->close();
@@ -143,8 +147,8 @@ abstract class FileTest extends FilesystemTest
         $this->expectException(\Error::class);
 
         try {
-            /** @var \Amp\File\File $handle */
-            $handle = yield File\open(__FILE__, "r");
+            /** @var File\File $handle */
+            $handle = yield $this->driver->openFile(__FILE__, "r");
             yield $handle->seek(0, 99999);
         } finally {
             yield $handle->close();
@@ -153,8 +157,8 @@ abstract class FileTest extends FilesystemTest
 
     public function testSeekSetCur(): \Generator
     {
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
         yield $handle->seek(10);
         $this->assertSame(10, $handle->tell());
@@ -165,9 +169,9 @@ abstract class FileTest extends FilesystemTest
 
     public function testSeekSetEnd(): \Generator
     {
-        $size = yield File\size(__FILE__);
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        $size = yield File\getSize(__FILE__);
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
         yield $handle->seek(-10, \SEEK_END);
         $this->assertSame($size - 10, $handle->tell());
@@ -176,24 +180,24 @@ abstract class FileTest extends FilesystemTest
 
     public function testPath(): \Generator
     {
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
-        $this->assertSame(__FILE__, $handle->path());
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $this->assertSame(__FILE__, $handle->getPath());
         yield $handle->close();
     }
 
     public function testMode(): \Generator
     {
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
-        $this->assertSame("r", $handle->mode());
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $this->assertSame("r", $handle->getMode());
         yield $handle->close();
     }
 
     public function testClose(): \Generator
     {
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open(__FILE__, "r");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile(__FILE__, "r");
         yield $handle->close();
 
         $this->expectException(ClosedException::class);
@@ -206,8 +210,8 @@ abstract class FileTest extends FilesystemTest
     public function testTruncateToSmallerSize(): \Generator
     {
         $path = Fixture::path() . "/write";
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "c+");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile($path, "c+");
 
         $handle->write("foo");
         yield $handle->write("bar");
@@ -232,8 +236,8 @@ abstract class FileTest extends FilesystemTest
     public function testTruncateToLargerSize(): \Generator
     {
         $path = Fixture::path() . "/write";
-        /** @var \Amp\File\File $handle */
-        $handle = yield File\open($path, "c+");
+        /** @var File\File $handle */
+        $handle = yield $this->driver->openFile($path, "c+");
 
         yield $handle->write("foo");
         yield $handle->truncate(6);
@@ -250,5 +254,14 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame("foo\0\0\0bar", $contents);
 
         yield $handle->close();
+    }
+
+    abstract protected function createDriver(): File\Driver;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->driver = $this->createDriver();
     }
 }

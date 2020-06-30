@@ -30,6 +30,8 @@ interface Driver
     /**
      * Same as {@see Driver::getStatus()} except if the path is a link then the link's data is returned.
      *
+     * If the requested path does not exist the resulting Promise will resolve to NULL.
+     *
      * @param string $path The file system path to stat.
      *
      * @return Promise<array|null> A promise resolving to an associative array upon successful resolution.
@@ -57,7 +59,7 @@ interface Driver
     public function createHardlink(string $target, string $link): Promise;
 
     /**
-     * Read the symlink at $path.
+     * Resolve the symlink at $path.
      *
      * @param string $target
      *
@@ -89,11 +91,20 @@ interface Driver
      *
      * @param string $path
      * @param int    $mode
-     * @param bool   $recursive
      *
      * @return Promise<void>
      */
-    public function createDirectory(string $path, int $mode = 0777, bool $recursive = false): Promise;
+    public function createDirectory(string $path, int $mode = 0777): Promise;
+
+    /**
+     * Create a directory recursively.
+     *
+     * @param string $path
+     * @param int    $mode
+     *
+     * @return Promise<void>
+     */
+    public function createDirectories(string $path, int $mode = 0777): Promise;
 
     /**
      * Delete a directory.
@@ -142,12 +153,13 @@ interface Driver
      * If the file does not exist it will be created automatically.
      *
      * @param string   $path
-     * @param int|null $time The touch time. If $time is not supplied, the current system time is used.
-     * @param int|null $atime The access time. If $atime is not supplied, value passed to the $time parameter is used.
+     * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
+     * @param int|null $accessTime The access time. If $atime is not supplied, value passed to the $time parameter is
+     *     used.
      *
      * @return Promise<void>
      */
-    public function touch(string $path, ?int $time, ?int $atime): Promise;
+    public function touch(string $path, ?int $modificationTime, ?int $accessTime): Promise;
 
     /**
      * Buffer the specified file's contents.

@@ -1,9 +1,13 @@
-<?php
+<?php /** @noinspection PhpComposerExtensionStubsInspection */
 
-namespace Amp\File;
+namespace Amp\File\Driver;
 
 use Amp\Coroutine;
 use Amp\Deferred;
+use Amp\File\Driver;
+use Amp\File\FilesystemException;
+use Amp\File\Internal;
+use Amp\File\StatCache;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
@@ -11,20 +15,8 @@ use Closure;
 
 final class UvDriver implements Driver
 {
-    /** @var Loop\UvDriver */
-    private $driver;
-
-    /** @var \UVLoop|resource Loop resource of type uv_loop or instance of \UVLoop. */
-    private $loop;
-
-    /** @var Internal\UvPoll */
-    private $poll;
-
-    /** @var bool True if ext-uv version is < 0.3.0. */
-    private $priorVersion;
-
     /**
-     * @param Loop\Driver The currently active loop driver.
+     * @param Loop\Driver $driver The currently active loop driver.
      *
      * @return bool Determines if this driver can be used based on the environment.
      */
@@ -33,21 +25,23 @@ final class UvDriver implements Driver
         return $driver instanceof Loop\UvDriver;
     }
 
-    /**
-     * @param Loop\UvDriver $driver
-     */
+    /** @var Loop\UvDriver */
+    private $driver;
+    /** @var \UVLoop|resource Loop resource of type uv_loop or instance of \UVLoop. */
+    private $loop;
+    /** @var Internal\UvPoll */
+    private $poll;
+    /** @var bool True if ext-uv version is < 0.3.0. */
+    private $priorVersion;
+
     public function __construct(Loop\UvDriver $driver)
     {
         $this->driver = $driver;
         $this->loop = $driver->getHandle();
         $this->poll = new Internal\UvPoll;
-
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function openFile(string $path, string $mode): Promise
     {
         $flags = $this->parseMode($mode);
@@ -62,76 +56,13 @@ final class UvDriver implements Driver
                 $this->onOpenHandle($fh, $openArr);
             } else {
                 [, $path, $deferred] = $openArr;
-                $deferred->fail(new FilesystemException(
-                    "Failed opening file handle to $path"
-                ));
+                $deferred->fail(new FilesystemException("Failed opening file '{$path}'"));
             }
         });
 
         return $deferred->promise();
     }
 
-    private function parseMode(string $mode): int
-    {
-        $mode = \str_replace(['b', 't', 'e'], '', $mode);
-
-        switch ($mode) {
-            case "r":  return \UV::O_RDONLY;
-            case "r+": return \UV::O_RDWR;
-            case "w":  return \UV::O_WRONLY | \UV::O_CREAT;
-            case "w+": return \UV::O_RDWR | \UV::O_CREAT;
-            case "a":  return \UV::O_WRONLY | \UV::O_CREAT | \UV::O_APPEND;
-            case "a+": return \UV::O_RDWR | \UV::O_CREAT | \UV::O_APPEND;
-            case "x":  return \UV::O_WRONLY | \UV::O_CREAT | \UV::O_EXCL;
-            case "x+": return \UV::O_RDWR | \UV::O_CREAT | \UV::O_EXCL;
-            case "c":  return \UV::O_WRONLY | \UV::O_CREAT;
-            case "c+": return \UV::O_RDWR | \UV::O_CREAT;
-
-            default:
-                throw new \Error('Invalid file mode');
-        }
-    }
-
-    private function onOpenHandle($fh, array $openArr): void
-    {
-        [$mode] = $openArr;
-
-        if ($mode[0] === "w") {
-            \uv_fs_ftruncate($this->loop, $fh, $length = 0, function ($fh) use ($openArr): void {
-                if (\is_resource($fh)) {
-                    $this->finalizeHandle($fh, $size = 0, $openArr);
-                } else {
-                    [, $path, $deferred] = $openArr;
-                    $deferred->fail(new FilesystemException(
-                        "Failed truncating file $path"
-                    ));
-                }
-            });
-        } else {
-            \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($openArr): void {
-                if (\is_resource($fh)) {
-                    StatCache::set($openArr[1], $stat);
-                    $this->finalizeHandle($fh, $stat["size"], $openArr);
-                } else {
-                    [, $path, $deferred] = $openArr;
-                    $deferred->fail(new FilesystemException(
-                        "Failed reading file size from open handle pointing to $path"
-                    ));
-                }
-            });
-        }
-    }
-
-    private function finalizeHandle($fh, $size, array $openArr): void
-    {
-        [$mode, $path, $deferred] = $openArr;
-        $handle = new UvFile($this->driver, $this->poll, $fh, $path, $mode, $size);
-        $deferred->resolve($handle);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getStatus(string $path): Promise
     {
         if ($stat = StatCache::get($path)) {
@@ -175,9 +106,6 @@ final class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getLinkStatus(string $path): Promise
     {
         $deferred = new Deferred;
@@ -198,22 +126,17 @@ final class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function createSymlink(string $target, string $link): Promise
     {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, $this->createGenericCallback($deferred, "Could not create symbolic link"));
+        $callback = $this->createGenericCallback($deferred, "Could not create symbolic link");
+        \uv_fs_symlink($this->loop, $target, $link, \UV::S_IRWXU | \UV::S_IRUSR, $callback);
 
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function createHardlink(string $target, string $link): Promise
     {
         $deferred = new Deferred;
@@ -224,9 +147,6 @@ final class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function resolveSymlink(string $path): Promise
     {
         $deferred = new Deferred;
@@ -257,9 +177,6 @@ final class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function move(string $from, string $to): Promise
     {
         $deferred = new Deferred;
@@ -271,9 +188,6 @@ final class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function deleteFile(string $path): Promise
     {
         $deferred = new Deferred;
@@ -285,65 +199,57 @@ final class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function createDirectory(string $path, int $mode = 0777, bool $recursive = false): Promise
+    public function createDirectory(string $path, int $mode = 0777): Promise
     {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        if ($recursive) {
-            $path = \str_replace("/", DIRECTORY_SEPARATOR, $path);
-            $arrayPath = \explode(DIRECTORY_SEPARATOR, $path);
-            $tmpPath = "";
-
-            $callback = function () use (
-                &$callback, &$arrayPath, &$tmpPath, $mode, $deferred
-            ) {
-                $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
-
-                if (empty($arrayPath)) {
-                    \uv_fs_mkdir($this->loop, $tmpPath, $mode, $this->createGenericCallback($deferred, "Could not create directory"));
-                } else {
-                    $this->isDir($tmpPath)->onResolve(function ($error, $result) use (
-                        $callback, $tmpPath, $mode
-                    ): void {
-                        if ($result) {
-                            $callback();
-                        } else {
-                            \uv_fs_mkdir($this->loop, $tmpPath, $mode, $callback);
-                        }
-                    });
-                }
-            };
-
-            $callback();
-        } else {
-            \uv_fs_mkdir($this->loop, $path, $mode, $this->createGenericCallback($deferred, "Could not create directory"));
-        }
+        \uv_fs_mkdir($this->loop, $path, $mode, $this->createGenericCallback($deferred, "Could not create directory"));
 
         return $deferred->promise();
     }
 
-    private function isDir(string $path): Promise
+    public function createDirectories(string $path, int $mode = 0777): Promise
     {
         $deferred = new Deferred;
+        $this->poll->listen($deferred->promise());
 
-        $this->getStatus($path)->onResolve(static function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve(($result["mode"] & \UV::S_IFDIR) === \UV::S_IFDIR);
+        $path = \str_replace("/", DIRECTORY_SEPARATOR, $path);
+        $arrayPath = \explode(DIRECTORY_SEPARATOR, $path);
+        $tmpPath = "";
+
+        $callback = function () use (
+            &$callback,
+            &$arrayPath,
+            &$tmpPath,
+            $mode,
+            $deferred
+        ) {
+            $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
+
+            if (empty($arrayPath)) {
+                \uv_fs_mkdir($this->loop, $tmpPath, $mode,
+                    $this->createGenericCallback($deferred, "Could not create directory"));
             } else {
-                $deferred->resolve(false);
+                $this->isDir($tmpPath)->onResolve(function ($error, $result) use (
+                    $callback,
+                    $tmpPath,
+                    $mode
+                ): void {
+                    if ($result) {
+                        $callback();
+                    } else {
+                        \uv_fs_mkdir($this->loop, $tmpPath, $mode, $callback);
+                    }
+                });
             }
-        });
+        };
+
+        $callback();
 
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function deleteDirectory(string $path): Promise
     {
         $deferred = new Deferred;
@@ -355,9 +261,6 @@ final class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function listFiles(string $path): Promise
     {
         $deferred = new Deferred;
@@ -374,6 +277,7 @@ final class UvDriver implements Driver
                 }
             });
         } else {
+            /** @noinspection PhpUndefinedFunctionInspection */
             \uv_fs_scandir($this->loop, $path, static function ($data) use ($deferred, $path): void {
                 if (\is_int($data) && $data !== 0) {
                     $deferred->fail(new FilesystemException("Failed reading contents from {$path}"));
@@ -388,61 +292,140 @@ final class UvDriver implements Driver
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function changePermissions(string $path, int $mode): Promise
     {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_chmod($this->loop, $path, $mode, $this->createGenericCallback($deferred, "Could not change file permissions"));
+        $callback = $this->createGenericCallback($deferred, "Could not change file permissions");
+        \uv_fs_chmod($this->loop, $path, $mode, $callback);
         StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function changeOwner(string $path, ?int $uid, ?int $gid): Promise
     {
         // @TODO Return a failure in windows environments
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_chown($this->loop, $path, $uid ?? -1, $gid ?? -1, $this->createGenericCallback($deferred, "Could not change file owner"));
+        $callback = $this->createGenericCallback($deferred, "Could not change file owner");
+        \uv_fs_chown($this->loop, $path, $uid ?? -1, $gid ?? -1, $callback);
         StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function touch(string $path, ?int $time, ?int $atime): Promise
+    public function touch(string $path, ?int $modificationTime, ?int $accessTime): Promise
     {
-        $time = $time ?? \time();
-        $atime = $atime ?? $time;
+        $modificationTime = $modificationTime ?? \time();
+        $accessTime = $accessTime ?? $modificationTime;
 
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
-        \uv_fs_utime($this->loop, $path, $time, $atime, $this->createGenericCallback($deferred, "Could not touch file"));
+        $callback = $this->createGenericCallback($deferred, "Could not touch file");
+        \uv_fs_utime($this->loop, $path, $modificationTime, $accessTime, $callback);
         StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function read(string $path): Promise
     {
         $promise = new Coroutine($this->doRead($path));
         $this->poll->listen($promise);
 
         return $promise;
+    }
+
+    public function write(string $path, string $contents): Promise
+    {
+        $promise = new Coroutine($this->doWrite($path, $contents));
+        $this->poll->listen($promise);
+
+        return $promise;
+    }
+
+    private function parseMode(string $mode): int
+    {
+        $mode = \str_replace(['b', 't', 'e'], '', $mode);
+
+        switch ($mode) {
+            case "r":
+                return \UV::O_RDONLY;
+            case "r+":
+                return \UV::O_RDWR;
+            case "c":
+            case "w":
+                return \UV::O_WRONLY | \UV::O_CREAT;
+            case "c+":
+            case "w+":
+                return \UV::O_RDWR | \UV::O_CREAT;
+            case "a":
+                return \UV::O_WRONLY | \UV::O_CREAT | \UV::O_APPEND;
+            case "a+":
+                return \UV::O_RDWR | \UV::O_CREAT | \UV::O_APPEND;
+            case "x":
+                return \UV::O_WRONLY | \UV::O_CREAT | \UV::O_EXCL;
+            case "x+":
+                return \UV::O_RDWR | \UV::O_CREAT | \UV::O_EXCL;
+            default:
+                throw new \Error('Invalid file mode');
+        }
+    }
+
+    private function onOpenHandle($fh, array $openArr): void
+    {
+        [$mode] = $openArr;
+
+        if ($mode[0] === "w") {
+            \uv_fs_ftruncate($this->loop, $fh, $length = 0, function ($fh) use ($openArr): void {
+                if (\is_resource($fh)) {
+                    $this->finalizeHandle($fh, $size = 0, $openArr);
+                } else {
+                    [, $path, $deferred] = $openArr;
+                    $deferred->fail(new FilesystemException(
+                        "Failed truncating file $path"
+                    ));
+                }
+            });
+        } else {
+            \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($openArr): void {
+                if (\is_resource($fh)) {
+                    StatCache::set($openArr[1], $stat);
+                    $this->finalizeHandle($fh, $stat["size"], $openArr);
+                } else {
+                    [, $path, $deferred] = $openArr;
+                    $deferred->fail(new FilesystemException(
+                        "Failed reading file size from open handle pointing to $path"
+                    ));
+                }
+            });
+        }
+    }
+
+    private function finalizeHandle($fh, $size, array $openArr): void
+    {
+        [$mode, $path, $deferred] = $openArr;
+        $handle = new UvFile($this->driver, $this->poll, $fh, $path, $mode, $size);
+        $deferred->resolve($handle);
+    }
+
+    private function isDir(string $path): Promise
+    {
+        $deferred = new Deferred;
+
+        $this->getStatus($path)->onResolve(static function ($error, $result) use ($deferred): void {
+            if ($result) {
+                $deferred->resolve(($result["mode"] & \UV::S_IFDIR) === \UV::S_IFDIR);
+            } else {
+                $deferred->resolve(false);
+            }
+        });
+
+        return $deferred->promise();
     }
 
     private function doRead($path): \Generator
@@ -483,7 +466,7 @@ final class UvDriver implements Driver
     {
         $deferred = new Deferred;
 
-        \uv_fs_open($this->loop, $path, $flags, $mode, static function ($fh) use ($deferred, $path) {
+        \uv_fs_open($this->loop, $path, $flags, $mode, static function ($fh) use ($deferred) {
             $deferred->resolve($fh);
         });
 
@@ -512,29 +495,18 @@ final class UvDriver implements Driver
         $deferred = new Deferred;
 
         if ($this->priorVersion) {
-            $callback = static function ($fh, $nread, $buffer) use ($deferred): void {
-                $deferred->resolve($nread < 0 ? false : $buffer);
+            $callback = static function ($fh, $readBytes, $buffer) use ($deferred): void {
+                $deferred->resolve($readBytes < 0 ? false : $buffer);
             };
         } else {
-            $callback = static function ($nread, $buffer) use ($deferred): void {
-                $deferred->resolve($nread < 0 ? false : $buffer);
+            $callback = static function ($readBytes, $buffer) use ($deferred): void {
+                $deferred->resolve($readBytes < 0 ? false : $buffer);
             };
         }
 
         \uv_fs_read($this->loop, $fh, $offset, $len, $callback);
 
         return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function write(string $path, string $contents): Promise
-    {
-        $promise = new Coroutine($this->doWrite($path, $contents));
-        $this->poll->listen($promise);
-
-        return $promise;
     }
 
     private function doWrite(string $path, string $contents): \Generator

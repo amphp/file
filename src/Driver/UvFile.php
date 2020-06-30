@@ -1,10 +1,15 @@
-<?php
+<?php /** @noinspection PhpComposerExtensionStubsInspection */
 
-namespace Amp\File;
+namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Deferred;
+use Amp\Failure;
+use Amp\File\File;
+use Amp\File\Internal;
+use Amp\File\PendingOperationError;
+use Amp\File\StatCache;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
@@ -50,14 +55,20 @@ final class UvFile implements File
 
     /**
      * @param \Amp\Loop\UvDriver $driver
-     * @param Internal\UvPoll $poll Poll for keeping the loop active.
-     * @param resource $fh File handle.
-     * @param string $path
-     * @param string $mode
-     * @param int $size
+     * @param Internal\UvPoll    $poll Poll for keeping the loop active.
+     * @param resource           $fh File handle.
+     * @param string             $path
+     * @param string             $mode
+     * @param int                $size
      */
-    public function __construct(Loop\UvDriver $driver, Internal\UvPoll $poll, $fh, string $path, string $mode, int $size)
-    {
+    public function __construct(
+        Loop\UvDriver $driver,
+        Internal\UvPoll $poll,
+        $fh,
+        string $path,
+        string $mode,
+        int $size
+    ) {
         $this->poll = $poll;
         $this->fh = $fh;
         $this->path = $path;
@@ -96,12 +107,12 @@ final class UvFile implements File
             }
 
             $length = \strlen($buffer);
-            $this->position = $this->position + $length;
+            $this->position += $length;
             $deferred->resolve($length ? $buffer : null);
         };
 
         if ($this->priorVersion) {
-            $onRead = function ($fh, $result, $buffer) use ($onRead): void {
+            $onRead = static function ($fh, $result, $buffer) use ($onRead): void {
                 if ($result < 0) {
                     $buffer = $result; // php-uv v0.3.0 changed the callback to put an int in $buffer on error.
                 }
@@ -115,9 +126,6 @@ final class UvFile implements File
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function write(string $data): Promise
     {
         if ($this->isActive && $this->queue->isEmpty()) {
@@ -125,7 +133,7 @@ final class UvFile implements File
         }
 
         if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
+            return new Failure(new ClosedException("The file is no longer writable"));
         }
 
         $this->isActive = true;
@@ -145,9 +153,6 @@ final class UvFile implements File
         return $promise;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function end(string $data = ""): Promise
     {
         return call(function () use ($data) {
@@ -159,6 +164,94 @@ final class UvFile implements File
 
             return $promise;
         });
+    }
+
+    public function truncate(int $size): Promise
+    {
+        if ($this->isActive && $this->queue->isEmpty()) {
+            throw new PendingOperationError;
+        }
+
+        if (!$this->writable) {
+            return new Failure(new ClosedException("The file is no longer writable"));
+        }
+
+        $this->isActive = true;
+
+        if ($this->queue->isEmpty()) {
+            $promise = $this->trim($size);
+        } else {
+            $promise = $this->queue->top();
+            $promise = call(function () use ($promise, $size) {
+                yield $promise;
+                return yield $this->trim($size);
+            });
+        }
+
+        $this->queue->push($promise);
+
+        return $promise;
+    }
+
+    public function seek(int $offset, int $whence = \SEEK_SET): Promise
+    {
+        if ($this->isActive) {
+            throw new PendingOperationError;
+        }
+
+        $offset = (int) $offset;
+        switch ($whence) {
+            case self::SEEK_SET:
+                $this->position = $offset;
+                break;
+            case self::SEEK_CUR:
+                $this->position += $offset;
+                break;
+            case self::SEEK_END:
+                $this->position = $this->size + $offset;
+                break;
+            default:
+                throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected");
+        }
+
+        return new Success($this->position);
+    }
+
+    public function tell(): int
+    {
+        return $this->position;
+    }
+
+    public function eof(): bool
+    {
+        return !$this->queue->isEmpty() ? false : ($this->size <= $this->position);
+    }
+
+    public function getPath(): string
+    {
+        return $this->path;
+    }
+
+    public function getMode(): string
+    {
+        return $this->mode;
+    }
+
+    public function close(): Promise
+    {
+        if ($this->closing) {
+            return $this->closing;
+        }
+
+        $deferred = new Deferred;
+        $this->poll->listen($this->closing = $deferred->promise());
+
+        \uv_fs_close($this->loop, $this->fh, static function () use ($deferred): void {
+            // Ignore errors when closing file, as the handle will become invalid anyway.
+            $deferred->resolve();
+        });
+
+        return $deferred->promise();
     }
 
     private function push(string $data): Promise
@@ -204,33 +297,6 @@ final class UvFile implements File
         return $deferred->promise();
     }
 
-    public function truncate(int $size): Promise
-    {
-        if ($this->isActive && $this->queue->isEmpty()) {
-            throw new PendingOperationError;
-        }
-
-        if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
-        }
-
-        $this->isActive = true;
-
-        if ($this->queue->isEmpty()) {
-            $promise = $this->trim($size);
-        } else {
-            $promise = $this->queue->top();
-            $promise = call(function () use ($promise, $size) {
-                yield $promise;
-                return yield $this->trim($size);
-            });
-        }
-
-        $this->queue->push($promise);
-
-        return $promise;
-    }
-
     private function trim(int $size): Promise
     {
         $deferred = new Deferred;
@@ -257,87 +323,6 @@ final class UvFile implements File
             $size,
             $onTruncate
         );
-
-        return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function seek(int $offset, int $whence = \SEEK_SET): Promise
-    {
-        if ($this->isActive) {
-            throw new PendingOperationError;
-        }
-
-        $offset = (int) $offset;
-        switch ($whence) {
-            case \SEEK_SET:
-                $this->position = $offset;
-                break;
-            case \SEEK_CUR:
-                $this->position = $this->position + $offset;
-                break;
-            case \SEEK_END:
-                $this->position = $this->size + $offset;
-                break;
-            default:
-                throw new \Error(
-                    "Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"
-                );
-        }
-
-        return new Success($this->position);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function tell(): int
-    {
-        return $this->position;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function eof(): bool
-    {
-        return !$this->queue->isEmpty() ? false : ($this->size <= $this->position);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function path(): string
-    {
-        return $this->path;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function mode(): string
-    {
-        return $this->mode;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close(): Promise
-    {
-        if ($this->closing) {
-            return $this->closing;
-        }
-
-        $deferred = new Deferred;
-        $this->poll->listen($this->closing = $deferred->promise());
-
-        \uv_fs_close($this->loop, $this->fh, function () use ($deferred): void {
-            // Ignore errors when closing file, as the handle will become invalid anyway.
-            $deferred->resolve();
-        });
 
         return $deferred->promise();
     }
