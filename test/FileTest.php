@@ -6,7 +6,6 @@ use Amp\ByteStream\ClosedException;
 use Amp\File;
 
 abstract class FileTest extends FilesystemTest
-
 {
     /** @var File\Driver */
     private $driver;

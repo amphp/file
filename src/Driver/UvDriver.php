@@ -38,7 +38,7 @@ final class UvDriver implements Driver
     {
         $this->driver = $driver;
         $this->loop = $driver->getHandle();
-        $this->poll = new Internal\UvPoll;
+        $this->poll = new Internal\UvPoll($driver);
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
     }
 
@@ -228,8 +228,12 @@ final class UvDriver implements Driver
             $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
 
             if (empty($arrayPath)) {
-                \uv_fs_mkdir($this->loop, $tmpPath, $mode,
-                    $this->createGenericCallback($deferred, "Could not create directory"));
+                \uv_fs_mkdir(
+                    $this->loop,
+                    $tmpPath,
+                    $mode,
+                    $this->createGenericCallback($deferred, "Could not create directory")
+                );
             } else {
                 $this->isDir($tmpPath)->onResolve(function ($error, $result) use (
                     $callback,
