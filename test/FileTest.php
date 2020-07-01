@@ -95,7 +95,7 @@ abstract class FileTest extends FilesystemTest
         $contents = "";
         $position = 0;
 
-        $stat = yield File\getStatus(__FILE__);
+        $stat = yield $this->driver->getStatus(__FILE__);
         $chunkSize = (int) \floor(($stat["size"] / 5));
 
         while (!$handle->eof()) {
@@ -106,7 +106,7 @@ abstract class FileTest extends FilesystemTest
         }
 
         $this->assertNull(yield $handle->read());
-        $this->assertSame(yield File\read(__FILE__), $contents);
+        $this->assertSame(yield $this->driver->read(__FILE__), $contents);
 
         yield $handle->close();
     }
@@ -120,7 +120,7 @@ abstract class FileTest extends FilesystemTest
         $contents .= yield $handle->read(10);
         $contents .= yield $handle->read(10);
 
-        $expected = \substr(yield File\read(__FILE__), 0, 20);
+        $expected = \substr(yield $this->driver->read(__FILE__), 0, 20);
         $this->assertSame($expected, $contents);
 
         yield $handle->close();
@@ -135,7 +135,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame(10, $handle->tell());
         $chunk = yield $handle->read(90);
         $this->assertSame(100, $handle->tell());
-        $expected = \substr(yield File\read(__FILE__), 10, 90);
+        $expected = \substr(yield $this->driver->read(__FILE__), 10, 90);
         $this->assertSame($expected, $chunk);
 
         yield $handle->close();
@@ -168,7 +168,7 @@ abstract class FileTest extends FilesystemTest
 
     public function testSeekSetEnd(): \Generator
     {
-        $size = yield File\getSize(__FILE__);
+        $size = \filesize(__FILE__);
         /** @var File\File $handle */
         $handle = yield $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
