@@ -7,6 +7,7 @@ use Amp\File\Driver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
 use Amp\File\StatCache;
+use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
 
@@ -23,9 +24,9 @@ final class EioDriver implements Driver
     /** @var Internal\EioPoll */
     private $poll;
 
-    public function __construct()
+    public function __construct(Loop\Driver $driver)
     {
-        $this->poll = new Internal\EioPoll;
+        $this->poll = new Internal\EioPoll($driver);
     }
 
     public function openFile(string $path, string $mode): Promise

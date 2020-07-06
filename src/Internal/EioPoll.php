@@ -17,32 +17,39 @@ final class EioPoll
     /** @var int */
     private $requests = 0;
 
-    public function __construct()
+    /** @var Loop\Driver */
+    private $driver;
+
+    public function __construct(Loop\Driver $driver)
     {
+        $this->driver = $driver;
+
         if (!self::$stream) {
             \eio_init();
             self::$stream = \eio_get_event_stream();
         }
 
-        $this->watcher = Loop::onReadable(self::$stream, static function (): void {
+        $this->watcher = $this->driver->onReadable(self::$stream, static function (): void {
             while (\eio_npending()) {
                 \eio_poll();
             }
         });
 
-        Loop::disable($this->watcher);
+        $this->driver->disable($this->watcher);
 
-        Loop::setState(self::class, new class($this->watcher) {
+        $this->driver->setState(self::class, new class($this->watcher, $driver) {
             private $watcher;
+            private $driver;
 
-            public function __construct(string $watcher)
+            public function __construct(string $watcher, Loop\Driver $driver)
             {
                 $this->watcher = $watcher;
+                $this->driver = $driver;
             }
 
             public function __destruct()
             {
-                Loop::cancel($this->watcher);
+                $this->driver->cancel($this->watcher);
 
                 // Ensure there are no active operations anymore. This is a safe-guard as some operations might not be
                 // finished on loop exit due to not being yielded. This also ensures a clean shutdown for these if PHP
@@ -55,7 +62,7 @@ final class EioPoll
     public function listen(Promise $promise): void
     {
         if ($this->requests++ === 0) {
-            Loop::enable($this->watcher);
+            $this->driver->enable($this->watcher);
         }
 
         $promise->onResolve(\Closure::fromCallable([$this, 'done']));
@@ -64,7 +71,7 @@ final class EioPoll
     private function done(): void
     {
         if (--$this->requests === 0) {
-            Loop::disable($this->watcher);
+            $this->driver->disable($this->watcher);
         }
 
         \assert($this->requests >= 0);

@@ -55,7 +55,7 @@ function createDefaultDriver(): Driver
     }
 
     if (EioDriver::isSupported()) {
-        return new EioDriver;
+        return new EioDriver($driver);
     }
 
     if (\defined("AMP_WORKER")) { // Prevent spawning infinite workers.
