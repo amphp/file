@@ -5,6 +5,7 @@ namespace Amp\File\Test\Driver;
 use Amp\File;
 use Amp\File\Driver\EioDriver;
 use Amp\File\Test\DriverTest;
+use Amp\Loop;
 
 class EioDriverTest extends DriverTest
 {
@@ -14,6 +15,6 @@ class EioDriverTest extends DriverTest
             $this->markTestSkipped("eio extension not loaded");
         }
 
-        return new EioDriver;
+        return new EioDriver(Loop::get());
     }
 }
