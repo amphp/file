@@ -10,8 +10,7 @@ use Amp\Parallel\Worker\Pool;
 
 class ParallelDriverTest extends DriverTest
 {
-    /** @var Pool */
-    private $pool;
+    private Pool $pool;
 
     protected function createDriver(): File\Driver
     {

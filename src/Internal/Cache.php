@@ -8,19 +8,18 @@ use Amp\Struct;
 /** @internal */
 final class Cache
 {
-    /** @var object */
-    private $sharedState;
-    /** @var string */
-    private $ttlWatcherId;
-    /** @var int|null */
-    private $maxSize;
+    private object $sharedState;
+
+    private string $ttlWatcherId;
+
+    private ?int $maxSize;
 
     /**
      * @param int      $gcInterval The frequency in milliseconds at which expired cache entries should be garbage
      *     collected.
      * @param int|null $maxSize The maximum size of cache array (number of elements).
      */
-    public function __construct(int $gcInterval = 1000, int $maxSize = null)
+    public function __construct(int $gcInterval = 1000, ?int $maxSize = null)
     {
         // By using a shared state object we're able to use `__destruct()` for "normal" garbage collection of both this
         // instance and the loop's watcher. Otherwise this object could only be GC'd when the TTL watcher was cancelled
@@ -28,12 +27,12 @@ final class Cache
         $this->sharedState = $sharedState = new class {
             use Struct;
 
-            /** @var string[] */
-            public $cache = [];
+            /** @var array[] */
+            public array $cache = [];
             /** @var int[] */
-            public $cacheTimeouts = [];
+            public array $cacheTimeouts = [];
             /** @var bool */
-            public $isSortNeeded = false;
+            public bool $isSortNeeded = false;
 
             public function collectGarbage(): void
             {
@@ -71,7 +70,7 @@ final class Cache
         Loop::cancel($this->ttlWatcherId);
     }
 
-    public function get(string $key)
+    public function get(string $key): ?array
     {
         if (!isset($this->sharedState->cache[$key])) {
             return null;
@@ -89,7 +88,7 @@ final class Cache
         return $this->sharedState->cache[$key];
     }
 
-    public function set(string $key, $value, int $ttl = null): void
+    public function set(string $key, array $value, ?int $ttl = null): void
     {
         if ($ttl === null) {
             unset($this->sharedState->cacheTimeouts[$key]);

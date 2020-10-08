@@ -4,7 +4,7 @@ namespace Amp\File\Test;
 
 final class Fixture
 {
-    private static $fixtureId;
+    private static string $fixtureId;
 
     public static function path(): string
     {

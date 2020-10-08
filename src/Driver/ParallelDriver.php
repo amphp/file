@@ -2,133 +2,198 @@
 
 namespace Amp\File\Driver;
 
-use Amp\Coroutine;
 use Amp\File\Driver;
+use Amp\File\File;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
-use Amp\Parallel\Worker;
 use Amp\Parallel\Worker\Pool;
-use Amp\Parallel\Worker\TaskException;
+use Amp\Parallel\Worker\Worker;
+use Amp\Parallel\Worker\TaskFailureThrowable;
 use Amp\Parallel\Worker\WorkerException;
 use Amp\Promise;
-use function Amp\call;
+use Amp\Success;
+use function Amp\async;
+use function Amp\await;
+use function Amp\Parallel\Worker\pool;
 
 final class ParallelDriver implements Driver
 {
-    /** @var Pool */
-    private $pool;
+    public const DEFAULT_WORKER_LIMIT = 8;
+
+    private Pool $pool;
+
+    /** @var int Maximum number of workers to use for open files. */
+    private int $workerLimit;
+
+    /** @var \SplObjectStorage Worker storage. */
+    private \SplObjectStorage $workerStorage;
+
+    /** @var Promise Pending worker request promise. */
+    private Promise $pendingWorker;
 
     /**
      * @param Pool|null $pool
+     * @param int       $workerLimit Maximum number of workers to use from the pool for open files.
      */
-    public function __construct(Pool $pool = null)
+    public function __construct(Pool $pool = null, int $workerLimit = self::DEFAULT_WORKER_LIMIT)
     {
-        $this->pool = $pool ?: Worker\pool();
+        $this->pool = $pool ?? pool();
+        $this->workerLimit = $workerLimit;
+        $this->workerStorage = new \SplObjectStorage;
+        $this->pendingWorker = new Success;
     }
 
-    public function openFile(string $path, string $mode): Promise
+    public function openFile(string $path, string $mode): File
     {
-        return call(function () use ($path, $mode) {
-            $worker = $this->pool->getWorker();
-            try {
-                [$id, $size, $mode] = yield $worker->enqueue(new Internal\FileTask("fopen", [$path, $mode]));
-            } catch (TaskException $exception) {
-                throw new FilesystemException("Could not open file", $exception);
-            } catch (WorkerException $exception) {
-                throw new FilesystemException("Could not send open request to worker", $exception);
+        $worker = $this->selectWorker();
+
+        $workerStorage = $this->workerStorage;
+        $worker = new Internal\FileWorker($worker, static function (Worker $worker) use ($workerStorage): void {
+            \assert($workerStorage->contains($worker));
+            if (($workerStorage[$worker] -=1) === 0 || !$worker->isRunning()) {
+                $workerStorage->detach($worker);
             }
-            return new ParallelFile($worker, $id, $path, $size, $mode);
         });
+
+        try {
+            [$id, $size, $mode] = $worker->enqueue(new Internal\FileTask("fopen", [$path, $mode]));
+        } catch (TaskFailureThrowable $exception) {
+            throw new FilesystemException("Could not open file", $exception);
+        } catch (WorkerException $exception) {
+            throw new FilesystemException("Could not send open request to worker", $exception);
+        }
+
+        return new ParallelFile($worker, $id, $path, $size, $mode);
     }
 
-    public function deleteFile(string $path): Promise
+    private function selectWorker(): Worker
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("deleteFile", [$path])));
+        await($this->pendingWorker); // Wait for any currently pending request for a worker.
+
+        if ($this->workerStorage->count() < $this->workerLimit) {
+            $this->pendingWorker = async(fn() => $this->pool->getWorker());
+            $worker = await($this->pendingWorker);
+
+            if ($this->workerStorage->contains($worker)) {
+                // amphp/parallel v1.x may return an already used worker from the pool.
+                $this->workerStorage[$worker] += 1;
+            } else {
+                // amphp/parallel v2.x should always return an unused worker.
+                $this->workerStorage->attach($worker, 1);
+            }
+
+            return $worker;
+        }
+
+        $max = \PHP_INT_MAX;
+        foreach ($this->workerStorage as $storedWorker) {
+            $count = $this->workerStorage[$storedWorker];
+            if ($count <= $max) {
+                $worker = $storedWorker;
+                $max = $count;
+            }
+        }
+
+        \assert(isset($worker) && $worker instanceof Worker);
+
+        if (!$worker->isRunning()) {
+            $this->workerStorage->detach($worker);
+            return $this->selectWorker();
+        }
+
+        $this->workerStorage[$worker] += 1;
+
+        return $worker;
     }
 
-    public function getStatus(string $path): Promise
+    public function deleteFile(string $path): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("getStatus", [$path])));
+        $this->runFileTask(new Internal\FileTask("deleteFile", [$path]));
     }
 
-    public function move(string $from, string $to): Promise
+    public function getStatus(string $path): ?array
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("move", [$from, $to])));
+        return $this->runFileTask(new Internal\FileTask("getStatus", [$path]));
     }
 
-    public function createHardlink(string $target, string $link): Promise
+    public function move(string $from, string $to): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("createHardlink", [$target, $link])));
+        $this->runFileTask(new Internal\FileTask("move", [$from, $to]));
     }
 
-    public function createSymlink(string $target, string $link): Promise
+    public function createHardlink(string $target, string $link): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("createSymlink", [$target, $link])));
+        $this->runFileTask(new Internal\FileTask("createHardlink", [$target, $link]));
     }
 
-    public function resolveSymlink(string $path): Promise
+    public function createSymlink(string $target, string $link): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("resolveSymlink", [$path])));
+        $this->runFileTask(new Internal\FileTask("createSymlink", [$target, $link]));
     }
 
-    public function createDirectory(string $path, int $mode = 0777): Promise
+    public function resolveSymlink(string $path): string
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("createDirectory", [$path, $mode])));
+        return $this->runFileTask(new Internal\FileTask("resolveSymlink", [$path]));
     }
 
-    public function createDirectoryRecursively(string $path, int $mode = 0777): Promise
+    public function createDirectory(string $path, int $mode = 0777): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("createDirectoryRecursively", [$path, $mode])));
+        $this->runFileTask(new Internal\FileTask("createDirectory", [$path, $mode]));
     }
 
-    public function listFiles(string $path): Promise
+    public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("listFiles", [$path])));
+        $this->runFileTask(new Internal\FileTask("createDirectoryRecursively", [$path, $mode]));
     }
 
-    public function deleteDirectory(string $path): Promise
+    public function listFiles(string $path): array
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("deleteDirectory", [$path])));
+        return $this->runFileTask(new Internal\FileTask("listFiles", [$path]));
     }
 
-    public function changePermissions(string $path, int $mode): Promise
+    public function deleteDirectory(string $path): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("changePermissions", [$path, $mode])));
+        $this->runFileTask(new Internal\FileTask("deleteDirectory", [$path]));
     }
 
-    public function changeOwner(string $path, ?int $uid, ?int $gid): Promise
+    public function changePermissions(string $path, int $mode): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("changeOwner", [$path, $uid, $gid])));
+        $this->runFileTask(new Internal\FileTask("changePermissions", [$path, $mode]));
     }
 
-    public function getLinkStatus(string $path): Promise
+    public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("getLinkStatus", [$path])));
+        $this->runFileTask(new Internal\FileTask("changeOwner", [$path, $uid, $gid]));
     }
 
-    public function touch(string $path, ?int $modificationTime, ?int $accessTime): Promise
+    public function getLinkStatus(string $path): ?array
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask(
+        return $this->runFileTask(new Internal\FileTask("getLinkStatus", [$path]));
+    }
+
+    public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
+    {
+        $this->runFileTask(new Internal\FileTask(
             "touch",
             [$path, $modificationTime, $accessTime]
-        )));
+        ));
     }
 
-    public function read(string $path): Promise
+    public function read(string $path): string
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("read", [$path])));
+        return $this->runFileTask(new Internal\FileTask("read", [$path]));
     }
 
-    public function write(string $path, string $contents): Promise
+    public function write(string $path, string $contents): void
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("write", [$path, $contents])));
+        $this->runFileTask(new Internal\FileTask("write", [$path, $contents]));
     }
 
-    private function runFileTask(Internal\FileTask $task): \Generator
+    private function runFileTask(Internal\FileTask $task): mixed
     {
         try {
-            return yield $this->pool->enqueue($task);
-        } catch (TaskException $exception) {
+            return $this->pool->enqueue($task);
+        } catch (TaskFailureThrowable $exception) {
             throw new FilesystemException("The file operation failed", $exception);
         } catch (WorkerException $exception) {
             throw new FilesystemException("Could not send the file task to worker", $exception);

@@ -8,7 +8,6 @@ use Amp\File\Driver\ParallelDriver;
 use Amp\File\Driver\StatusCachingDriver;
 use Amp\File\Driver\UvDriver;
 use Amp\Loop;
-use Amp\Promise;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
@@ -77,9 +76,9 @@ function createDefaultDriver(): Driver
  * @param string $path
  * @param string $mode
  *
- * @return Promise<File>
+ * @return File
  */
-function openFile(string $path, string $mode): Promise
+function openFile(string $path, string $mode): File
 {
     return filesystem()->openFile($path, $mode);
 }
@@ -87,13 +86,13 @@ function openFile(string $path, string $mode): Promise
 /**
  * Execute a file stat operation.
  *
- * If the requested path does not exist the resulting Promise will resolve to NULL.
+ * If the requested path does not exist the function will return NULL.
  *
  * @param string $path File system path.
  *
- * @return Promise<array|null>
+ * @return array|null
  */
-function getStatus(string $path): Promise
+function getStatus(string $path): ?array
 {
     return filesystem()->getStatus($path);
 }
@@ -101,13 +100,13 @@ function getStatus(string $path): Promise
 /**
  * Same as {@see Filesystem::getStatus()} except if the path is a link then the link's data is returned.
  *
- * If the requested path does not exist the resulting Promise will resolve to NULL.
+ * If the requested path does not exist the function will return NULL.
  *
  * @param string $path File system path.
  *
- * @return Promise<array|null>
+ * @return array|null
  */
-function getLinkStatus(string $path): Promise
+function getLinkStatus(string $path): ?array
 {
     return filesystem()->getLinkStatus($path);
 }
@@ -120,9 +119,9 @@ function getLinkStatus(string $path): Promise
  *
  * @param string $path File system path.
  *
- * @return Promise<bool>
+ * @return bool
  */
-function exists(string $path): Promise
+function exists(string $path): bool
 {
     return filesystem()->exists($path);
 }
@@ -130,15 +129,12 @@ function exists(string $path): Promise
 /**
  * Retrieve the size in bytes of the file at the specified path.
  *
- * If the path does not exist or is not a regular file this
- * function's returned Promise WILL resolve as a failure.
- *
  * @param string $path File system path.
  * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file.
  *
- * @return Promise<int>
+ * @return int
  */
-function getSize(string $path): Promise
+function getSize(string $path): int
 {
     return filesystem()->getSize($path);
 }
@@ -148,9 +144,9 @@ function getSize(string $path): Promise
  *
  * @param string $path File system path.
  *
- * @return Promise<bool>
+ * @return bool
  */
-function isDirectory(string $path): Promise
+function isDirectory(string $path): bool
 {
     return filesystem()->isDirectory($path);
 }
@@ -160,9 +156,9 @@ function isDirectory(string $path): Promise
  *
  * @param string $path File system path.
  *
- * @return Promise<bool>
+ * @return bool
  */
-function isFile(string $path): Promise
+function isFile(string $path): bool
 {
     return filesystem()->isFile($path);
 }
@@ -170,14 +166,11 @@ function isFile(string $path): Promise
 /**
  * Does the specified path exist and is it a symlink?
  *
- * If the path does not exist the returned Promise will resolve
- * to FALSE and will not reject with an error.
- *
  * @param string $path File system path.
  *
- * @return Promise<bool>
+ * @return bool
  */
-function isSymlink(string $path): Promise
+function isSymlink(string $path): bool
 {
     return filesystem()->isSymlink($path);
 }
@@ -188,9 +181,9 @@ function isSymlink(string $path): Promise
  * @param string $path File system path.
  * @fails \Amp\Files\FilesystemException If the path does not exist.
  *
- * @return Promise<int>
+ * @return int
  */
-function getModificationTime(string $path): Promise
+function getModificationTime(string $path): int
 {
     return filesystem()->getModificationTime($path);
 }
@@ -201,9 +194,9 @@ function getModificationTime(string $path): Promise
  * @param string $path File system path.
  * @fails \Amp\Files\FilesystemException If the path does not exist.
  *
- * @return Promise<int>
+ * @return int
  */
-function getAccessTime(string $path): Promise
+function getAccessTime(string $path): int
 {
     return filesystem()->getAccessTime($path);
 }
@@ -213,10 +206,8 @@ function getAccessTime(string $path): Promise
  *
  * @param string $path File system path.
  * @fails \Amp\Files\FilesystemException If the path does not exist.
- *
- * @return Promise<int>
  */
-function getCreationTime(string $path): Promise
+function getCreationTime(string $path): int
 {
     return filesystem()->getCreationTime($path);
 }
@@ -227,12 +218,10 @@ function getCreationTime(string $path): Promise
  * @param string $original
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function createSymlink(string $original, string $link): Promise
+function createSymlink(string $original, string $link): void
 {
-    return filesystem()->createSymlink($original, $link);
+    filesystem()->createSymlink($original, $link);
 }
 
 /**
@@ -241,12 +230,10 @@ function createSymlink(string $original, string $link): Promise
  * @param string $target
  * @param string $link
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function createHardlink(string $target, string $link): Promise
+function createHardlink(string $target, string $link): void
 {
-    return filesystem()->createHardlink($target, $link);
+    filesystem()->createHardlink($target, $link);
 }
 
 /**
@@ -255,9 +242,9 @@ function createHardlink(string $target, string $link): Promise
  * @param string $path
  * @fails \Amp\Files\FilesystemException If the operation fails.
  *
- * @return Promise<string>
+ * @return string
  */
-function resolveSymlink(string $path): Promise
+function resolveSymlink(string $path): string
 {
     return filesystem()->resolveSymlink($path);
 }
@@ -268,12 +255,10 @@ function resolveSymlink(string $path): Promise
  * @param string $from
  * @param string $to
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function move(string $from, string $to): Promise
+function move(string $from, string $to): void
 {
-    return filesystem()->move($from, $to);
+    filesystem()->move($from, $to);
 }
 
 /**
@@ -281,12 +266,10 @@ function move(string $from, string $to): Promise
  *
  * @param string $path
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function deleteFile(string $path): Promise
+function deleteFile(string $path): void
 {
-    return filesystem()->deleteFile($path);
+    filesystem()->deleteFile($path);
 }
 
 /**
@@ -295,12 +278,10 @@ function deleteFile(string $path): Promise
  * @param string $path
  * @param int    $mode
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function createDirectory(string $path, int $mode = 0777): Promise
+function createDirectory(string $path, int $mode = 0777): void
 {
-    return filesystem()->createDirectory($path, $mode);
+    filesystem()->createDirectory($path, $mode);
 }
 
 /**
@@ -309,12 +290,10 @@ function createDirectory(string $path, int $mode = 0777): Promise
  * @param string $path
  * @param int    $mode
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function createDirectoryRecursively(string $path, int $mode = 0777): Promise
+function createDirectories(string $path, int $mode = 0777): void
 {
-    return filesystem()->createDirectoryRecursively($path, $mode);
+    filesystem()->createDirectories($path, $mode);
 }
 
 /**
@@ -322,12 +301,10 @@ function createDirectoryRecursively(string $path, int $mode = 0777): Promise
  *
  * @param string $path
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function deleteDirectory(string $path): Promise
+function deleteDirectory(string $path): void
 {
-    return filesystem()->deleteDirectory($path);
+    filesystem()->deleteDirectory($path);
 }
 
 /**
@@ -337,9 +314,9 @@ function deleteDirectory(string $path): Promise
  *
  * @param string $path
  *
- * @return Promise<list<string>>
+ * @returnlist<string>
  */
-function listFiles(string $path): Promise
+function listFiles(string $path): array
 {
     return filesystem()->listFiles($path);
 }
@@ -350,12 +327,10 @@ function listFiles(string $path): Promise
  * @param string $path
  * @param int    $mode
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function changePermissions(string $path, int $mode): Promise
+function changePermissions(string $path, int $mode): void
 {
-    return filesystem()->changePermissions($path, $mode);
+    filesystem()->changePermissions($path, $mode);
 }
 
 /**
@@ -365,12 +340,10 @@ function changePermissions(string $path, int $mode): Promise
  * @param int|null $uid null to ignore
  * @param int|null $gid null to ignore
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function changeOwner(string $path, ?int $uid, ?int $gid = null): Promise
+function changeOwner(string $path, ?int $uid, ?int $gid = null): void
 {
-    return filesystem()->changeOwner($path, $uid, $gid);
+    filesystem()->changeOwner($path, $uid, $gid);
 }
 
 /**
@@ -382,12 +355,10 @@ function changeOwner(string $path, ?int $uid, ?int $gid = null): Promise
  * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
  * @param int|null $accessTime The access time. If not supplied, the modification time is used.
  * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return Promise<void>
  */
-function touch(string $path, ?int $modificationTime = null, ?int $accessTime = null): Promise
+function touch(string $path, ?int $modificationTime = null, ?int $accessTime = null): void
 {
-    return filesystem()->touch($path, $modificationTime, $accessTime);
+    filesystem()->touch($path, $modificationTime, $accessTime);
 }
 
 /**
@@ -395,9 +366,9 @@ function touch(string $path, ?int $modificationTime = null, ?int $accessTime = n
  *
  * @param string $path The file path from which to buffer contents.
  *
- * @return Promise<string>
+ * @return string
  */
-function read(string $path): Promise
+function read(string $path): string
 {
     return filesystem()->read($path);
 }
@@ -407,10 +378,8 @@ function read(string $path): Promise
  *
  * @param string $path The file path to which to $contents should be written.
  * @param string $contents The data to write to the specified $path.
- *
- * @return Promise<void>
  */
-function write(string $path, string $contents): Promise
+function write(string $path, string $contents): void
 {
-    return filesystem()->write($path, $contents);
+    filesystem()->write($path, $contents);
 }

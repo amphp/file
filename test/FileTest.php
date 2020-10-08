@@ -7,252 +7,236 @@ use Amp\File;
 
 abstract class FileTest extends FilesystemTest
 {
-    /** @var File\Driver */
-    private $driver;
+    private File\Driver $driver;
 
-    public function testWrite(): \Generator
+    public function testWrite()
     {
         $path = Fixture::path() . "/write";
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile($path, "c+");
+        $handle = $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
 
         $handle->write("foo");
-        yield $handle->write("bar");
-        yield $handle->seek(0);
-        $contents = yield $handle->read();
+        $handle->write("bar");
+        $handle->seek(0);
+        $contents = $handle->read();
         $this->assertSame(6, $handle->tell());
         $this->assertTrue($handle->eof());
         $this->assertSame("foobar", $contents);
 
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testEmptyWrite(): \Generator
+    public function testEmptyWrite()
     {
         $path = Fixture::path() . "/write";
 
-        $handle = yield $this->driver->openFile($path, "c+");
+        $handle = $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
 
-        yield $handle->write("");
+        $handle->write("");
         $this->assertSame(0, $handle->tell());
 
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testWriteAfterClose(): \Generator
+    public function testWriteAfterClose()
     {
         $path = Fixture::path() . "/write";
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile($path, "c+");
-        yield $handle->close();
+        $handle = $this->driver->openFile($path, "c+");
+        $handle->close();
 
         $this->expectException(ClosedException::class);
-        yield $handle->write("bar");
+        $handle->write("bar");
     }
 
-    public function testDoubleClose(): \Generator
+    public function testDoubleClose()
     {
         $path = Fixture::path() . "/write";
         /** @var File\File $handle */
-        $handle = yield $this->driver->openFile($path, "c+");
-        yield $handle->close();
-        $this->assertNull(yield $handle->close());
+        $handle = $this->driver->openFile($path, "c+");
+        $handle->close();
+        $this->assertNull($handle->close());
     }
 
-    public function testWriteAfterEnd(): \Generator
+    public function testWriteAfterEnd()
     {
         $path = Fixture::path() . "/write";
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile($path, "c+");
+        $handle = $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
-        yield $handle->end("foo");
+        $handle->end("foo");
 
         $this->expectException(ClosedException::class);
-        yield $handle->write("bar");
+        $handle->write("bar");
     }
 
-    public function testWriteInAppendMode(): \Generator
+    public function testWriteInAppendMode()
     {
         $path = Fixture::path() . "/write";
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile($path, "a+");
+        $handle = $this->driver->openFile($path, "a+");
         $this->assertSame(0, $handle->tell());
-        yield $handle->write("bar");
-        yield $handle->write("foo");
-        yield $handle->write("baz");
+        $handle->write("bar");
+        $handle->write("foo");
+        $handle->write("baz");
         $this->assertSame(9, $handle->tell());
-        yield $handle->seek(0);
+        $handle->seek(0);
         $this->assertSame(0, $handle->tell());
-        $this->assertSame("barfoobaz", yield $handle->read());
+        $this->assertSame("barfoobaz", $handle->read());
     }
 
-    public function testReadingToEof(): \Generator
+    public function testReadingToEof()
     {
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
         $contents = "";
         $position = 0;
 
-        $stat = yield $this->driver->getStatus(__FILE__);
+        $stat = $this->driver->getStatus(__FILE__);
         $chunkSize = (int) \floor(($stat["size"] / 5));
 
         while (!$handle->eof()) {
-            $chunk = yield $handle->read($chunkSize);
+            $chunk = $handle->read($chunkSize);
             $contents .= $chunk;
             $position += \strlen($chunk);
             $this->assertSame($position, $handle->tell());
         }
 
-        $this->assertNull(yield $handle->read());
-        $this->assertSame(yield $this->driver->read(__FILE__), $contents);
+        $this->assertNull($handle->read());
+        $this->assertSame($this->driver->read(__FILE__), $contents);
 
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testSequentialReads(): \Generator
+    public function testSequentialReads()
     {
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
 
         $contents = "";
-        $contents .= yield $handle->read(10);
-        $contents .= yield $handle->read(10);
+        $contents .= $handle->read(10);
+        $contents .= $handle->read(10);
 
-        $expected = \substr(yield $this->driver->read(__FILE__), 0, 20);
+        $expected = \substr($this->driver->read(__FILE__), 0, 20);
         $this->assertSame($expected, $contents);
 
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testReadingFromOffset(): \Generator
+    public function testReadingFromOffset()
     {
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
-        yield $handle->seek(10);
+        $handle->seek(10);
         $this->assertSame(10, $handle->tell());
-        $chunk = yield $handle->read(90);
+        $chunk = $handle->read(90);
         $this->assertSame(100, $handle->tell());
-        $expected = \substr(yield $this->driver->read(__FILE__), 10, 90);
+        $expected = \substr($this->driver->read(__FILE__), 10, 90);
         $this->assertSame($expected, $chunk);
 
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testSeekThrowsOnInvalidWhence(): \Generator
+    public function testSeekThrowsOnInvalidWhence()
     {
         $this->expectException(\Error::class);
 
         try {
-            /** @var File\File $handle */
-            $handle = yield $this->driver->openFile(__FILE__, "r");
-            yield $handle->seek(0, 99999);
+            $handle = $this->driver->openFile(__FILE__, "r");
+            $handle->seek(0, 99999);
         } finally {
-            yield $handle->close();
+            $handle->close();
         }
     }
 
-    public function testSeekSetCur(): \Generator
+    public function testSeekSetCur()
     {
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
-        yield $handle->seek(10);
+        $handle->seek(10);
         $this->assertSame(10, $handle->tell());
-        yield $handle->seek(-10, \SEEK_CUR);
+        $handle->seek(-10, \SEEK_CUR);
         $this->assertSame(0, $handle->tell());
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testSeekSetEnd(): \Generator
+    public function testSeekSetEnd()
     {
         $size = \filesize(__FILE__);
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
-        yield $handle->seek(-10, \SEEK_END);
+        $handle->seek(-10, \SEEK_END);
         $this->assertSame($size - 10, $handle->tell());
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testPath(): \Generator
+    public function testPath()
     {
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame(__FILE__, $handle->getPath());
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testMode(): \Generator
+    public function testMode()
     {
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame("r", $handle->getMode());
-        yield $handle->close();
+        $handle->close();
     }
 
-    public function testClose(): \Generator
+    public function testClose()
     {
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile(__FILE__, "r");
-        yield $handle->close();
+        $handle = $this->driver->openFile(__FILE__, "r");
+        $handle->close();
 
         $this->expectException(ClosedException::class);
-        yield $handle->read();
+        $handle->read();
     }
 
     /**
      * @depends testWrite
      */
-    public function testTruncateToSmallerSize(): \Generator
+    public function testTruncateToSmallerSize()
     {
         $path = Fixture::path() . "/write";
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile($path, "c+");
+        $handle = $this->driver->openFile($path, "c+");
 
         $handle->write("foo");
-        yield $handle->write("bar");
-        yield $handle->truncate(4);
-        yield $handle->seek(0);
-        $contents = yield $handle->read();
+        $handle->write("bar");
+        $handle->truncate(4);
+        $handle->seek(0);
+        $contents = $handle->read();
         $this->assertTrue($handle->eof());
         $this->assertSame("foob", $contents);
 
-        yield $handle->write("bar");
+        $handle->write("bar");
         $this->assertSame(7, $handle->tell());
-        yield $handle->seek(0);
-        $contents = yield $handle->read();
+        $handle->seek(0);
+        $contents = $handle->read();
         $this->assertSame("foobbar", $contents);
 
-        yield $handle->close();
+        $handle->close();
     }
 
     /**
      * @depends testWrite
      */
-    public function testTruncateToLargerSize(): \Generator
+    public function testTruncateToLargerSize()
     {
         $path = Fixture::path() . "/write";
-        /** @var File\File $handle */
-        $handle = yield $this->driver->openFile($path, "c+");
+        $handle = $this->driver->openFile($path, "c+");
 
-        yield $handle->write("foo");
-        yield $handle->truncate(6);
+        $handle->write("foo");
+        $handle->truncate(6);
         $this->assertSame(3, $handle->tell());
-        yield $handle->seek(0);
-        $contents = yield $handle->read();
+        $handle->seek(0);
+        $contents = $handle->read();
         $this->assertTrue($handle->eof());
         $this->assertSame("foo\0\0\0", $contents);
 
-        yield $handle->write("bar");
+        $handle->write("bar");
         $this->assertSame(9, $handle->tell());
-        yield $handle->seek(0);
-        $contents = yield $handle->read();
+        $handle->seek(0);
+        $contents = $handle->read();
         $this->assertSame("foo\0\0\0bar", $contents);
 
-        yield $handle->close();
+        $handle->close();
     }
 
     abstract protected function createDriver(): File\Driver;

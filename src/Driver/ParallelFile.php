@@ -4,7 +4,6 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
-use Amp\Failure;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
@@ -12,40 +11,40 @@ use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
 use Amp\Promise;
-use Amp\Success;
-use function Amp\call;
+use function Amp\async;
+use function Amp\await;
 
 final class ParallelFile implements File
 {
     /** @var Worker */
-    private $worker;
+    private Worker $worker;
 
     /** @var int|null */
-    private $id;
+    private ?int $id;
 
     /** @var string */
-    private $path;
+    private string $path;
 
     /** @var int */
-    private $position;
+    private int $position;
 
     /** @var int */
-    private $size;
+    private int $size;
 
     /** @var string */
-    private $mode;
+    private string $mode;
 
     /** @var bool True if an operation is pending. */
-    private $busy = false;
+    private bool $busy = false;
 
     /** @var int Number of pending write operations. */
-    private $pendingWrites = 0;
+    private int $pendingWrites = 0;
 
     /** @var bool */
-    private $writable = true;
+    private bool $writable = true;
 
     /** @var Promise|null */
-    private $closing;
+    private ?Promise $closing = null;
 
     /**
      * @param Worker $worker
@@ -71,28 +70,32 @@ final class ParallelFile implements File
         }
     }
 
-    public function close(): Promise
+    public function close(): void
     {
+        if (!$this->worker->isRunning()) {
+            return;
+        }
+
         if ($this->closing) {
-            return $this->closing;
+            await($this->closing);
+            return;
         }
 
         $this->writable = false;
 
-        if ($this->worker->isRunning()) {
-            $this->closing = $this->worker->enqueue(new Internal\FileTask('fclose', [], $this->id));
+        $this->closing = async(function (): void {
+            $id = $this->id;
             $this->id = null;
-        } else {
-            $this->closing = new Success;
-        }
+            $this->worker->enqueue(new Internal\FileTask('fclose', [], $id));
+        });
 
-        return $this->closing;
+        await($this->closing);
     }
 
-    public function truncate(int $size): Promise
+    public function truncate(int $size): void
     {
         if ($this->id === null) {
-            return new Failure(new ClosedException("The file has been closed"));
+            throw new ClosedException("The file has been closed");
         }
 
         if ($this->busy) {
@@ -100,25 +103,23 @@ final class ParallelFile implements File
         }
 
         if (!$this->writable) {
-            return new Failure(new ClosedException("The file is no longer writable"));
+            throw new ClosedException("The file is no longer writable");
         }
 
-        return call(function () use ($size) {
-            ++$this->pendingWrites;
-            $this->busy = true;
+        ++$this->pendingWrites;
+        $this->busy = true;
 
-            try {
-                yield $this->worker->enqueue(new Internal\FileTask('ftruncate', [$size], $this->id));
-            } catch (TaskException $exception) {
-                throw new StreamException("Reading from the file failed", 0, $exception);
-            } catch (WorkerException $exception) {
-                throw new StreamException("Sending the task to the worker failed", 0, $exception);
-            } finally {
-                if (--$this->pendingWrites === 0) {
-                    $this->busy = false;
-                }
+        try {
+            $this->worker->enqueue(new Internal\FileTask('ftruncate', [$size], $this->id));
+        } catch (TaskException $exception) {
+            throw new StreamException("Reading from the file failed", 0, $exception);
+        } catch (WorkerException $exception) {
+            throw new StreamException("Sending the task to the worker failed", 0, $exception);
+        } finally {
+            if (--$this->pendingWrites === 0) {
+                $this->busy = false;
             }
-        });
+        }
     }
 
     public function eof(): bool
@@ -126,38 +127,36 @@ final class ParallelFile implements File
         return $this->pendingWrites === 0 && $this->size <= $this->position;
     }
 
-    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
+    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->id === null) {
-            return new Failure(new ClosedException("The file has been closed"));
+            throw new ClosedException("The file has been closed");
         }
 
         if ($this->busy) {
             throw new PendingOperationError;
         }
 
-        return call(function () use ($length) {
-            $this->busy = true;
+        $this->busy = true;
 
-            try {
-                $data = yield $this->worker->enqueue(new Internal\FileTask('fread', [$length], $this->id));
-                $this->position += \strlen($data);
-            } catch (TaskException $exception) {
-                throw new StreamException("Reading from the file failed", 0, $exception);
-            } catch (WorkerException $exception) {
-                throw new StreamException("Sending the task to the worker failed", 0, $exception);
-            } finally {
-                $this->busy = false;
-            }
+        try {
+            $data = $this->worker->enqueue(new Internal\FileTask('fread', [$length], $this->id));
+            $this->position += \strlen($data);
+        } catch (TaskException $exception) {
+            throw new StreamException("Reading from the file failed", 0, $exception);
+        } catch (WorkerException $exception) {
+            throw new StreamException("Sending the task to the worker failed", 0, $exception);
+        } finally {
+            $this->busy = false;
+        }
 
-            return $data;
-        });
+        return $data;
     }
 
-    public function write(string $data): Promise
+    public function write(string $data): void
     {
         if ($this->id === null) {
-            return new Failure(new ClosedException("The file has been closed"));
+            throw new ClosedException("The file has been closed");
         }
 
         if ($this->busy && $this->pendingWrites === 0) {
@@ -165,76 +164,69 @@ final class ParallelFile implements File
         }
 
         if (!$this->writable) {
-            return new Failure(new ClosedException("The file is no longer writable"));
+            throw new ClosedException("The file is no longer writable");
         }
 
-        return call(function () use ($data) {
-            ++$this->pendingWrites;
-            $this->busy = true;
+        ++$this->pendingWrites;
+        $this->busy = true;
 
-            try {
-                yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
-                $this->position += \strlen($data);
-            } catch (TaskException $exception) {
-                throw new StreamException("Writing to the file failed", 0, $exception);
-            } catch (WorkerException $exception) {
-                throw new StreamException("Sending the task to the worker failed", 0, $exception);
-            } finally {
-                if (--$this->pendingWrites === 0) {
-                    $this->busy = false;
-                }
+        try {
+            $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
+            $this->position += \strlen($data);
+        } catch (TaskException $exception) {
+            throw new StreamException("Writing to the file failed", 0, $exception);
+        } catch (WorkerException $exception) {
+            throw new StreamException("Sending the task to the worker failed", 0, $exception);
+        } finally {
+            if (--$this->pendingWrites === 0) {
+                $this->busy = false;
             }
-        });
+        }
     }
 
-    public function end(string $data = ""): Promise
+    public function end(string $data = ""): void
     {
-        return call(function () use ($data) {
-            $promise = $this->write($data);
+        try {
+            $this->write($data);
             $this->writable = false;
-
-            // ignore any errors
-            yield Promise\any([$this->close()]);
-
-            return $promise;
-        });
+        } finally {
+            $this->close();
+        }
     }
 
-    public function seek(int $offset, int $whence = SEEK_SET): Promise
+    public function seek(int $offset, int $whence = SEEK_SET): int
     {
         if ($this->id === null) {
-            return new Failure(new ClosedException("The file has been closed"));
+            throw new ClosedException("The file has been closed");
         }
 
         if ($this->busy) {
             throw new PendingOperationError;
         }
 
-        return call(function () use ($offset, $whence) {
-            switch ($whence) {
-                case self::SEEK_SET:
-                case self::SEEK_CUR:
-                case self::SEEK_END:
-                    try {
-                        $this->position = yield $this->worker->enqueue(
-                            new Internal\FileTask('fseek', [$offset, $whence], $this->id)
-                        );
+        switch ($whence) {
+            case self::SEEK_SET:
+            case self::SEEK_CUR:
+            case self::SEEK_END:
+                try {
+                    $this->position = $this->worker->enqueue(
+                        new Internal\FileTask('fseek', [$offset, $whence], $this->id)
+                    );
 
-                        if ($this->position > $this->size) {
-                            $this->size = $this->position;
-                        }
-
-                        return $this->position;
-                    } catch (TaskException $exception) {
-                        throw new StreamException('Seeking in the file failed.', 0, $exception);
-                    } catch (WorkerException $exception) {
-                        throw new StreamException("Sending the task to the worker failed", 0, $exception);
+                    if ($this->position > $this->size) {
+                        $this->size = $this->position;
                     }
 
-                default:
-                    throw new \Error('Invalid whence value. Use SEEK_SET, SEEK_CUR, or SEEK_END.');
-            }
-        });
+                    return $this->position;
+                } catch (TaskException $exception) {
+                    throw new StreamException('Seeking in the file failed.', 0, $exception);
+                } catch (WorkerException $exception) {
+                    throw new StreamException("Sending the task to the worker failed", 0, $exception);
+                }
+
+            default:
+                throw new \Error('Invalid whence value. Use SEEK_SET, SEEK_CUR, or SEEK_END.');
+        }
     }
 
     public function tell(): int

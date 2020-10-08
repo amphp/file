@@ -5,52 +5,43 @@ namespace Amp\File\Driver;
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Deferred;
-use Amp\Failure;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
-use function Amp\call;
+use function Amp\async;
+use function Amp\await;
 
 final class UvFile implements File
 {
-    /** @var Internal\UvPoll */
-    private $poll;
+    private Internal\UvPoll $poll;
 
-    /** @var \UVLoop */
+    /** @var \UVLoop|resource */
     private $loop;
 
     /** @var resource */
     private $fh;
 
-    /** @var string */
-    private $path;
+    private string $path;
 
-    /** @var string */
-    private $mode;
+    private string $mode;
 
-    /** @var int */
-    private $size;
+    private int $size;
 
-    /** @var int */
-    private $position;
+    private int $position;
 
-    /** @var \SplQueue */
-    private $queue;
+    private \SplQueue $queue;
 
-    /** @var bool */
-    private $isActive = false;
+    private bool $isActive = false;
 
-    /** @var bool */
-    private $writable = true;
+    private bool $writable = true;
 
-    /** @var Promise|null */
-    private $closing;
+    private ?Promise $closing = null;
 
     /** @var bool True if ext-uv version is < 0.3.0. */
-    private $priorVersion;
+    private bool $priorVersion;
 
     /**
      * @param \Amp\Loop\UvDriver $driver
@@ -81,7 +72,7 @@ final class UvFile implements File
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
     }
 
-    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
+    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->isActive) {
             throw new PendingOperationError;
@@ -122,17 +113,17 @@ final class UvFile implements File
 
         \uv_fs_read($this->loop, $this->fh, $this->position, $length, $onRead);
 
-        return $deferred->promise();
+        return await($deferred->promise());
     }
 
-    public function write(string $data): Promise
+    public function write(string $data): void
     {
         if ($this->isActive && $this->queue->isEmpty()) {
             throw new PendingOperationError;
         }
 
         if (!$this->writable) {
-            return new Failure(new ClosedException("The file is no longer writable"));
+            throw new ClosedException("The file is no longer writable");
         }
 
         $this->isActive = true;
@@ -141,38 +132,35 @@ final class UvFile implements File
             $promise = $this->push($data);
         } else {
             $promise = $this->queue->top();
-            $promise = call(function () use ($promise, $data) {
-                yield $promise;
-                return yield $this->push($data);
+            $promise = async(function () use ($promise, $data): void {
+                await($promise);
+                await($this->push($data));
             });
         }
 
         $this->queue->push($promise);
 
-        return $promise;
+        await($promise);
     }
 
-    public function end(string $data = ""): Promise
+    public function end(string $data = ""): void
     {
-        return call(function () use ($data) {
-            $promise = $this->write($data);
+        try {
+            $this->write($data);
             $this->writable = false;
-
-            // ignore any errors
-            yield Promise\any([$this->close()]);
-
-            return $promise;
-        });
+        } finally {
+            $this->close();
+        }
     }
 
-    public function truncate(int $size): Promise
+    public function truncate(int $size): void
     {
         if ($this->isActive && $this->queue->isEmpty()) {
             throw new PendingOperationError;
         }
 
         if (!$this->writable) {
-            return new Failure(new ClosedException("The file is no longer writable"));
+            throw new ClosedException("The file is no longer writable");
         }
 
         $this->isActive = true;
@@ -181,18 +169,18 @@ final class UvFile implements File
             $promise = $this->trim($size);
         } else {
             $promise = $this->queue->top();
-            $promise = call(function () use ($promise, $size) {
-                yield $promise;
-                return yield $this->trim($size);
+            $promise = async(function () use ($promise, $size): void {
+                await($promise);
+                await($this->trim($size));
             });
         }
 
         $this->queue->push($promise);
 
-        return $promise;
+        await($promise);
     }
 
-    public function seek(int $offset, int $whence = \SEEK_SET): Promise
+    public function seek(int $offset, int $whence = \SEEK_SET): int
     {
         if ($this->isActive) {
             throw new PendingOperationError;
@@ -213,7 +201,7 @@ final class UvFile implements File
                 throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected");
         }
 
-        return new Success($this->position);
+        return $this->position;
     }
 
     public function tell(): int
@@ -236,10 +224,11 @@ final class UvFile implements File
         return $this->mode;
     }
 
-    public function close(): Promise
+    public function close(): void
     {
         if ($this->closing) {
-            return $this->closing;
+            await($this->closing);
+            return;
         }
 
         $deferred = new Deferred;
@@ -250,7 +239,7 @@ final class UvFile implements File
             $deferred->resolve();
         });
 
-        return $deferred->promise();
+        await($deferred->promise());
     }
 
     private function push(string $data): Promise

@@ -11,14 +11,11 @@ final class EioPoll
     /** @var resource */
     private static $stream;
 
-    /** @var string */
-    private $watcher;
+    private string $watcher;
 
-    /** @var int */
-    private $requests = 0;
+    private int $requests = 0;
 
-    /** @var Loop\Driver */
-    private $driver;
+    private Loop\Driver $driver;
 
     public function __construct(Loop\Driver $driver)
     {
@@ -38,8 +35,8 @@ final class EioPoll
         $this->driver->disable($this->watcher);
 
         $this->driver->setState(self::class, new class($this->watcher, $driver) {
-            private $watcher;
-            private $driver;
+            private string $watcher;
+            private Loop\Driver $driver;
 
             public function __construct(string $watcher, Loop\Driver $driver)
             {

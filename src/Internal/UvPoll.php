@@ -8,14 +8,11 @@ use Amp\Promise;
 /** @internal */
 final class UvPoll
 {
-    /** @var string */
-    private $watcher;
+    private string $watcher;
 
-    /** @var int */
-    private $requests = 0;
+    private int $requests = 0;
 
-    /** @var UvDriver */
-    private $driver;
+    private UvDriver $driver;
 
     public function __construct(UvDriver $driver)
     {
@@ -28,8 +25,8 @@ final class UvPoll
         $this->driver->disable($this->watcher);
 
         $this->driver->setState(self::class, new class($this->watcher, $driver) {
-            private $watcher;
-            private $driver;
+            private string $watcher;
+            private UvDriver $driver;
 
             public function __construct(string $watcher, UvDriver $driver)
             {

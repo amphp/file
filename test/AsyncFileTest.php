@@ -4,75 +4,72 @@ namespace Amp\File\Test;
 
 use Amp\File;
 use Amp\File\PendingOperationError;
+use function Amp\async;
+use function Amp\await;
 
 abstract class AsyncFileTest extends FileTest
 {
-    public function testSimultaneousReads(): \Generator
+    public function testSimultaneousReads()
     {
         $this->expectException(PendingOperationError::class);
 
-        /** @var File\File $handle */
-        $handle = yield File\openFile(__FILE__, "r");
+        $handle = File\openFile(__FILE__, "r");
 
-        $promise1 = $handle->read();
-        $promise2 = $handle->read();
+        $promise1 = async(fn() => $handle->read(20));
+        $promise2 = async(fn() => $handle->read(20));
 
-        $expected = \substr(yield File\read(__FILE__), 0, 20);
-        $this->assertSame($expected, yield $promise1);
+        $expected = \substr(File\read(__FILE__), 0, 20);
+        $this->assertSame($expected, await($promise1));
 
-        yield $promise2;
+        await($promise2);
     }
 
-    public function testSeekWhileReading(): \Generator
+    public function testSeekWhileReading()
     {
         $this->expectException(PendingOperationError::class);
 
-        /** @var File\File $handle */
-        $handle = yield File\openFile(__FILE__, "r");
+        $handle = File\openFile(__FILE__, "r");
 
-        $promise1 = $handle->read(10);
-        $promise2 = $handle->seek(0);
+        $promise1 = async(fn() => $handle->read(10));
+        $promise2 = async(fn() => $handle->read(0));
 
-        $expected = \substr(yield File\read(__FILE__), 0, 10);
-        $this->assertSame($expected, yield $promise1);
+        $expected = \substr(File\read(__FILE__), 0, 10);
+        $this->assertSame($expected, await($promise1));
 
-        yield $promise2;
+        await($promise2);
     }
 
-    public function testReadWhileWriting(): \Generator
+    public function testReadWhileWriting()
     {
         $this->expectException(PendingOperationError::class);
 
         $path = Fixture::path() . "/temp";
 
-        /** @var File\File $handle */
-        $handle = yield File\openFile($path, "c+");
+        $handle = File\openFile($path, "c+");
 
         $data = "test";
 
-        $promise1 = $handle->write($data);
-        $promise2 = $handle->read(10);
+        $promise1 = async(fn() => $handle->write($data));
+        $promise2 = async(fn() => $handle->read(10));
 
-        $this->assertSame(\strlen($data), yield $promise1);
+        $this->assertNull(await($promise1));
 
-        yield $promise2; // Should throw.
+        await($promise2);
     }
 
-    public function testWriteWhileReading(): \Generator
+    public function testWriteWhileReading()
     {
         $this->expectException(PendingOperationError::class);
 
         $path = Fixture::path() . "/temp";
 
-        /** @var File\File $handle */
-        $handle = yield File\openFile($path, "c+");
+        $handle = File\openFile($path, "c+");
 
-        $promise1 = $handle->read(10);
-        $promise2 = $handle->write("test");
+        $promise1 = async(fn() => $handle->read(10));
+        $promise2 = async(fn() => $handle->write("test"));
 
-        $expected = \substr(yield File\read(__FILE__), 0, 10);
-        $this->assertSame($expected, yield $promise1);
+        $this->assertNull(await($promise1));
 
-        yield $promise2; // Should throw.
+        await($promise2);
     }
 }

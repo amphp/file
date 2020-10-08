@@ -4,17 +4,14 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
-use Amp\Failure;
 use Amp\File\File;
-use Amp\Promise;
-use Amp\Success;
-use function Amp\call;
 
 final class BlockingFile implements File
 {
+    /** @var resource|null */
     private $handle;
-    private $path;
-    private $mode;
+    private string $path;
+    private string $mode;
 
     /**
      * @param resource $handle An open filesystem descriptor.
@@ -35,10 +32,10 @@ final class BlockingFile implements File
         }
     }
 
-    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
+    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->handle === null) {
-            return new Failure(new ClosedException("The file '{$this->path}' has been closed"));
+            throw new ClosedException("The file '{$this->path}' has been closed");
         }
 
         try {
@@ -51,18 +48,16 @@ final class BlockingFile implements File
                 throw new StreamException("Failed reading from file '{$this->path}'");
             }
 
-            return new Success($data !== '' ? $data : null);
-        } catch (StreamException $e) {
-            return new Failure($e);
+            return $data !== '' ? $data : null;
         } finally {
             \restore_error_handler();
         }
     }
 
-    public function write(string $data): Promise
+    public function write(string $data): void
     {
         if ($this->handle === null) {
-            return new Failure(new ClosedException("The file '{$this->path}' has been closed"));
+            throw new ClosedException("The file '{$this->path}' has been closed");
         }
 
         try {
@@ -74,31 +69,26 @@ final class BlockingFile implements File
             if ($length === false) {
                 throw new StreamException("Failed writing to file '{$this->path}'");
             }
-
-            return new Success;
-        } catch (StreamException $e) {
-            return new Failure($e);
         } finally {
             \restore_error_handler();
         }
     }
 
-    public function end(string $data = ""): Promise
+    public function end(string $data = ""): void
     {
-        return call(function () use ($data) {
-            $promise = $this->write($data);
+        $this->write($data);
 
+        try {
+            $this->close();
+        } catch (\Throwable $exception) {
             // ignore any errors
-            yield Promise\any([$this->close()]);
-
-            return $promise;
-        });
+        }
     }
 
-    public function close(): Promise
+    public function close(): void
     {
         if ($this->handle === null) {
-            return new Success;
+            return;
         }
 
         $handle = $this->handle;
@@ -110,21 +100,19 @@ final class BlockingFile implements File
             });
 
             if (\fclose($handle)) {
-                return new Success;
+                return;
             }
 
             throw new StreamException("Failed closing file '{$this->path}'");
-        } catch (StreamException $e) {
-            return new Failure($e);
         } finally {
             \restore_error_handler();
         }
     }
 
-    public function truncate(int $size): Promise
+    public function truncate(int $size): void
     {
         if ($this->handle === null) {
-            return new Failure(new ClosedException("The file '{$this->path}' has been closed"));
+            throw new ClosedException("The file '{$this->path}' has been closed");
         }
 
         try {
@@ -135,19 +123,15 @@ final class BlockingFile implements File
             if (!\ftruncate($this->handle, $size)) {
                 throw new StreamException("Could not truncate file '{$this->path}'");
             }
-
-            return new Success;
-        } catch (StreamException $e) {
-            return new Failure($e);
         } finally {
             \restore_error_handler();
         }
     }
 
-    public function seek(int $position, int $whence = self::SEEK_SET): Promise
+    public function seek(int $position, int $whence = self::SEEK_SET): int
     {
         if ($this->handle === null) {
-            return new Failure(new ClosedException("The file '{$this->path}' has been closed"));
+            throw new ClosedException("The file '{$this->path}' has been closed");
         }
 
         switch ($whence) {
@@ -163,9 +147,7 @@ final class BlockingFile implements File
                         throw new StreamException("Could not seek in file '{$this->path}'");
                     }
 
-                    return new Success($this->tell());
-                } catch (StreamException $e) {
-                    return new Failure($e);
+                    return $this->tell();
                 } finally {
                     \restore_error_handler();
                 }

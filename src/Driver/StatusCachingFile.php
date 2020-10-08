@@ -3,12 +3,10 @@
 namespace Amp\File\Driver;
 
 use Amp\File\File;
-use Amp\Promise;
 
 final class StatusCachingFile implements File
 {
-    /** @var File */
-    private $file;
+    private File $file;
 
     /** @var callable */
     private $invalidateCallback;
@@ -25,27 +23,35 @@ final class StatusCachingFile implements File
         $this->invalidateCallback = $invalidateCallback;
     }
 
-    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
+    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         return $this->file->read($length);
     }
 
-    public function write(string $data): Promise
+    public function write(string $data): void
     {
-        return $this->invalidate($this->file->write($data));
+        try {
+            $this->file->write($data);
+        } finally {
+            $this->invalidate();
+        }
     }
 
-    public function end(string $data = ""): Promise
+    public function end(string $data = ""): void
     {
-        return $this->invalidate($this->file->end($data));
+        try {
+            $this->file->end($data);
+        } finally {
+            $this->invalidate();
+        }
     }
 
-    public function close(): Promise
+    public function close(): void
     {
-        return $this->file->close();
+        $this->file->close();
     }
 
-    public function seek(int $position, int $whence = self::SEEK_SET): Promise
+    public function seek(int $position, int $whence = self::SEEK_SET): int
     {
         return $this->file->seek($position, $whence);
     }
@@ -70,17 +76,17 @@ final class StatusCachingFile implements File
         return $this->file->getMode();
     }
 
-    public function truncate(int $size): Promise
+    public function truncate(int $size): void
     {
-        return $this->invalidate($this->file->truncate($size));
+        try {
+            $this->file->truncate($size);
+        } finally {
+            $this->invalidate();
+        }
     }
 
-    private function invalidate(Promise $promise): Promise
+    private function invalidate(): void
     {
-        $promise->onResolve(function () {
-            ($this->invalidateCallback)();
-        });
-
-        return $promise;
+        ($this->invalidateCallback)();
     }
 }

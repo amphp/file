@@ -2,6 +2,7 @@
 
 namespace Amp\File\Internal;
 
+use Amp\CancellationToken;
 use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\BlockingFile;
 use Amp\File\FilesystemException;
@@ -22,21 +23,20 @@ final class FileTask implements Task
         return self::ENV_PREFIX . $id;
     }
 
-    /** @var string */
-    private $operation;
-    /** @var mixed[] */
-    private $args;
-    /**  @var string|null */
-    private $id;
+    private string $operation;
+
+    private array $args;
+
+    private ?int $id;
 
     /**
-     * @param string $operation
-     * @param array  $args
-     * @param int    $id File ID.
+     * @param string   $operation
+     * @param array    $args
+     * @param int|null $id File ID.
      *
      * @throws \Error
      */
-    public function __construct(string $operation, array $args = [], int $id = null)
+    public function __construct(string $operation, array $args = [], ?int $id = null)
     {
         if ($operation === '') {
             throw new \Error('Operation must be a non-empty string');
@@ -47,7 +47,7 @@ final class FileTask implements Task
         $this->id = $id;
     }
 
-    public function run(Environment $environment)
+    public function run(Environment $environment, CancellationToken $token): mixed
     {
         if ('f' === $this->operation[0]) {
             if ("fopen" === $this->operation) {
@@ -102,8 +102,8 @@ final class FileTask implements Task
                 ));
             }
 
-            /** @var BlockingFile $file */
-            if (!($file = $environment->get($id)) instanceof BlockingFile) {
+            $file = $environment->get($id);
+            if (!$file instanceof BlockingFile) {
                 throw new FilesystemException("File storage found in inconsistent state");
             }
 
@@ -145,7 +145,7 @@ final class FileTask implements Task
                 return ([new BlockingDriver, $this->operation])(...$this->args);
 
             default:
-                throw new \Error("Invalid operation");
+                throw new \Error("Invalid operation - " . $this->operation);
         }
     }
 }

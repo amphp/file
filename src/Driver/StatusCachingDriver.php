@@ -3,18 +3,18 @@
 namespace Amp\File\Driver;
 
 use Amp\File\Driver;
+use Amp\File\File;
 use Amp\File\Internal\Cache;
 use Amp\Promise;
 use Amp\Success;
-use function Amp\call;
 
 final class StatusCachingDriver implements Driver
 {
     /** @var Driver */
-    private $driver;
+    private Driver $driver;
 
     /** @var Cache */
-    private $statusCache;
+    private Cache $statusCache;
 
     public function __construct(Driver $driver)
     {
@@ -22,106 +22,149 @@ final class StatusCachingDriver implements Driver
         $this->statusCache = new Cache(1000, 1024);
     }
 
-    public function openFile(string $path, string $mode): Promise
+    public function openFile(string $path, string $mode): File
     {
-        return call(function () use ($path, $mode) {
-            $file = yield $this->driver->openFile($path, $mode);
+        $file = $this->driver->openFile($path, $mode);
 
-            return new StatusCachingFile($file, function () use ($path) {
-                $this->invalidate([$path], new Success);
-            });
+        return new StatusCachingFile($file, function () use ($path): void {
+            $this->statusCache->delete($path);
         });
     }
 
-    public function getStatus(string $path): Promise
+    public function getStatus(string $path): ?array
     {
         if ($cachedStat = $this->statusCache->get($path)) {
-            return new Success($cachedStat);
+            return $cachedStat;
         }
 
-        return call(function () use ($path) {
-            $stat = yield $this->driver->getStatus($path);
-            if ($stat) {
-                $this->statusCache->set($path, $stat, 1000);
-            }
+        $stat = $this->driver->getStatus($path);
+        if ($stat) {
+            $this->statusCache->set($path, $stat, 1000);
+        }
 
-            return $stat;
-        });
+        return $stat;
     }
 
-    public function getLinkStatus(string $path): Promise
+    public function getLinkStatus(string $path): ?array
     {
         return $this->driver->getLinkStatus($path);
     }
 
-    public function createSymlink(string $target, string $link): Promise
+    public function createSymlink(string $target, string $link): void
     {
-        return $this->invalidate([$target, $link], $this->driver->createSymlink($target, $link));
+        try {
+            $this->driver->createSymlink($target, $link);
+        } finally {
+            $this->statusCache->delete($target);
+            $this->statusCache->delete($link);
+        }
     }
 
-    public function createHardlink(string $target, string $link): Promise
+    public function createHardlink(string $target, string $link): void
     {
-        return $this->invalidate([$target, $link], $this->driver->createHardlink($target, $link));
+        try {
+            $this->driver->createHardlink($target, $link);
+        } finally {
+            $this->statusCache->delete($target);
+            $this->statusCache->delete($link);
+        }
     }
 
-    public function resolveSymlink(string $target): Promise
+    public function resolveSymlink(string $target): string
     {
         return $this->driver->resolveSymlink($target);
     }
 
-    public function move(string $from, string $to): Promise
+    public function move(string $from, string $to): void
     {
-        return $this->invalidate([$from, $to], $this->driver->move($from, $to));
+        try {
+            $this->driver->move($from, $to);
+        } finally {
+            $this->statusCache->delete($from);
+            $this->statusCache->delete($to);
+        }
     }
 
-    public function deleteFile(string $path): Promise
+    public function deleteFile(string $path): void
     {
-        return $this->invalidate([$path], $this->driver->deleteFile($path));
+        try {
+            $this->driver->deleteFile($path);
+        } finally {
+            $this->statusCache->delete($path);
+        }
     }
 
-    public function createDirectory(string $path, int $mode = 0777): Promise
+    public function createDirectory(string $path, int $mode = 0777): void
     {
-        return $this->invalidate([$path], $this->driver->createDirectory($path, $mode));
+        try {
+            $this->driver->createDirectory($path, $mode);
+        } finally {
+            $this->statusCache->delete($path);
+        }
     }
 
-    public function createDirectoryRecursively(string $path, int $mode = 0777): Promise
+    public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
-        return $this->invalidate([$path], $this->driver->createDirectoryRecursively($path, $mode));
+        try {
+            $this->driver->createDirectoryRecursively($path, $mode);
+        } finally {
+            $this->statusCache->delete($path);
+        }
     }
 
-    public function deleteDirectory(string $path): Promise
+    public function deleteDirectory(string $path): void
     {
-        return $this->invalidate([$path], $this->driver->deleteDirectory($path));
+        try {
+            $this->driver->deleteDirectory($path);
+        } finally {
+            $this->statusCache->delete($path);
+        }
     }
 
-    public function listFiles(string $path): Promise
+    public function listFiles(string $path): array
     {
         return $this->driver->listFiles($path);
     }
 
-    public function changePermissions(string $path, int $mode): Promise
+    public function changePermissions(string $path, int $mode): void
     {
-        return $this->invalidate([$path], $this->driver->changePermissions($path, $mode));
+        try {
+            $this->driver->changePermissions($path, $mode);
+        } finally {
+            $this->statusCache->delete($path);
+        }
     }
 
-    public function changeOwner(string $path, ?int $uid, ?int $gid): Promise
+    public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
-        return $this->invalidate([$path], $this->driver->changeOwner($path, $uid, $gid));
+        try {
+            $this->driver->changeOwner($path, $uid, $gid);
+        } finally {
+            $this->statusCache->delete($path);
+        }
     }
 
-    public function touch(string $path, ?int $modificationTime, ?int $accessTime): Promise
+    public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
     {
-        return $this->invalidate([$path], $this->driver->touch($path, $modificationTime, $accessTime));
+        try {
+            $this->driver->touch($path, $modificationTime, $accessTime);
+        } finally {
+            $this->statusCache->delete($path);
+        }
     }
 
-    public function read(string $path): Promise
+    public function read(string $path): string
     {
         return $this->driver->read($path);
     }
 
-    public function write(string $path, string $contents): Promise
+    public function write(string $path, string $contents): void
     {
-        return $this->invalidate([$path], $this->driver->write($path, $contents));
+        try {
+            $this->driver->write($path, $contents);
+        } finally {
+            $this->statusCache->delete($path);
+        }
     }
 
     private function invalidate(array $paths, Promise $promise): Promise

@@ -4,7 +4,6 @@ namespace Amp\File;
 
 use Amp\ByteStream\InputStream;
 use Amp\ByteStream\OutputStream;
-use Amp\Promise;
 
 interface File extends InputStream, OutputStream
 {
@@ -19,37 +18,31 @@ interface File extends InputStream, OutputStream
      *
      * @param int $length
      *
-     * @return Promise<string|null>
+     * @return string|null
      */
-    public function read(int $length = self::DEFAULT_READ_LENGTH): Promise;
+    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string;
 
     /**
      * Write $data to the open file handle.
      *
      * @param string $data
-     *
-     * @return Promise<int>
      */
-    public function write(string $data): Promise;
+    public function write(string $data): void;
 
     /**
      * Write $data to the open file handle and close the handle once the write completes.
      *
      * @param string $data
-     *
-     * @return Promise<int>
      */
-    public function end(string $data = ""): Promise;
+    public function end(string $data = ""): void;
 
     /**
      * Close the file handle.
      *
      * Applications are not required to manually close handles -- they will
      * be unloaded automatically when the object is garbage collected.
-     *
-     * @return Promise<void>
      */
-    public function close(): Promise;
+    public function close(): void;
 
     /**
      * Set the handle's internal pointer position.
@@ -63,9 +56,9 @@ interface File extends InputStream, OutputStream
      * @param int $position
      * @param int $whence
      *
-     * @return Promise<int> New offset position.
+     * @return int New offset position.
      */
-    public function seek(int $position, int $whence = self::SEEK_SET): Promise;
+    public function seek(int $position, int $whence = self::SEEK_SET): int;
 
     /**
      * Return the current internal offset position of the file handle.
@@ -100,8 +93,6 @@ interface File extends InputStream, OutputStream
      * with null bytes.
      *
      * @param int $size New file size.
-     *
-     * @return Promise<void>
      */
-    public function truncate(int $size): Promise;
+    public function truncate(int $size): void;
 }

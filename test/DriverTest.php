@@ -7,74 +7,73 @@ use Amp\File\FilesystemException;
 
 abstract class DriverTest extends FilesystemTest
 {
-    /** @var File\Filesystem */
-    protected $driver;
+    protected File\Filesystem $driver;
 
-    public function testListFiles(): \Generator
+    public function testListFiles()
     {
         $fixtureDir = Fixture::path();
-        $actual = yield $this->driver->listFiles($fixtureDir);
+        $actual = $this->driver->listFiles($fixtureDir);
         $expected = ["dir", "dirlink", "fifo", "fifolink", "file", "filelink", "linkloop"];
         $this->assertSame($expected, $actual);
     }
 
-    public function testListFilesThrowsIfPathNotADirectory(): \Generator
+    public function testListFilesThrowsIfPathNotADirectory()
     {
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->listFiles(__FILE__);
+        $this->driver->listFiles(__FILE__);
     }
 
-    public function testListFilesThrowsIfPathDoesntExist(): \Generator
+    public function testListFilesThrowsIfPathDoesntExist()
     {
         $this->expectException(FilesystemException::class);
 
         $path = Fixture::path() . "/nonexistent";
-        yield $this->driver->listFiles($path);
+        $this->driver->listFiles($path);
     }
 
-    public function testCreateSymlink(): \Generator
+    public function testCreateSymlink()
     {
         $fixtureDir = Fixture::path();
 
         $original = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/symlink.txt";
-        $this->assertNull(yield $this->driver->createSymlink($original, $link));
+        $this->assertNull($this->driver->createSymlink($original, $link));
         $this->assertTrue(\is_link($link));
-        yield $this->driver->deleteFile($link);
+        $this->driver->deleteFile($link);
     }
 
-    public function testCreateSymlinkFailWhenLinkExists(): \Generator
+    public function testCreateSymlinkFailWhenLinkExists()
     {
         $this->expectException(FilesystemException::class);
 
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
-        yield $this->driver->createSymlink($path, $path);
+        $this->driver->createSymlink($path, $path);
     }
 
-    public function testCreateHardlink(): \Generator
+    public function testCreateHardlink()
     {
         $fixtureDir = Fixture::path();
 
         $original = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/hardlink.txt";
-        $this->assertNull(yield $this->driver->createHardlink($original, $link));
+        $this->assertNull($this->driver->createHardlink($original, $link));
         $this->assertFileExists($link);
         $this->assertFalse(\is_link($link));
-        yield $this->driver->deleteFile($link);
+        $this->driver->deleteFile($link);
     }
 
-    public function testCreateHardlinkFailWhenLinkExists(): \Generator
+    public function testCreateHardlinkFailWhenLinkExists()
     {
         $this->expectException(FilesystemException::class);
 
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
-        yield $this->driver->createHardlink($path, $path);
+        $this->driver->createHardlink($path, $path);
     }
 
-    public function testResolveSymlink(): \Generator
+    public function testResolveSymlink()
     {
         $fixtureDir = Fixture::path();
 
@@ -82,7 +81,7 @@ abstract class DriverTest extends FilesystemTest
         $link = "{$fixtureDir}/symlink.txt";
         \symlink($original, $link);
 
-        $this->assertSame($original, yield $this->driver->resolveSymlink($link));
+        $this->assertSame($original, $this->driver->resolveSymlink($link));
     }
 
     public function symlinkPathProvider(): array
@@ -108,99 +107,99 @@ abstract class DriverTest extends FilesystemTest
      *
      * @return \Generator
      */
-    public function testResolveSymlinkError(\Closure $linkResolver): \Generator
+    public function testResolveSymlinkError(\Closure $linkResolver)
     {
         $this->expectException(FilesystemException::class);
 
         $link = $linkResolver();
 
-        yield $this->driver->resolveSymlink($link);
+        $this->driver->resolveSymlink($link);
     }
 
-    public function testLinkStatus(): \Generator
+    public function testLinkStatus()
     {
         $fixtureDir = Fixture::path();
 
         $target = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/symlink.txt";
-        yield $this->driver->createSymlink($target, $link);
-        $this->assertIsArray(yield $this->driver->getLinkStatus($link));
-        yield $this->driver->deleteFile($link);
+        $this->driver->createSymlink($target, $link);
+        $this->assertIsArray($this->driver->getLinkStatus($link));
+        $this->driver->deleteFile($link);
     }
 
-    public function testStatus(): \Generator
+    public function testStatus()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
-        $stat = yield $this->driver->getStatus($path);
+        $stat = $this->driver->getStatus($path);
         $this->assertIsArray($stat);
         $this->assertSameStatus(\stat($path), $stat);
     }
 
-    public function testDirectoryStatus(): \Generator
+    public function testDirectoryStatus()
     {
         $fixtureDir = Fixture::path();
-        $stat = yield $this->driver->getStatus("{$fixtureDir}/dir");
+        $stat = $this->driver->getStatus("{$fixtureDir}/dir");
         $this->assertIsArray($stat);
         $this->assertSameStatus(\stat("{$fixtureDir}/dir"), $stat);
     }
 
-    public function testNonexistentPathStatusResolvesToNull(): \Generator
+    public function testNonexistentPathStatusResolvesToNull()
     {
         $fixtureDir = Fixture::path();
-        $stat = yield $this->driver->getStatus("{$fixtureDir}/nonexistent");
+        $stat = $this->driver->getStatus("{$fixtureDir}/nonexistent");
         $this->assertNull($stat);
     }
 
-    public function testExists(): \Generator
+    public function testExists()
     {
         $fixtureDir = Fixture::path();
-        $this->assertFalse(yield $this->driver->exists("{$fixtureDir}/nonexistent"));
-        $this->assertTrue(yield $this->driver->exists("{$fixtureDir}/file"));
+        $this->assertFalse($this->driver->exists("{$fixtureDir}/nonexistent"));
+        $this->assertTrue($this->driver->exists("{$fixtureDir}/file"));
     }
 
-    public function testRead(): \Generator
+    public function testRead()
     {
         $fixtureDir = Fixture::path();
-        $this->assertSame("small", yield $this->driver->read("{$fixtureDir}/file"));
+        $this->assertSame("small", $this->driver->read("{$fixtureDir}/file"));
     }
 
-    public function testSize(): \Generator
+    public function testSize()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
-        $stat = (yield $this->driver->getStatus($path));
+        $stat = ($this->driver->getStatus($path));
         $size = $stat["size"];
-        $this->assertSame($size, yield $this->driver->getSize($path));
+        $this->assertSame($size, $this->driver->getSize($path));
     }
 
-    public function testSizeFailsOnNonexistentPath(): \Generator
+    public function testSizeFailsOnNonexistentPath()
     {
         $this->expectException(FilesystemException::class);
 
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
-        yield $this->driver->getSize($path);
+        $this->driver->getSize($path);
     }
 
-    public function testSizeFailsOnDirectoryPath(): \Generator
+    public function testSizeFailsOnDirectoryPath()
     {
         $this->expectException(FilesystemException::class);
 
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/dir";
-        $this->assertTrue(yield $this->driver->isDirectory($path));
-        yield $this->driver->getSize($path);
+        $this->assertTrue($this->driver->isDirectory($path));
+        $this->driver->getSize($path);
     }
 
     /**
      * @dataProvider dataForDirectoryCheck
      */
-    public function testIsDirectory(bool $expectedResult, string $name): \Generator
+    public function testIsDirectory(bool $expectedResult, string $name)
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/{$name}";
-        $this->assertSame($expectedResult, yield $this->driver->isDirectory($path));
+        $this->assertSame($expectedResult, $this->driver->isDirectory($path));
     }
 
     public function dataForDirectoryCheck(): \Generator
@@ -220,11 +219,11 @@ abstract class DriverTest extends FilesystemTest
     /**
      * @dataProvider dataForFileCheck
      */
-    public function testIsFile(bool $expectedResult, string $name): \Generator
+    public function testIsFile(bool $expectedResult, string $name)
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/{$name}";
-        $this->assertSame($expectedResult, yield $this->driver->isFile($path));
+        $this->assertSame($expectedResult, $this->driver->isFile($path));
     }
 
     public function dataForFileCheck(): \Generator
@@ -244,11 +243,11 @@ abstract class DriverTest extends FilesystemTest
     /**
      * @dataProvider dataForSymlinkCheck
      */
-    public function testIsSymlink(bool $expectedResult, string $name): \Generator
+    public function testIsSymlink(bool $expectedResult, string $name)
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/{$name}";
-        $this->assertSame($expectedResult, yield $this->driver->isSymlink($path));
+        $this->assertSame($expectedResult, $this->driver->isSymlink($path));
     }
 
     public function dataForSymlinkCheck(): \Generator
@@ -265,7 +264,7 @@ abstract class DriverTest extends FilesystemTest
         yield 'nonexistent' => [false, 'nonexistent'];
     }
 
-    public function testMove(): \Generator
+    public function testMove()
     {
         $fixtureDir = Fixture::path();
 
@@ -273,56 +272,56 @@ abstract class DriverTest extends FilesystemTest
         $old = "{$fixtureDir}/rename1.txt";
         $new = "{$fixtureDir}/rename2.txt";
 
-        yield $this->driver->write($old, $contents1);
-        $this->assertNull(yield $this->driver->move($old, $new));
-        $contents2 = yield $this->driver->read($new);
-        yield $this->driver->deleteFile($new);
+        $this->driver->write($old, $contents1);
+        $this->assertNull($this->driver->move($old, $new));
+        $contents2 = $this->driver->read($new);
+        $this->driver->deleteFile($new);
 
         $this->assertSame($contents1, $contents2);
     }
 
-    public function testMoveFailsOnNonexistentPath(): \Generator
+    public function testMoveFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->move($path, $path);
+        $this->driver->move($path, $path);
     }
 
-    public function testDeleteFile(): \Generator
+    public function testDeleteFile()
     {
         $fixtureDir = Fixture::path();
         $toUnlink = "{$fixtureDir}/unlink";
-        yield $this->driver->getStatus($toUnlink);
-        yield $this->driver->write($toUnlink, "unlink me");
-        $this->assertNull(yield $this->driver->deleteFile($toUnlink));
-        $this->assertNull(yield $this->driver->getStatus($toUnlink));
+        $this->driver->getStatus($toUnlink);
+        $this->driver->write($toUnlink, "unlink me");
+        $this->assertNull($this->driver->deleteFile($toUnlink));
+        $this->assertNull($this->driver->getStatus($toUnlink));
     }
 
-    public function testDeleteFileFailsOnNonexistentPath(): \Generator
+    public function testDeleteFileFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->deleteFile($path);
+        $this->driver->deleteFile($path);
     }
 
-    public function testDeleteFileFailsOnDirectory(): \Generator
+    public function testDeleteFileFailsOnDirectory()
     {
         $fixtureDir = Fixture::path();
         $dir = "{$fixtureDir}/newdir";
-        yield $this->driver->createDirectory($dir);
+        $this->driver->createDirectory($dir);
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->deleteFile($dir);
+        $this->driver->deleteFile($dir);
     }
 
-    public function testCreateAndDeleteDirectory(): \Generator
+    public function testCreateAndDeleteDirectory()
     {
         $fixtureDir = Fixture::path();
 
@@ -330,176 +329,176 @@ abstract class DriverTest extends FilesystemTest
 
         \umask(0022);
 
-        $this->assertNull(yield $this->driver->createDirectory($dir));
-        $stat = yield $this->driver->getStatus($dir);
+        $this->assertNull($this->driver->createDirectory($dir));
+        $stat = $this->driver->getStatus($dir);
         $this->assertSame('0755', $this->getPermissionsFromStatus($stat));
-        $this->assertNull(yield $this->driver->deleteDirectory($dir));
-        $this->assertNull(yield $this->driver->getStatus($dir));
+        $this->assertNull($this->driver->deleteDirectory($dir));
+        $this->assertNull($this->driver->getStatus($dir));
 
         // test for 0, because previous array_filter made that not work
         $dir = "{$fixtureDir}/newdir/with/recursive/creation/0/1/2";
 
-        $this->assertNull(yield $this->driver->createDirectoryRecursively($dir, 0764));
-        $stat = yield $this->driver->getStatus($dir);
+        $this->assertNull($this->driver->createDirectoryRecursively($dir, 0764));
+        $stat = $this->driver->getStatus($dir);
         $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
     }
 
-    public function testCreateDirectoryFailsOnNonexistentPath(): \Generator
+    public function testCreateDirectoryFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->createDirectory($path);
+        $this->driver->createDirectory($path);
     }
 
-    public function testDeleteDirectoryFailsOnNonexistentPath(): \Generator
+    public function testDeleteDirectoryFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->deleteDirectory($path);
+        $this->driver->deleteDirectory($path);
     }
 
-    public function testDeleteDirectoryFailsOnFile(): \Generator
+    public function testDeleteDirectoryFailsOnFile()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->deleteDirectory($path);
+        $this->driver->deleteDirectory($path);
     }
 
-    public function testMtime(): \Generator
+    public function testMtime()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
-        $stat = yield $this->driver->getStatus($path);
+        $stat = $this->driver->getStatus($path);
         $statMtime = $stat["mtime"];
-        $this->assertSame($statMtime, yield $this->driver->getModificationTime($path));
+        $this->assertSame($statMtime, $this->driver->getModificationTime($path));
     }
 
-    public function testMtimeFailsOnNonexistentPath(): \Generator
+    public function testMtimeFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->getModificationTime($path);
+        $this->driver->getModificationTime($path);
     }
 
-    public function testAtime(): \Generator
+    public function testAtime()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
-        $stat = yield $this->driver->getStatus($path);
+        $stat = $this->driver->getStatus($path);
         $statAtime = $stat["atime"];
-        $this->assertSame($statAtime, yield $this->driver->getAccessTime($path));
+        $this->assertSame($statAtime, $this->driver->getAccessTime($path));
     }
 
-    public function testAtimeFailsOnNonexistentPath(): \Generator
+    public function testAtimeFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->getAccessTime($path);
+        $this->driver->getAccessTime($path);
     }
 
-    public function testCtime(): \Generator
+    public function testCtime()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
-        $stat = yield $this->driver->getStatus($path);
+        $stat = $this->driver->getStatus($path);
         $statCtime = $stat["ctime"];
-        $this->assertSame($statCtime, yield $this->driver->getCreationTime($path));
+        $this->assertSame($statCtime, $this->driver->getCreationTime($path));
     }
 
-    public function testCtimeFailsOnNonexistentPath(): \Generator
+    public function testCtimeFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->getCreationTime($path);
+        $this->driver->getCreationTime($path);
     }
 
     /**
      * @group slow
      */
-    public function testTouch(): \Generator
+    public function testTouch()
     {
         $fixtureDir = Fixture::path();
 
         $touch = "{$fixtureDir}/touch";
-        yield $this->driver->write($touch, "touch me");
+        $this->driver->write($touch, "touch me");
 
-        $oldStat = yield $this->driver->getStatus($touch);
-        $this->assertNull(yield $this->driver->touch($touch, \time() + 10, \time() + 20));
-        $newStat = yield $this->driver->getStatus($touch);
-        yield $this->driver->deleteFile($touch);
+        $oldStat = $this->driver->getStatus($touch);
+        $this->assertNull($this->driver->touch($touch, \time() + 10, \time() + 20));
+        $newStat = $this->driver->getStatus($touch);
+        $this->driver->deleteFile($touch);
 
         $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
         $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
     }
 
-    public function testTouchFailsOnNonexistentPath(): \Generator
+    public function testTouchFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->touch($path);
+        $this->driver->touch($path);
     }
 
-    public function testChangePermissions(): \Generator
+    public function testChangePermissions()
     {
         $fixtureDir = Fixture::path();
 
         $path = "{$fixtureDir}/file";
-        $stat = yield $this->driver->getStatus($path);
+        $stat = $this->driver->getStatus($path);
         $this->assertNotSame('0777', \substr(\decoct($stat['mode']), -4));
-        $this->assertNull(yield $this->driver->changePermissions($path, 0777));
-        $stat = yield $this->driver->getStatus($path);
+        $this->assertNull($this->driver->changePermissions($path, 0777));
+        $stat = $this->driver->getStatus($path);
         $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
     }
 
-    public function testChangePermissionsFailsOnNonexistentPath(): \Generator
+    public function testChangePermissionsFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->changePermissions($path, 0777);
+        $this->driver->changePermissions($path, 0777);
     }
 
-    public function testChangeOwner(): \Generator
+    public function testChangeOwner()
     {
         $fixtureDir = Fixture::path();
 
         $path = "{$fixtureDir}/file";
-        yield $this->driver->getStatus($path);
+        $this->driver->getStatus($path);
         $user = \fileowner($path);
-        $this->assertNull(yield $this->driver->changeOwner($path, $user, null));
+        $this->assertNull($this->driver->changeOwner($path, $user, null));
     }
 
-    public function testChangeOwnerFailsOnNonexistentPath(): \Generator
+    public function testChangeOwnerFailsOnNonexistentPath()
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        yield $this->driver->changeOwner($path, 0, null);
+        $this->driver->changeOwner($path, 0, null);
     }
 
     protected function setUp(): void
