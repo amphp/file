@@ -8,7 +8,6 @@ use Amp\File\Driver\ParallelDriver;
 use Amp\File\Driver\UvDriver;
 use Amp\Loop;
 use Amp\Promise;
-use function Amp\call;
 
 const LOOP_STATE_IDENTIFIER = Driver::class;
 
