@@ -6,13 +6,11 @@ use Amp\Coroutine;
 use Amp\File\Driver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
-use Amp\File\StatCache;
 use Amp\Parallel\Worker;
 use Amp\Parallel\Worker\Pool;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\WorkerException;
 use Amp\Promise;
-use Amp\Success;
 use function Amp\call;
 
 final class ParallelDriver implements Driver

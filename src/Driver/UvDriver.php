@@ -7,10 +7,8 @@ use Amp\Deferred;
 use Amp\File\Driver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
-use Amp\File\StatCache;
 use Amp\Loop;
 use Amp\Promise;
-use Amp\Success;
 use Closure;
 
 final class UvDriver implements Driver

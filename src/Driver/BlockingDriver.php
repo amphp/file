@@ -5,7 +5,6 @@ namespace Amp\File\Driver;
 use Amp\Failure;
 use Amp\File\Driver;
 use Amp\File\FilesystemException;
-use Amp\File\StatCache;
 use Amp\Promise;
 use Amp\Success;
 

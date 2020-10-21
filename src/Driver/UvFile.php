@@ -9,7 +9,6 @@ use Amp\Failure;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
-use Amp\File\StatCache;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;

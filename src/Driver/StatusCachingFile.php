@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Amp\File\Driver;
 
 use Amp\File\File;

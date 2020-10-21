@@ -5,7 +5,6 @@ namespace Amp\File\Internal;
 use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\BlockingFile;
 use Amp\File\FilesystemException;
-use Amp\File\StatCache;
 use Amp\Parallel\Worker\Environment;
 use Amp\Parallel\Worker\Task;
 

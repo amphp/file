@@ -2,7 +2,6 @@
 
 namespace Amp\File\Test;
 
-use Amp\File;
 use Amp\PHPUnit\AsyncTestCase;
 
 abstract class FilesystemTest extends AsyncTestCase
