@@ -1,9 +1,13 @@
 <?php
 
-namespace Amp\File;
+namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
+use Amp\Failure;
+use Amp\File\File;
+use Amp\File\Internal;
+use Amp\File\PendingOperationError;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
@@ -13,7 +17,7 @@ use function Amp\call;
 
 final class ParallelFile implements File
 {
-    /** @var \Amp\Parallel\Worker\Worker */
+    /** @var Worker */
     private $worker;
 
     /** @var int|null */
@@ -40,14 +44,14 @@ final class ParallelFile implements File
     /** @var bool */
     private $writable = true;
 
-    /** @var \Amp\Promise|null */
+    /** @var Promise|null */
     private $closing;
 
     /**
-     * @param \Amp\Parallel\Worker\Worker $worker
-     * @param int $id
+     * @param Worker $worker
+     * @param int    $id
      * @param string $path
-     * @param int $size
+     * @param int    $size
      * @param string $mode
      */
     public function __construct(Worker $worker, int $id, string $path, int $size, string $mode)
@@ -67,17 +71,6 @@ final class ParallelFile implements File
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function path(): string
-    {
-        return $this->path;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function close(): Promise
     {
         if ($this->closing) {
@@ -96,13 +89,10 @@ final class ParallelFile implements File
         return $this->closing;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function truncate(int $size): Promise
     {
         if ($this->id === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         if ($this->busy) {
@@ -110,7 +100,7 @@ final class ParallelFile implements File
         }
 
         if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
+            return new Failure(new ClosedException("The file is no longer writable"));
         }
 
         return call(function () use ($size) {
@@ -131,9 +121,6 @@ final class ParallelFile implements File
         });
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function eof(): bool
     {
         return $this->pendingWrites === 0 && $this->size <= $this->position;
@@ -142,7 +129,7 @@ final class ParallelFile implements File
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
     {
         if ($this->id === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         if ($this->busy) {
@@ -167,13 +154,10 @@ final class ParallelFile implements File
         });
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function write(string $data): Promise
     {
         if ($this->id === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         if ($this->busy && $this->pendingWrites === 0) {
@@ -181,7 +165,7 @@ final class ParallelFile implements File
         }
 
         if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
+            return new Failure(new ClosedException("The file is no longer writable"));
         }
 
         return call(function () use ($data) {
@@ -189,7 +173,8 @@ final class ParallelFile implements File
             $this->busy = true;
 
             try {
-                $length = yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
+                yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
+                $this->position += \strlen($data);
             } catch (TaskException $exception) {
                 throw new StreamException("Writing to the file failed", 0, $exception);
             } catch (WorkerException $exception) {
@@ -199,15 +184,9 @@ final class ParallelFile implements File
                     $this->busy = false;
                 }
             }
-
-            $this->position += $length;
-            return $length;
         });
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function end(string $data = ""): Promise
     {
         return call(function () use ($data) {
@@ -221,13 +200,10 @@ final class ParallelFile implements File
         });
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function seek(int $offset, int $whence = SEEK_SET): Promise
     {
         if ($this->id === null) {
-            throw new ClosedException("The file has been closed");
+            return new Failure(new ClosedException("The file has been closed"));
         }
 
         if ($this->busy) {
@@ -236,9 +212,9 @@ final class ParallelFile implements File
 
         return call(function () use ($offset, $whence) {
             switch ($whence) {
-                case \SEEK_SET:
-                case \SEEK_CUR:
-                case \SEEK_END:
+                case self::SEEK_SET:
+                case self::SEEK_CUR:
+                case self::SEEK_END:
                     try {
                         $this->position = yield $this->worker->enqueue(
                             new Internal\FileTask('fseek', [$offset, $whence], $this->id)
@@ -261,26 +237,17 @@ final class ParallelFile implements File
         });
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function tell(): int
     {
         return $this->position;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function size(): int
+    public function getPath(): string
     {
-        return $this->size;
+        return $this->path;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function mode(): string
+    public function getMode(): string
     {
         return $this->mode;
     }

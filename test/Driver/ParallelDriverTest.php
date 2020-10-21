@@ -1,8 +1,10 @@
 <?php
 
-namespace Amp\File\Test;
+namespace Amp\File\Test\Driver;
 
 use Amp\File;
+use Amp\File\Driver\ParallelDriver;
+use Amp\File\Test\DriverTest;
 use Amp\Parallel\Worker\DefaultPool;
 use Amp\Parallel\Worker\Pool;
 
@@ -11,16 +13,15 @@ class ParallelDriverTest extends DriverTest
     /** @var Pool */
     private $pool;
 
-    protected function setUp(): void
+    protected function createDriver(): File\Driver
     {
-        parent::setUp();
         $this->pool = new DefaultPool;
-        File\filesystem(new File\ParallelDriver($this->pool));
+
+        return new ParallelDriver($this->pool);
     }
 
-    protected function tearDown(): void
+    protected function tearDownAsync(): void
     {
-        parent::tearDown();
         $this->pool->shutdown();
     }
 }

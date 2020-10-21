@@ -1,17 +1,21 @@
 <?php
 
-namespace Amp\File;
+namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Deferred;
+use Amp\Failure;
+use Amp\File\File;
+use Amp\File\Internal;
+use Amp\File\PendingOperationError;
 use Amp\Promise;
 use Amp\Success;
 use function Amp\call;
 
 final class EioFile implements File
 {
-    /** @var \Amp\File\Internal\EioPoll */
+    /** @var Internal\EioPoll */
     private $poll;
 
     /** @var resource eio file handle. */
@@ -38,7 +42,7 @@ final class EioFile implements File
     /** @var bool */
     private $writable = true;
 
-    /** @var \Amp\Promise|null */
+    /** @var Promise|null */
     private $closing;
 
     public function __construct(Internal\EioPoll $poll, $fh, string $path, string $mode, int $size)
@@ -53,9 +57,6 @@ final class EioFile implements File
         $this->queue = new \SplQueue;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function read(int $length = self::DEFAULT_READ_LENGTH): Promise
     {
         if ($this->isActive) {
@@ -98,9 +99,6 @@ final class EioFile implements File
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function write(string $data): Promise
     {
         if ($this->isActive && $this->queue->isEmpty()) {
@@ -126,6 +124,106 @@ final class EioFile implements File
         $this->queue->push($promise);
 
         return $promise;
+    }
+
+    public function end(string $data = ""): Promise
+    {
+        return call(function () use ($data) {
+            $promise = $this->write($data);
+            $this->writable = false;
+
+            // ignore any errors
+            yield Promise\any([$this->close()]);
+
+            return $promise;
+        });
+    }
+
+    public function close(): Promise
+    {
+        if ($this->closing) {
+            return $this->closing;
+        }
+
+        $deferred = new Deferred;
+        $this->poll->listen($this->closing = $deferred->promise());
+
+        \eio_close($this->fh, \EIO_PRI_DEFAULT, static function (Deferred $deferred): void {
+            // Ignore errors when closing file, as the handle will become invalid anyway.
+            $deferred->resolve();
+        }, $deferred);
+
+        return $deferred->promise();
+    }
+
+    public function truncate(int $size): Promise
+    {
+        if ($this->isActive && $this->queue->isEmpty()) {
+            throw new PendingOperationError;
+        }
+
+        if (!$this->writable) {
+            return new Failure(new ClosedException("The file is no longer writable"));
+        }
+
+        $this->isActive = true;
+
+        if ($this->queue->isEmpty()) {
+            $promise = $this->trim($size);
+        } else {
+            $promise = $this->queue->top();
+            $promise = call(function () use ($promise, $size) {
+                yield $promise;
+                return yield $this->trim($size);
+            });
+        }
+
+        $this->queue->push($promise);
+
+        return $promise;
+    }
+
+    public function seek(int $offset, int $whence = \SEEK_SET): Promise
+    {
+        if ($this->isActive) {
+            throw new PendingOperationError;
+        }
+
+        switch ($whence) {
+            case self::SEEK_SET:
+                $this->position = $offset;
+                break;
+            case self::SEEK_CUR:
+                $this->position += $offset;
+                break;
+            case self::SEEK_END:
+                $this->position = $this->size + $offset;
+                break;
+            default:
+                throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected");
+        }
+
+        return new Success($this->position);
+    }
+
+    public function tell(): int
+    {
+        return $this->position;
+    }
+
+    public function eof(): bool
+    {
+        return !$this->queue->isEmpty() ? false : ($this->size <= $this->position);
+    }
+
+    public function getPath(): string
+    {
+        return $this->path;
+    }
+
+    public function getMode(): string
+    {
+        return $this->mode;
     }
 
     private function push(string $data): Promise
@@ -179,69 +277,6 @@ final class EioFile implements File
         return $deferred->promise();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function end(string $data = ""): Promise
-    {
-        return call(function () use ($data) {
-            $promise = $this->write($data);
-            $this->writable = false;
-
-            // ignore any errors
-            yield Promise\any([$this->close()]);
-
-            return $promise;
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close(): Promise
-    {
-        if ($this->closing) {
-            return $this->closing;
-        }
-
-        $deferred = new Deferred;
-        $this->poll->listen($this->closing = $deferred->promise());
-
-        \eio_close($this->fh, \EIO_PRI_DEFAULT, function (Deferred $deferred): void {
-            // Ignore errors when closing file, as the handle will become invalid anyway.
-            $deferred->resolve();
-        }, $deferred);
-
-        return $deferred->promise();
-    }
-
-    public function truncate(int $size): Promise
-    {
-        if ($this->isActive && $this->queue->isEmpty()) {
-            throw new PendingOperationError;
-        }
-
-        if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
-        }
-
-        $this->isActive = true;
-
-        if ($this->queue->isEmpty()) {
-            $promise = $this->trim($size);
-        } else {
-            $promise = $this->queue->top();
-            $promise = call(function () use ($promise, $size) {
-                yield $promise;
-                return yield $this->trim($size);
-            });
-        }
-
-        $this->queue->push($promise);
-
-        return $promise;
-    }
-
     private function trim(int $size): Promise
     {
         $deferred = new Deferred;
@@ -279,65 +314,5 @@ final class EioFile implements File
         );
 
         return $deferred->promise();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function seek(int $offset, int $whence = \SEEK_SET): Promise
-    {
-        if ($this->isActive) {
-            throw new PendingOperationError;
-        }
-
-        switch ($whence) {
-            case \SEEK_SET:
-                $this->position = $offset;
-                break;
-            case \SEEK_CUR:
-                $this->position = $this->position + $offset;
-                break;
-            case \SEEK_END:
-                $this->position = $this->size + $offset;
-                break;
-            default:
-                throw new \Error(
-                    "Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"
-                );
-        }
-
-        return new Success($this->position);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function tell(): int
-    {
-        return $this->position;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function eof(): bool
-    {
-        return !$this->queue->isEmpty() ? false : ($this->size <= $this->position);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function path(): string
-    {
-        return $this->path;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function mode(): string
-    {
-        return $this->mode;
     }
 }

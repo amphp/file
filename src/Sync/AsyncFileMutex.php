@@ -9,8 +9,8 @@ use Amp\Promise;
 use Amp\Sync\Lock;
 use Amp\Sync\Mutex;
 use Amp\Sync\SyncException;
-use function Amp\File\open;
-use function Amp\File\unlink;
+use function Amp\File\deleteFile;
+use function Amp\File\openFile;
 
 final class AsyncFileMutex implements Mutex
 {
@@ -46,7 +46,7 @@ final class AsyncFileMutex implements Mutex
         // has the lock, so set an asynchronous timer and try again.
         while (true) {
             try {
-                $file = yield open($this->fileName, 'x');
+                $file = yield openFile($this->fileName, 'x');
 
                 break;
             } catch (FilesystemException $exception) {
@@ -69,7 +69,7 @@ final class AsyncFileMutex implements Mutex
      */
     private function release(): void
     {
-        unlink($this->fileName)->onResolve(
+        deleteFile($this->fileName)->onResolve(
             function (?\Throwable $exception): void {
                 if ($exception !== null) {
                     throw new SyncException(
