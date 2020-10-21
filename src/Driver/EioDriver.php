@@ -49,10 +49,6 @@ final class EioDriver implements Driver
 
     public function getStatus(string $path): Promise
     {
-        if ($stat = StatCache::get($path)) {
-            return new Success($stat);
-        }
-
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
@@ -219,7 +215,6 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
-        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -231,7 +226,6 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_chown($path, $uid ?? -1, $gid ?? -1, $priority, [$this, "onGenericResult"], $deferred);
-        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -246,7 +240,6 @@ final class EioDriver implements Driver
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_utime($path, $accessTime, $modificationTime, $priority, [$this, "onGenericResult"], $deferred);
-        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -343,7 +336,6 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            StatCache::set($path, $result);
             $handle = new EioFile($this->poll, $fh, $path, $mode, $result["size"]);
             $deferred->resolve($handle);
         }
@@ -355,7 +347,6 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->resolve(null);
         } else {
-            StatCache::set($path, $result);
             $deferred->resolve($result);
         }
     }
@@ -394,7 +385,6 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            StatCache::clear($path);
             $deferred->resolve();
         }
     }
@@ -421,7 +411,6 @@ final class EioDriver implements Driver
         if ($result === -1) {
             $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            StatCache::clear($path);
             $deferred->resolve();
         }
     }

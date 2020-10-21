@@ -283,7 +283,6 @@ final class UvFile implements File
                     $deferred->fail(new StreamException("Writing to the file failed: " . $error));
                 }
             } else {
-                StatCache::clear($this->path);
                 $this->position += $length;
                 if ($this->position > $this->size) {
                     $this->size = $this->position;
@@ -312,7 +311,6 @@ final class UvFile implements File
                 $this->isActive = false;
             }
 
-            StatCache::clear($this->path);
             $this->size = $size;
             $deferred->resolve();
         };

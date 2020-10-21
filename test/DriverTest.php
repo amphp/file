@@ -133,7 +133,6 @@ abstract class DriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
         $stat = yield $this->driver->getStatus($path);
-        $this->assertNotNull(File\StatCache::get($path));
         $this->assertIsArray($stat);
         $this->assertSameStatus(\stat($path), $stat);
     }
@@ -172,7 +171,6 @@ abstract class DriverTest extends FilesystemTest
         $path = "{$fixtureDir}/file";
         $stat = (yield $this->driver->getStatus($path));
         $size = $stat["size"];
-        File\StatCache::clear($path);
         $this->assertSame($size, yield $this->driver->getSize($path));
     }
 
@@ -192,7 +190,6 @@ abstract class DriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/dir";
         $this->assertTrue(yield $this->driver->isDirectory($path));
-        File\StatCache::clear($path);
         yield $this->driver->getSize($path);
     }
 
@@ -300,7 +297,6 @@ abstract class DriverTest extends FilesystemTest
         $toUnlink = "{$fixtureDir}/unlink";
         yield $this->driver->getStatus($toUnlink);
         yield $this->driver->write($toUnlink, "unlink me");
-        $this->assertNull(File\StatCache::get($toUnlink));
         $this->assertNull(yield $this->driver->deleteFile($toUnlink));
         $this->assertNull(yield $this->driver->getStatus($toUnlink));
     }
@@ -338,7 +334,6 @@ abstract class DriverTest extends FilesystemTest
         $stat = yield $this->driver->getStatus($dir);
         $this->assertSame('0755', $this->getPermissionsFromStatus($stat));
         $this->assertNull(yield $this->driver->deleteDirectory($dir));
-        $this->assertNull(File\StatCache::get($dir));
         $this->assertNull(yield $this->driver->getStatus($dir));
 
         // test for 0, because previous array_filter made that not work
@@ -385,7 +380,6 @@ abstract class DriverTest extends FilesystemTest
         $path = "{$fixtureDir}/file";
         $stat = yield $this->driver->getStatus($path);
         $statMtime = $stat["mtime"];
-        File\StatCache::clear($path);
         $this->assertSame($statMtime, yield $this->driver->getModificationTime($path));
     }
 
@@ -405,7 +399,6 @@ abstract class DriverTest extends FilesystemTest
         $path = "{$fixtureDir}/file";
         $stat = yield $this->driver->getStatus($path);
         $statAtime = $stat["atime"];
-        File\StatCache::clear($path);
         $this->assertSame($statAtime, yield $this->driver->getAccessTime($path));
     }
 
@@ -425,7 +418,6 @@ abstract class DriverTest extends FilesystemTest
         $path = "{$fixtureDir}/file";
         $stat = yield $this->driver->getStatus($path);
         $statCtime = $stat["ctime"];
-        File\StatCache::clear($path);
         $this->assertSame($statCtime, yield $this->driver->getCreationTime($path));
     }
 
@@ -451,7 +443,6 @@ abstract class DriverTest extends FilesystemTest
 
         $oldStat = yield $this->driver->getStatus($touch);
         $this->assertNull(yield $this->driver->touch($touch, \time() + 10, \time() + 20));
-        $this->assertNull(File\StatCache::get($touch));
         $newStat = yield $this->driver->getStatus($touch);
         yield $this->driver->deleteFile($touch);
 
@@ -477,7 +468,6 @@ abstract class DriverTest extends FilesystemTest
         $stat = yield $this->driver->getStatus($path);
         $this->assertNotSame('0777', \substr(\decoct($stat['mode']), -4));
         $this->assertNull(yield $this->driver->changePermissions($path, 0777));
-        $this->assertNull(File\StatCache::get($path));
         $stat = yield $this->driver->getStatus($path);
         $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
     }
@@ -500,7 +490,6 @@ abstract class DriverTest extends FilesystemTest
         yield $this->driver->getStatus($path);
         $user = \fileowner($path);
         $this->assertNull(yield $this->driver->changeOwner($path, $user, null));
-        $this->assertNull(File\StatCache::get($path));
     }
 
     public function testChangeOwnerFailsOnNonexistentPath(): \Generator

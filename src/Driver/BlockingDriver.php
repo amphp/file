@@ -51,29 +51,16 @@ final class BlockingDriver implements Driver
 
     public function getStatus(string $path): Promise
     {
-        if ($stat = StatCache::get($path)) {
-            return new Success($stat);
-        }
+        \clearstatcache(true, $path);
 
-        if ($stat = @\stat($path)) {
-            StatCache::set($path, $stat);
-            \clearstatcache(true, $path);
-        } else {
-            $stat = null;
-        }
-
-        return new Success($stat);
+        return new Success(@\stat($path) ?: null);
     }
 
     public function getLinkStatus(string $path): Promise
     {
-        if ($stat = @\lstat($path)) {
-            \clearstatcache(true, $path);
-        } else {
-            $stat = null;
-        }
+        \clearstatcache(true, $path);
 
-        return new Success($stat);
+        return new Success(@\lstat($path) ?: null);
     }
 
     public function createSymlink(string $target, string $link): Promise
@@ -154,8 +141,6 @@ final class BlockingDriver implements Driver
 
     public function deleteFile(string $path): Promise
     {
-        StatCache::clear($path);
-
         try {
             \set_error_handler(static function ($type, $message) use ($path) {
                 throw new FilesystemException("Could not delete file '{$path}': {$message}");
@@ -225,8 +210,6 @@ final class BlockingDriver implements Driver
 
     public function deleteDirectory(string $path): Promise
     {
-        StatCache::clear($path);
-
         try {
             \set_error_handler(static function ($type, $message) use ($path) {
                 throw new FilesystemException("Could not remove directory '{$path}': {$message}");
@@ -282,8 +265,6 @@ final class BlockingDriver implements Driver
                 throw new FilesystemException("Failed to change permissions for '{$path}'");
             }
 
-            StatCache::clear($path);
-
             return new Success;
         } catch (FilesystemException $e) {
             return new Failure($e);
@@ -307,8 +288,6 @@ final class BlockingDriver implements Driver
                 throw new FilesystemException("Failed to change owner for '{$path}'");
             }
 
-            StatCache::clear($path);
-
             return new Success;
         } catch (FilesystemException $e) {
             return new Failure($e);
@@ -330,8 +309,6 @@ final class BlockingDriver implements Driver
             if (!\touch($path, $modificationTime, $accessTime)) {
                 throw new FilesystemException("Failed to touch '{$path}'");
             }
-
-            StatCache::clear($path);
 
             return new Success;
         } catch (FilesystemException $e) {

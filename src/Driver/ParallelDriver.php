@@ -45,24 +45,12 @@ final class ParallelDriver implements Driver
 
     public function deleteFile(string $path): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("deleteFile", [$path])));
-        StatCache::clearOn($promise, $path);
-        return $promise;
+        return new Coroutine($this->runFileTask(new Internal\FileTask("deleteFile", [$path])));
     }
 
     public function getStatus(string $path): Promise
     {
-        if ($stat = StatCache::get($path)) {
-            return new Success($stat);
-        }
-
-        return call(function () use ($path) {
-            $stat = yield from $this->runFileTask(new Internal\FileTask("getStatus", [$path]));
-            if (!empty($stat)) {
-                StatCache::set($path, $stat);
-            }
-            return $stat;
-        });
+        return new Coroutine($this->runFileTask(new Internal\FileTask("getStatus", [$path])));
     }
 
     public function move(string $from, string $to): Promise
@@ -102,23 +90,17 @@ final class ParallelDriver implements Driver
 
     public function deleteDirectory(string $path): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("deleteDirectory", [$path])));
-        StatCache::clearOn($promise, $path);
-        return $promise;
+        return new Coroutine($this->runFileTask(new Internal\FileTask("deleteDirectory", [$path])));
     }
 
     public function changePermissions(string $path, int $mode): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("changePermissions", [$path, $mode])));
-        StatCache::clearOn($promise, $path);
-        return $promise;
+        return new Coroutine($this->runFileTask(new Internal\FileTask("changePermissions", [$path, $mode])));
     }
 
     public function changeOwner(string $path, ?int $uid, ?int $gid): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask("changeOwner", [$path, $uid, $gid])));
-        StatCache::clearOn($promise, $path);
-        return $promise;
+        return new Coroutine($this->runFileTask(new Internal\FileTask("changeOwner", [$path, $uid, $gid])));
     }
 
     public function getLinkStatus(string $path): Promise
@@ -128,12 +110,10 @@ final class ParallelDriver implements Driver
 
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): Promise
     {
-        $promise = new Coroutine($this->runFileTask(new Internal\FileTask(
+        return new Coroutine($this->runFileTask(new Internal\FileTask(
             "touch",
             [$path, $modificationTime, $accessTime]
         )));
-        StatCache::clearOn($promise, $path);
-        return $promise;
     }
 
     public function read(string $path): Promise

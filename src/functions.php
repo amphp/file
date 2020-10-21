@@ -5,6 +5,7 @@ namespace Amp\File;
 use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\EioDriver;
 use Amp\File\Driver\ParallelDriver;
+use Amp\File\Driver\StatusCachingDriver;
 use Amp\File\Driver\UvDriver;
 use Amp\Loop;
 use Amp\Promise;
@@ -25,7 +26,13 @@ function filesystem(?Driver $driver = null): Filesystem
             return $filesystem;
         }
 
-        $filesystem = new Filesystem(createDefaultDriver());
+        $defaultDriver = createDefaultDriver();
+
+        if (!\defined("AMP_WORKER")) { // Prevent caching in workers, cache in parent instead.
+            $defaultDriver = new StatusCachingDriver($defaultDriver);
+        }
+
+        $filesystem = new Filesystem($defaultDriver);
     } else {
         $filesystem = new Filesystem($driver);
     }

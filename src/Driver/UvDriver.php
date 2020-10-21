@@ -65,10 +65,6 @@ final class UvDriver implements Driver
 
     public function getStatus(string $path): Promise
     {
-        if ($stat = StatCache::get($path)) {
-            return new Success($stat);
-        }
-
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
 
@@ -85,8 +81,6 @@ final class UvDriver implements Driver
 
                 unset($stat['link']);
             }
-
-            StatCache::set($path, $stat);
 
             $deferred->resolve($stat);
         };
@@ -183,7 +177,6 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_rename($this->loop, $from, $to, $this->createGenericCallback($deferred, "Could not rename file"));
-        StatCache::clearOn($deferred->promise(), $from);
 
         return $deferred->promise();
     }
@@ -194,7 +187,6 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_unlink($this->loop, $path, $this->createGenericCallback($deferred, "Could not unlink file"));
-        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -260,7 +252,6 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         \uv_fs_rmdir($this->loop, $path, $this->createGenericCallback($deferred, "Could not remove directory"));
-        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -303,7 +294,6 @@ final class UvDriver implements Driver
 
         $callback = $this->createGenericCallback($deferred, "Could not change file permissions");
         \uv_fs_chmod($this->loop, $path, $mode, $callback);
-        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -316,7 +306,6 @@ final class UvDriver implements Driver
 
         $callback = $this->createGenericCallback($deferred, "Could not change file owner");
         \uv_fs_chown($this->loop, $path, $uid ?? -1, $gid ?? -1, $callback);
-        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -331,7 +320,6 @@ final class UvDriver implements Driver
 
         $callback = $this->createGenericCallback($deferred, "Could not touch file");
         \uv_fs_utime($this->loop, $path, $modificationTime, $accessTime, $callback);
-        StatCache::clearOn($deferred->promise(), $path);
 
         return $deferred->promise();
     }
@@ -398,7 +386,6 @@ final class UvDriver implements Driver
         } else {
             \uv_fs_fstat($this->loop, $fh, function ($fh, $stat) use ($openArr): void {
                 if (\is_resource($fh)) {
-                    StatCache::set($openArr[1], $stat);
                     $this->finalizeHandle($fh, $stat["size"], $openArr);
                 } else {
                     [, $path, $deferred] = $openArr;

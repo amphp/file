@@ -11,7 +11,6 @@ abstract class FilesystemTest extends AsyncTestCase
     {
         parent::setUp();
         Fixture::init();
-        File\StatCache::clear();
     }
 
     protected function tearDown(): void

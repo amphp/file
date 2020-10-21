@@ -125,8 +125,6 @@ final class FileTask implements Task
             }
         }
 
-        StatCache::clear();
-
         switch ($this->operation) {
             case "getStatus":
             case "deleteFile":
