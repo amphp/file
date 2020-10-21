@@ -199,7 +199,7 @@ function getModificationTime(string $path): Promise
  */
 function getAccessTime(string $path): Promise
 {
-   return filesystem()->getAccessTime($path);
+    return filesystem()->getAccessTime($path);
 }
 
 /**

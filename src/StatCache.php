@@ -11,7 +11,7 @@ final class StatCache
     private static $cache = [];
     private static $timeouts = [];
     private static $ttl = 3;
-    private static $now = null;
+    private static $now;
 
     private static function init(): void
     {

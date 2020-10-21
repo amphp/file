@@ -137,7 +137,7 @@ final class FileTask implements Task
             case "getLinkStatus":
             case "exists":
             case "createDirectory":
-            case "createDirectories":
+            case "createDirectoryRecursively":
             case "listFiles":
             case "deleteDirectory":
             case "changePermissions":

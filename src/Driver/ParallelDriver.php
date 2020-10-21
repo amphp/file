@@ -92,7 +92,7 @@ final class ParallelDriver implements Driver
 
     public function createDirectoryRecursively(string $path, int $mode = 0777): Promise
     {
-        return new Coroutine($this->runFileTask(new Internal\FileTask("createDirectories", [$path, $mode])));
+        return new Coroutine($this->runFileTask(new Internal\FileTask("createDirectoryRecursively", [$path, $mode])));
     }
 
     public function listFiles(string $path): Promise
