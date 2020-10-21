@@ -65,14 +65,19 @@ final class Fixture
 
     public static function clear(): void
     {
+        \clearstatcache(true);
+
         $fixtureDir = self::path();
         if (!\file_exists($fixtureDir)) {
             return;
         }
+
         if (\stripos(\PHP_OS, "win") === 0) {
             \system('rd /Q /S "' . $fixtureDir . '"');
         } else {
             \system('/bin/rm -rf ' . \escapeshellarg($fixtureDir));
         }
+
+        \clearstatcache(true);
     }
 }
