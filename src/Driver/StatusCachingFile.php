@@ -14,6 +14,12 @@ final class StatusCachingFile implements File
     /** @var callable */
     private $invalidateCallback;
 
+    /**
+     * @param File $file Decorated instance.
+     * @param callable $invalidateCallback Invalidation callback.
+     *
+     * @internal
+     */
     public function __construct(File $file, callable $invalidateCallback)
     {
         $this->file = $file;
