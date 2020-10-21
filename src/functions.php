@@ -118,11 +118,7 @@ function getLinkStatus(string $path): Promise
  */
 function exists(string $path): Promise
 {
-    return call(static function () use ($path) {
-        $result = yield getStatus($path);
-
-        return $result !== null;
-    });
+    return filesystem()->exists($path);
 }
 
 /**
@@ -138,18 +134,7 @@ function exists(string $path): Promise
  */
 function getSize(string $path): Promise
 {
-    return call(static function () use ($path) {
-        $result = yield getStatus($path);
-        if ($result === null) {
-            throw new FilesystemException("Failed to read file size for '{$path}'");
-        }
-
-        if ($result['mode'] & 0100000) {
-            return $result["size"];
-        }
-
-        throw new FilesystemException("Failed to read file size for '{$path}'; specified path is not a regular file");
-    });
+    return filesystem()->getSize($path);
 }
 
 /**
@@ -161,14 +146,7 @@ function getSize(string $path): Promise
  */
 function isDirectory(string $path): Promise
 {
-    return call(static function () use ($path) {
-        $result = yield getStatus($path);
-        if ($result === null) {
-            return false;
-        }
-
-        return (bool) ($result['mode'] & 0040000);
-    });
+    return filesystem()->isDirectory($path);
 }
 
 /**
@@ -180,14 +158,7 @@ function isDirectory(string $path): Promise
  */
 function isFile(string $path): Promise
 {
-    return call(static function () use ($path) {
-        $result = yield getStatus($path);
-        if ($result === null) {
-            return false;
-        }
-
-        return (bool) ($result['mode'] & 0100000);
-    });
+    return filesystem()->isFile($path);
 }
 
 /**
@@ -202,14 +173,7 @@ function isFile(string $path): Promise
  */
 function isSymlink(string $path): Promise
 {
-    return call(function () use ($path) {
-        $result = yield $this->getLinkStatus($path);
-        if ($result === null) {
-            return false;
-        }
-
-        return ($result['mode'] & 0120000) === 0120000;
-    });
+    return filesystem()->isSymlink($path);
 }
 
 /**
@@ -222,14 +186,7 @@ function isSymlink(string $path): Promise
  */
 function getModificationTime(string $path): Promise
 {
-    return call(static function () use ($path) {
-        $result = yield getStatus($path);
-        if ($result === null) {
-            throw new FilesystemException("Failed to read file modification time for '{$path}'");
-        }
-
-        return $result["mtime"];
-    });
+    return filesystem()->getModificationTime($path);
 }
 
 /**
@@ -242,14 +199,7 @@ function getModificationTime(string $path): Promise
  */
 function getAccessTime(string $path): Promise
 {
-    return call(static function () use ($path) {
-        $result = yield getStatus($path);
-        if ($result === null) {
-            throw new FilesystemException("Failed to read file access time for '{$path}'");
-        }
-
-        return $result["atime"];
-    });
+   return filesystem()->getAccessTime($path);
 }
 
 /**
@@ -262,14 +212,7 @@ function getAccessTime(string $path): Promise
  */
 function getCreationTime(string $path): Promise
 {
-    return call(static function () use ($path) {
-        $result = yield getStatus($path);
-        if ($result === null) {
-            throw new FilesystemException("Failed to read file creation time for '{$path}'");
-        }
-
-        return $result["ctime"];
-    });
+    return filesystem()->getCreationTime($path);
 }
 
 /**
@@ -363,9 +306,9 @@ function createDirectory(string $path, int $mode = 0777): Promise
  *
  * @return Promise<void>
  */
-function createDirectories(string $path, int $mode = 0777): Promise
+function createDirectoryRecursively(string $path, int $mode = 0777): Promise
 {
-    return filesystem()->createDirectories($path, $mode);
+    return filesystem()->createDirectoryRecursively($path, $mode);
 }
 
 /**

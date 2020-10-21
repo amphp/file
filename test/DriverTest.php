@@ -344,7 +344,7 @@ abstract class DriverTest extends FilesystemTest
         // test for 0, because previous array_filter made that not work
         $dir = "{$fixtureDir}/newdir/with/recursive/creation/0/1/2";
 
-        $this->assertNull(yield $this->driver->createDirectories($dir, 0764));
+        $this->assertNull(yield $this->driver->createDirectoryRecursively($dir, 0764));
         $stat = yield $this->driver->getStatus($dir);
         $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
     }

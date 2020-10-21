@@ -313,9 +313,9 @@ final class Filesystem
      *
      * @return Promise<void>
      */
-    public function createDirectories(string $path, int $mode = 0777): Promise
+    public function createDirectoryRecursively(string $path, int $mode = 0777): Promise
     {
-        return $this->driver->createDirectories($path, $mode);
+        return $this->driver->createDirectoryRecursively($path, $mode);
     }
 
     /**

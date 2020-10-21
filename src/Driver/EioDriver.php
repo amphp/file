@@ -144,7 +144,7 @@ final class EioDriver implements Driver
         return $deferred->promise();
     }
 
-    public function createDirectories(string $path, int $mode = 0777): Promise
+    public function createDirectoryRecursively(string $path, int $mode = 0777): Promise
     {
         $deferred = new Deferred;
         $this->poll->listen($deferred->promise());
