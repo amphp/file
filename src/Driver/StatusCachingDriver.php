@@ -39,7 +39,14 @@ final class StatusCachingDriver implements Driver
             return new Success($cachedStat);
         }
 
-        return $this->driver->getStatus($path);
+        return call(function () use ($path) {
+            $stat = yield $this->driver->getStatus($path);
+            if ($stat) {
+                $this->statusCache->set($path, $stat, 1000);
+            }
+
+            return $stat;
+        });
     }
 
     public function getLinkStatus(string $path): Promise
