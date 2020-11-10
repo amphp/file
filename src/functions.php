@@ -291,9 +291,9 @@ function createDirectory(string $path, int $mode = 0777): void
  * @param int    $mode
  * @fails \Amp\Files\FilesystemException If the operation fails.
  */
-function createDirectories(string $path, int $mode = 0777): void
+function createDirectoryRecursively(string $path, int $mode = 0777): void
 {
-    filesystem()->createDirectories($path, $mode);
+    filesystem()->createDirectoryRecursively($path, $mode);
 }
 
 /**
