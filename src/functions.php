@@ -52,7 +52,7 @@ function filesystem(?Driver $driver = null): Filesystem
  */
 function createDefaultDriver(): Driver
 {
-    $driver = Loop::get();
+    $driver = Loop::getDriver();
 
     if (UvDriver::isSupported($driver)) {
         /** @var Loop\UvDriver $driver */
