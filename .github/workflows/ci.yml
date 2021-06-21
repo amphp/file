@@ -46,6 +46,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Install libuv
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install libuv1-dev
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
