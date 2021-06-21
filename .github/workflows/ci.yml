@@ -9,19 +9,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - operating-system: 'ubuntu-latest'
+          - operating-system: 'ubuntu-20.04'
             php-version: '7.1'
 
-          - operating-system: 'ubuntu-latest'
+          - operating-system: 'ubuntu-20.04'
             php-version: '7.2'
 
-          - operating-system: 'ubuntu-latest'
+          - operating-system: 'ubuntu-20.04'
             php-version: '7.3'
 
-          - operating-system: 'ubuntu-latest'
+          - operating-system: 'ubuntu-20.04'
             php-version: '7.4'
 
-          - operating-system: 'ubuntu-latest'
+          - operating-system: 'ubuntu-20.04'
             php-version: '8.0'
             composer-flags: '--ignore-platform-req=php'
 
@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install libuv
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-20.04'
         run: sudo apt-get install libuv1-dev
 
       - name: Setup PHP
