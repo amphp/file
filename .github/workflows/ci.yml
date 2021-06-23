@@ -23,7 +23,6 @@ jobs:
 
           - operating-system: 'ubuntu-latest'
             php-version: '8.0'
-            composer-flags: '--ignore-platform-req=ext-eio'
 
     name: PHP ${{ matrix.php-version }} ${{ matrix.job-description }}
 
@@ -45,7 +44,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: eio, uv-amphp/ext-uv@master
+          extensions: eio-beta, uv-amphp/ext-uv@master
 
       - name: Get Composer cache directory
         id: composer-cache
