@@ -1,8 +1,4 @@
-# file
-
-[![Build Status](https://img.shields.io/travis/amphp/file/master.svg?style=flat-square)](https://travis-ci.org/amphp/file)
-[![CoverageStatus](https://img.shields.io/coveralls/amphp/file/master.svg?style=flat-square)](https://coveralls.io/github/amphp/file?branch=master)
-![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
+# file ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
 `amphp/file` allows non-blocking access to the filesystem for [Amp](https://github.com/amphp/amp).
 
@@ -16,17 +12,17 @@ composer require amphp/file
 
 ## Optional Extension Backends
 
-Extensions allow to use threading in the background instead of using multiple processes.
+Extensions allow using threading in the background instead of using multiple processes.
  
- - [eio](https://pecl.php.net/package/eio)
- - [php-uv](https://github.com/bwoebi/php-uv)
- - [parallel](https://github.com/krakjoe/parallel)
+ - [`ext-eio`](https://pecl.php.net/package/eio)
+ - [`ext-uv`](https://github.com/amphp/ext-uv)
+ - [`ext-parallel`](https://github.com/krakjoe/parallel)
 
 `amphp/file` works out of the box without any PHP extensions. It uses multi-processing by default, but also comes with a blocking driver that just uses PHP's blocking functions in the current process.
 
 ## Versioning
 
-`amphp/file` follows the [semver](http://semver.org/) semantic versioning specification like all other `amphp` packages.
+`amphp/file` follows the [semver](https://semver.org/) semantic versioning specification like all other `amphp` packages.
 
 ## Security
 

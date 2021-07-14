@@ -141,7 +141,10 @@ final class ParallelFile implements File
 
         try {
             $data = $this->worker->enqueue(new Internal\FileTask('fread', [$length], $this->id));
-            $this->position += \strlen($data);
+            
+            if ($data !== null) {
+                $this->position += \strlen($data);
+            }
         } catch (TaskException $exception) {
             throw new StreamException("Reading from the file failed", 0, $exception);
         } catch (WorkerException $exception) {
