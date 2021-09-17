@@ -25,6 +25,9 @@ final class EioPoll
         $this->driver = $driver;
 
         if (!self::$stream) {
+            if (\function_exists('eio_init')) {
+                \eio_init();
+            }
             self::$stream = \eio_get_event_stream();
         }
 
