@@ -7,10 +7,8 @@ use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
-use Amp\Loop;
-use Amp\Promise;
-use Amp\Success;
-use function Amp\await;
+use Revolt\EventLoop;
+use Revolt\EventLoop\Driver as EventLoopDriver;
 
 final class EioDriver implements Driver
 {
@@ -22,10 +20,9 @@ final class EioDriver implements Driver
         return \extension_loaded('eio');
     }
 
-    /** @var Internal\EioPoll */
-    private $poll;
+    private Internal\EioPoll $poll;
 
-    public function __construct(Loop\Driver $driver)
+    public function __construct(EventLoopDriver $driver)
     {
         $this->poll = new Internal\EioPoll($driver);
     }
@@ -40,111 +37,147 @@ final class EioDriver implements Driver
         $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
 
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $openArr = [$mode, $path, $deferred];
         \eio_open($path, $flags, $chmod, \EIO_PRI_DEFAULT, [$this, "onOpenHandle"], $openArr);
 
-        return await($deferred->promise());
+        try {
+            return $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function getStatus(string $path): ?array
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         $data = [$deferred, $path];
         \eio_stat($path, $priority, [$this, "onStat"], $data);
 
-        return await($deferred->promise());
+        try {
+            return $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function getLinkStatus(string $path): ?array
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_lstat($path, $priority, [$this, "onLstat"], $deferred);
 
-        return await($deferred->promise());
+        try {
+            return $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function createSymlink(string $target, string $link): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_symlink($target, $link, $priority, [$this, "onGenericResult"], $deferred);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function createHardlink(string $target, string $link): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_link($target, $link, $priority, [$this, "onGenericResult"], $deferred);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function resolveSymlink(string $path): string
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_readlink($path, $priority, [$this, "onReadlink"], $deferred);
 
-        return await($deferred->promise());
+        try {
+            return $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function move(string $from, string $to): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_rename($from, $to, $priority, [$this, "onGenericResult"], $deferred);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function deleteFile(string $path): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         $data = [$deferred, $path];
         $result = \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
         // For a non-existent file eio_unlink immediately returns true and the callback is never called.
         if ($result === true) {
-            $deferred->fail(new FilesystemException('File does not exist.'));
+            $deferred->error(new FilesystemException('File does not exist.'));
         }
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function createDirectory(string $path, int $mode = 0777): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         \eio_mkdir($path, $mode, \EIO_PRI_DEFAULT, [$this, "onGenericResult"], $deferred);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
 
@@ -165,70 +198,79 @@ final class EioDriver implements Driver
             if (empty($arrayPath)) {
                 \eio_mkdir($tmpPath, $mode, $priority, [$this, "onGenericResult"], $deferred);
             } else {
-                $this->isdir($tmpPath)->onResolve(function ($error, $result) use (
-                    $callback,
-                    $tmpPath,
-                    $mode,
-                    $priority
-                ) {
-                    if ($result) {
-                        $callback();
-                    } else {
-                        \eio_mkdir($tmpPath, $mode, $priority, $callback);
-                    }
-                });
+                \eio_mkdir($tmpPath, $mode, $priority, $callback);
             }
         };
 
         $callback();
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function deleteDirectory(string $path): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         $data = [$deferred, $path];
         \eio_rmdir($path, $priority, [$this, "onRmdir"], $data);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function listFiles(string $path): array
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $flags = \EIO_READDIR_STAT_ORDER | \EIO_READDIR_DIRS_FIRST;
         $priority = \EIO_PRI_DEFAULT;
         \eio_readdir($path, $flags, $priority, [$this, "onScandir"], $deferred);
 
-        return await($deferred->promise());
+        try {
+            return $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function changePermissions(string $path, int $mode): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_chmod($path, $mode, $priority, [$this, "onGenericResult"], $deferred);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_chown($path, $uid ?? -1, $gid ?? -1, $priority, [$this, "onGenericResult"], $deferred);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
@@ -237,12 +279,16 @@ final class EioDriver implements Driver
         $accessTime = $accessTime ?? $modificationTime;
 
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
         \eio_utime($path, $accessTime, $modificationTime, $priority, [$this, "onGenericResult"], $deferred);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function read(string $path): string
@@ -252,11 +298,15 @@ final class EioDriver implements Driver
         $priority = \EIO_PRI_DEFAULT;
 
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         \eio_open($path, $flags, $mode, $priority, [$this, "onGetOpen"], $deferred);
 
-        return await($deferred->promise());
+        try {
+            return $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     public function write(string $path, string $contents): void
@@ -266,12 +316,16 @@ final class EioDriver implements Driver
         $priority = \EIO_PRI_DEFAULT;
 
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $data = [$contents, $deferred];
         \eio_open($path, $flags, $mode, $priority, [$this, "onPutOpen"], $data);
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
     private function parseMode(string $mode): int
@@ -309,7 +363,7 @@ final class EioDriver implements Driver
         [$mode, $path, $deferred] = $openArr;
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } elseif ($mode[0] === "a") {
             \array_unshift($openArr, $result);
             \eio_ftruncate($result, $offset = 0, \EIO_PRI_DEFAULT, [$this, "onOpenFtruncate"], $openArr);
@@ -324,10 +378,10 @@ final class EioDriver implements Driver
         [$fh, $mode, $path, $deferred] = $openArr;
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
             $handle = new EioFile($this->poll, $fh, $path, $mode, $size = 0);
-            $deferred->resolve($handle);
+            $deferred->complete($handle);
         }
     }
 
@@ -335,10 +389,10 @@ final class EioDriver implements Driver
     {
         [$fh, $mode, $path, $deferred] = $openArr;
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
             $handle = new EioFile($this->poll, $fh, $path, $mode, $result["size"]);
-            $deferred->resolve($handle);
+            $deferred->complete($handle);
         }
     }
 
@@ -346,36 +400,36 @@ final class EioDriver implements Driver
     {
         [$deferred, $path] = $data;
         if ($result === -1) {
-            $deferred->resolve(null);
+            $deferred->complete(null);
         } else {
-            $deferred->resolve($result);
+            $deferred->complete($result);
         }
     }
 
     private function onLstat(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
-            $deferred->resolve(null);
+            $deferred->complete(null);
         } else {
-            $deferred->resolve($result);
+            $deferred->complete($result);
         }
     }
 
     private function onReadlink(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve($result);
+            $deferred->complete($result);
         }
     }
 
     private function onGenericResult(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve();
+            $deferred->complete(null);
         }
     }
 
@@ -384,25 +438,10 @@ final class EioDriver implements Driver
         [$deferred, $path] = $data;
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve();
+            $deferred->complete(null);
         }
-    }
-
-    private function isDir(string $path): Promise
-    {
-        $deferred = new Deferred;
-
-        $this->getStatus($path)->onResolve(static function ($error, $result) use ($deferred): void {
-            if ($result) {
-                $deferred->resolve(($result["mode"] & 0040000) === 0040000);
-            } else {
-                $deferred->resolve(false);
-            }
-        });
-
-        return $deferred->promise();
     }
 
     private function onRmdir(array $data, $result, $req): void
@@ -410,27 +449,27 @@ final class EioDriver implements Driver
         [$deferred, $path] = $data;
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve();
+            $deferred->complete(null);
         }
     }
 
     private function onScandir(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
             $result = $result["names"];
             \sort($result);
-            $deferred->resolve($result);
+            $deferred->complete($result);
         }
     }
 
     private function onGetOpen(Deferred $deferred, $result, $req): void
     {
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
             $priority = \EIO_PRI_DEFAULT;
             \eio_fstat($result, $priority, [$this, "onGetFstat"], [$result, $deferred]);
@@ -442,7 +481,7 @@ final class EioDriver implements Driver
         [$fh, $deferred] = $fhAndPromisor;
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
             return;
         }
 
@@ -459,9 +498,9 @@ final class EioDriver implements Driver
         \eio_close($fh);
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve($result);
+            $deferred->complete($result);
         }
     }
 
@@ -470,7 +509,7 @@ final class EioDriver implements Driver
         [$contents, $deferred] = $data;
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
             $length = \strlen($contents);
             $offset = 0;
@@ -488,9 +527,9 @@ final class EioDriver implements Driver
         \eio_close($fh);
 
         if ($result === -1) {
-            $deferred->fail(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
         } else {
-            $deferred->resolve();
+            $deferred->complete(null);
         }
     }
 }

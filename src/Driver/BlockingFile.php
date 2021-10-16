@@ -5,6 +5,7 @@ namespace Amp\File\Driver;
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\File\File;
+use Amp\Future;
 
 final class BlockingFile implements File
 {
@@ -54,7 +55,7 @@ final class BlockingFile implements File
         }
     }
 
-    public function write(string $data): void
+    public function write(string $data): Future
     {
         if ($this->handle === null) {
             throw new ClosedException("The file '{$this->path}' has been closed");
@@ -72,9 +73,11 @@ final class BlockingFile implements File
         } finally {
             \restore_error_handler();
         }
+
+        return Future::complete(null);
     }
 
-    public function end(string $data = ""): void
+    public function end(string $data = ""): Future
     {
         $this->write($data);
 
@@ -83,6 +86,8 @@ final class BlockingFile implements File
         } catch (\Throwable $exception) {
             // ignore any errors
         }
+
+        return Future::complete(null);
     }
 
     public function close(): void

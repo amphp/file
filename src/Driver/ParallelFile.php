@@ -7,31 +7,25 @@ use Amp\ByteStream\StreamException;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
+use Amp\Future;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
-use Amp\Promise;
-use function Amp\async;
-use function Amp\await;
+use function Amp\coroutine;
+use function Revolt\launch;
 
 final class ParallelFile implements File
 {
-    /** @var Worker */
     private Worker $worker;
 
-    /** @var int|null */
     private ?int $id;
 
-    /** @var string */
     private string $path;
 
-    /** @var int */
     private int $position;
 
-    /** @var int */
     private int $size;
 
-    /** @var string */
     private string $mode;
 
     /** @var bool True if an operation is pending. */
@@ -40,11 +34,9 @@ final class ParallelFile implements File
     /** @var int Number of pending write operations. */
     private int $pendingWrites = 0;
 
-    /** @var bool */
     private bool $writable = true;
 
-    /** @var Promise|null */
-    private ?Promise $closing = null;
+    private ?Future $closing = null;
 
     /**
      * @param Worker $worker
@@ -65,8 +57,10 @@ final class ParallelFile implements File
 
     public function __destruct()
     {
-        if ($this->id !== null) {
-            $this->close();
+        if ($this->id !== null && $this->worker->isRunning()) {
+            $id = $this->id;
+            $worker = $this->worker;
+            launch(static fn () => $worker->enqueue(new Internal\FileTask('fclose', [], $id)));
         }
     }
 
@@ -77,19 +71,19 @@ final class ParallelFile implements File
         }
 
         if ($this->closing) {
-            await($this->closing);
+            $this->closing->await();
             return;
         }
 
         $this->writable = false;
 
-        $this->closing = async(function (): void {
+        $this->closing = coroutine(function (): void {
             $id = $this->id;
             $this->id = null;
             $this->worker->enqueue(new Internal\FileTask('fclose', [], $id));
         });
 
-        await($this->closing);
+        $this->closing->await();
     }
 
     public function truncate(int $size): void
@@ -141,7 +135,7 @@ final class ParallelFile implements File
 
         try {
             $data = $this->worker->enqueue(new Internal\FileTask('fread', [$length], $this->id));
-            
+
             if ($data !== null) {
                 $this->position += \strlen($data);
             }
@@ -156,7 +150,7 @@ final class ParallelFile implements File
         return $data;
     }
 
-    public function write(string $data): void
+    public function write(string $data): Future
     {
         if ($this->id === null) {
             throw new ClosedException("The file has been closed");
@@ -173,28 +167,33 @@ final class ParallelFile implements File
         ++$this->pendingWrites;
         $this->busy = true;
 
-        try {
-            $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
-            $this->position += \strlen($data);
-        } catch (TaskException $exception) {
-            throw new StreamException("Writing to the file failed", 0, $exception);
-        } catch (WorkerException $exception) {
-            throw new StreamException("Sending the task to the worker failed", 0, $exception);
-        } finally {
-            if (--$this->pendingWrites === 0) {
-                $this->busy = false;
+        return coroutine(function () use ($data): void {
+            try {
+                $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
+                $this->position += \strlen($data);
+            } catch (TaskException $exception) {
+                throw new StreamException("Writing to the file failed", 0, $exception);
+            } catch (WorkerException $exception) {
+                throw new StreamException("Sending the task to the worker failed", 0, $exception);
+            } finally {
+                if (--$this->pendingWrites === 0) {
+                    $this->busy = false;
+                }
             }
-        }
+        });
     }
 
-    public function end(string $data = ""): void
+    public function end(string $data = ""): Future
     {
-        try {
-            $this->write($data);
-            $this->writable = false;
-        } finally {
-            $this->close();
-        }
+        return coroutine(function () use ($data): void {
+            try {
+                $future = $this->write($data);
+                $this->writable = false;
+                $future->await();
+            } finally {
+                $this->close();
+            }
+        });
     }
 
     public function seek(int $offset, int $whence = SEEK_SET): int

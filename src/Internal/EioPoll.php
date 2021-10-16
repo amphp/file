@@ -2,8 +2,7 @@
 
 namespace Amp\File\Internal;
 
-use Amp\Loop;
-use Amp\Promise;
+use Revolt\EventLoop\Driver as EventLoopDriver;
 
 /** @internal */
 final class EioPoll
@@ -15,12 +14,8 @@ final class EioPoll
 
     private int $requests = 0;
 
-    private Loop\Driver $driver;
-
-    public function __construct(Loop\Driver $driver)
+    public function __construct(private EventLoopDriver $driver)
     {
-        $this->driver = $driver;
-
         if (!self::$stream) {
             if (\function_exists('eio_init')) {
                 \eio_init();
@@ -35,39 +30,26 @@ final class EioPoll
         });
 
         $this->driver->disable($this->watcher);
-
-        $this->driver->setState(self::class, new class($this->watcher, $driver) {
-            private string $watcher;
-            private Loop\Driver $driver;
-
-            public function __construct(string $watcher, Loop\Driver $driver)
-            {
-                $this->watcher = $watcher;
-                $this->driver = $driver;
-            }
-
-            public function __destruct()
-            {
-                $this->driver->cancel($this->watcher);
-
-                // Ensure there are no active operations anymore. This is a safe-guard as some operations might not be
-                // finished on loop exit due to not being yielded. This also ensures a clean shutdown for these if PHP
-                // exists.
-                \eio_event_loop();
-            }
-        });
     }
 
-    public function listen(Promise $promise): void
+    public function __destruct()
+    {
+        $this->driver->cancel($this->watcher);
+
+        // Ensure there are no active operations anymore. This is a safe-guard as some operations might not be
+        // finished on loop exit due to not being awaited. This also ensures a clean shutdown for these if a PHP
+        // execution context still exists.
+        \eio_event_loop();
+    }
+
+    public function listen(): void
     {
         if ($this->requests++ === 0) {
             $this->driver->enable($this->watcher);
         }
-
-        $promise->onResolve(\Closure::fromCallable([$this, 'done']));
     }
 
-    private function done(): void
+    public function done(): void
     {
         if (--$this->requests === 0) {
             $this->driver->disable($this->watcher);

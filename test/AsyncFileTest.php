@@ -4,8 +4,7 @@ namespace Amp\File\Test;
 
 use Amp\File;
 use Amp\File\PendingOperationError;
-use function Amp\async;
-use function Amp\await;
+use function Amp\coroutine;
 
 abstract class AsyncFileTest extends FileTest
 {
@@ -13,30 +12,30 @@ abstract class AsyncFileTest extends FileTest
     {
         $this->expectException(PendingOperationError::class);
 
-        $handle = File\openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
 
-        $promise1 = async(fn() => $handle->read(20));
-        $promise2 = async(fn() => $handle->read(20));
+        $promise1 = coroutine(fn() => $handle->read(20));
+        $promise2 = coroutine(fn() => $handle->read(20));
 
         $expected = \substr(File\read(__FILE__), 0, 20);
-        $this->assertSame($expected, await($promise1));
+        $this->assertSame($expected, $promise1->await());
 
-        await($promise2);
+        $promise2->await();
     }
 
     public function testSeekWhileReading()
     {
         $this->expectException(PendingOperationError::class);
 
-        $handle = File\openFile(__FILE__, "r");
+        $handle = $this->driver->openFile(__FILE__, "r");
 
-        $promise1 = async(fn() => $handle->read(10));
-        $promise2 = async(fn() => $handle->read(0));
+        $promise1 = coroutine(fn() => $handle->read(10));
+        $promise2 = coroutine(fn() => $handle->read(0));
 
         $expected = \substr(File\read(__FILE__), 0, 10);
-        $this->assertSame($expected, await($promise1));
+        $this->assertSame($expected, $promise1->await());
 
-        await($promise2);
+        $promise2->await();
     }
 
     public function testReadWhileWriting()
@@ -45,16 +44,16 @@ abstract class AsyncFileTest extends FileTest
 
         $path = Fixture::path() . "/temp";
 
-        $handle = File\openFile($path, "c+");
+        $handle = $this->driver->openFile($path, "c+");
 
         $data = "test";
 
-        $promise1 = async(fn() => $handle->write($data));
-        $promise2 = async(fn() => $handle->read(10));
+        $promise1 = $handle->write($data);
+        $promise2 = coroutine(fn() => $handle->read(10));
 
-        $this->assertNull(await($promise1));
+        $this->assertNull($promise1->await());
 
-        await($promise2);
+        $promise2->await();
     }
 
     public function testWriteWhileReading()
@@ -63,13 +62,13 @@ abstract class AsyncFileTest extends FileTest
 
         $path = Fixture::path() . "/temp";
 
-        $handle = File\openFile($path, "c+");
+        $handle = $this->driver->openFile($path, "c+");
 
-        $promise1 = async(fn() => $handle->read(10));
-        $promise2 = async(fn() => $handle->write("test"));
+        $promise1 = coroutine(fn() => $handle->read(10));
+        $promise2 = $handle->write("test");
 
-        $this->assertNull(await($promise1));
+        $this->assertNull($promise1->await());
 
-        await($promise2);
+        $promise2->await();
     }
 }

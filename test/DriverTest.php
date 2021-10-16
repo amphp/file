@@ -38,7 +38,7 @@ abstract class DriverTest extends FilesystemTest
 
         $original = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/symlink.txt";
-        $this->assertNull($this->driver->createSymlink($original, $link));
+        $this->driver->createSymlink($original, $link);
         $this->assertTrue(\is_link($link));
         $this->driver->deleteFile($link);
     }
@@ -58,7 +58,7 @@ abstract class DriverTest extends FilesystemTest
 
         $original = "{$fixtureDir}/file";
         $link = "{$fixtureDir}/hardlink.txt";
-        $this->assertNull($this->driver->createHardlink($original, $link));
+        $this->driver->createHardlink($original, $link);
         $this->assertFileExists($link);
         $this->assertFalse(\is_link($link));
         $this->driver->deleteFile($link);
@@ -273,7 +273,7 @@ abstract class DriverTest extends FilesystemTest
         $new = "{$fixtureDir}/rename2.txt";
 
         $this->driver->write($old, $contents1);
-        $this->assertNull($this->driver->move($old, $new));
+        $this->driver->move($old, $new);
         $contents2 = $this->driver->read($new);
         $this->driver->deleteFile($new);
 
@@ -296,7 +296,7 @@ abstract class DriverTest extends FilesystemTest
         $toUnlink = "{$fixtureDir}/unlink";
         $this->driver->getStatus($toUnlink);
         $this->driver->write($toUnlink, "unlink me");
-        $this->assertNull($this->driver->deleteFile($toUnlink));
+        $this->driver->deleteFile($toUnlink);
         $this->assertNull($this->driver->getStatus($toUnlink));
     }
 
@@ -329,16 +329,16 @@ abstract class DriverTest extends FilesystemTest
 
         \umask(0022);
 
-        $this->assertNull($this->driver->createDirectory($dir));
+        $this->driver->createDirectory($dir);
         $stat = $this->driver->getStatus($dir);
         $this->assertSame('0755', $this->getPermissionsFromStatus($stat));
-        $this->assertNull($this->driver->deleteDirectory($dir));
+        $this->driver->deleteDirectory($dir);
         $this->assertNull($this->driver->getStatus($dir));
 
         // test for 0, because previous array_filter made that not work
         $dir = "{$fixtureDir}/newdir/with/recursive/creation/0/1/2";
 
-        $this->assertNull($this->driver->createDirectoryRecursively($dir, 0764));
+        $this->driver->createDirectoryRecursively($dir, 0764);
         $stat = $this->driver->getStatus($dir);
         $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
     }
@@ -441,7 +441,7 @@ abstract class DriverTest extends FilesystemTest
         $this->driver->write($touch, "touch me");
 
         $oldStat = $this->driver->getStatus($touch);
-        $this->assertNull($this->driver->touch($touch, \time() + 10, \time() + 20));
+        $this->driver->touch($touch, \time() + 10, \time() + 20);
         $newStat = $this->driver->getStatus($touch);
         $this->driver->deleteFile($touch);
 
@@ -466,7 +466,7 @@ abstract class DriverTest extends FilesystemTest
         $path = "{$fixtureDir}/file";
         $stat = $this->driver->getStatus($path);
         $this->assertNotSame('0777', \substr(\decoct($stat['mode']), -4));
-        $this->assertNull($this->driver->changePermissions($path, 0777));
+        $this->driver->changePermissions($path, 0777);
         $stat = $this->driver->getStatus($path);
         $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
     }
@@ -488,7 +488,8 @@ abstract class DriverTest extends FilesystemTest
         $path = "{$fixtureDir}/file";
         $this->driver->getStatus($path);
         $user = \fileowner($path);
-        $this->assertNull($this->driver->changeOwner($path, $user, null));
+        $this->driver->changeOwner($path, $user, null);
+        self::assertSame($user, \fileowner($path));
     }
 
     public function testChangeOwnerFailsOnNonexistentPath()

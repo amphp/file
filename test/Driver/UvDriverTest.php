@@ -5,7 +5,8 @@ namespace Amp\File\Test\Driver;
 use Amp\File;
 use Amp\File\Driver\UvDriver;
 use Amp\File\Test\DriverTest;
-use Amp\Loop;
+use Revolt\EventLoop;
+use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
 
 class UvDriverTest extends DriverTest
 {
@@ -14,24 +15,26 @@ class UvDriverTest extends DriverTest
      *
      * @param \Closure $linkResolver
      */
-    public function testResolveSymlinkError(\Closure $linkResolver): \Generator
+    public function testResolveSymlinkError(\Closure $linkResolver)
     {
         if (\version_compare(\phpversion('uv'), '0.3.0', '<')) {
             $this->markTestSkipped('UvDriver Test Skipped: Causes Crash');
         }
 
-        yield from parent::testResolveSymlinkError($linkResolver);
+        parent::testResolveSymlinkError($linkResolver);
     }
 
     protected function createDriver(): File\Driver
     {
         if (!\extension_loaded("uv")) {
-            $this->markTestSkipped("php-uv extension not loaded");
+            $this->markTestSkipped("ext-uv not loaded");
         }
 
-        $loop = new Loop\UvDriver;
+        $loop = EventLoop::getDriver();
 
-        Loop::set($loop);
+        if (!$loop instanceof UvLoopDriver) {
+            $this->markTestSkipped("Loop driver must be using ext-uv");
+        }
 
         return new UvDriver($loop);
     }

@@ -3,6 +3,8 @@
 namespace Amp\File\Driver;
 
 use Amp\File\File;
+use Amp\Future;
+use function Amp\coroutine;
 
 final class StatusCachingFile implements File
 {
@@ -28,22 +30,26 @@ final class StatusCachingFile implements File
         return $this->file->read($length);
     }
 
-    public function write(string $data): void
+    public function write(string $data): Future
     {
-        try {
-            $this->file->write($data);
-        } finally {
-            $this->invalidate();
-        }
+        return coroutine(function () use ($data): void {
+            try {
+                $this->file->write($data)->await();
+            } finally {
+                $this->invalidate();
+            }
+        });
     }
 
-    public function end(string $data = ""): void
+    public function end(string $data = ""): Future
     {
-        try {
-            $this->file->end($data);
-        } finally {
-            $this->invalidate();
-        }
+        return coroutine(function () use ($data): void {
+            try {
+                $this->file->end($data)->await();
+            } finally {
+                $this->invalidate();
+            }
+        });
     }
 
     public function close(): void

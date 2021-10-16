@@ -2,8 +2,7 @@
 
 namespace Amp\File\Internal;
 
-use Amp\Loop\UvDriver;
-use Amp\Promise;
+use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
 
 /** @internal */
 final class UvPoll
@@ -12,45 +11,27 @@ final class UvPoll
 
     private int $requests = 0;
 
-    private UvDriver $driver;
-
-    public function __construct(UvDriver $driver)
+    public function __construct(private UvLoopDriver $driver)
     {
-        $this->driver = $driver;
-
-        $this->watcher = $this->driver->repeat(\PHP_INT_MAX / 2, static function (): void {
-            // do nothing, it's a dummy watcher
-        });
+        // Create dummy watcher to keep loop running while polling.
+        $this->watcher = $this->driver->repeat(\PHP_INT_MAX / 2, static fn () => null);
 
         $this->driver->disable($this->watcher);
-
-        $this->driver->setState(self::class, new class($this->watcher, $driver) {
-            private string $watcher;
-            private UvDriver $driver;
-
-            public function __construct(string $watcher, UvDriver $driver)
-            {
-                $this->watcher = $watcher;
-                $this->driver = $driver;
-            }
-
-            public function __destruct()
-            {
-                $this->driver->cancel($this->watcher);
-            }
-        });
     }
 
-    public function listen(Promise $promise): void
+    public function __destruct()
+    {
+        $this->driver->cancel($this->watcher);
+    }
+
+    public function listen(): void
     {
         if ($this->requests++ === 0) {
             $this->driver->enable($this->watcher);
         }
-
-        $promise->onResolve(\Closure::fromCallable([$this, 'done']));
     }
 
-    private function done(): void
+    public function done(): void
     {
         if (--$this->requests === 0) {
             $this->driver->disable($this->watcher);

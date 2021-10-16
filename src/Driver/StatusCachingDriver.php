@@ -5,8 +5,6 @@ namespace Amp\File\Driver;
 use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\Internal\Cache;
-use Amp\Promise;
-use Amp\Success;
 
 final class StatusCachingDriver implements Driver
 {
@@ -26,9 +24,7 @@ final class StatusCachingDriver implements Driver
     {
         $file = $this->driver->openFile($path, $mode);
 
-        return new StatusCachingFile($file, function () use ($path): void {
-            $this->statusCache->delete($path);
-        });
+        return new StatusCachingFile($file, fn () => $this->statusCache->delete($path));
     }
 
     public function getStatus(string $path): ?array
@@ -165,22 +161,5 @@ final class StatusCachingDriver implements Driver
         } finally {
             $this->statusCache->delete($path);
         }
-    }
-
-    private function invalidate(array $paths, Promise $promise): Promise
-    {
-        foreach ($paths as $path) {
-            $this->statusCache->delete($path);
-        }
-
-        if (!$promise instanceof Success) {
-            $promise->onResolve(function () use ($paths) {
-                foreach ($paths as $path) {
-                    $this->statusCache->delete($path);
-                }
-            });
-        }
-
-        return $promise;
     }
 }

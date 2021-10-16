@@ -2,8 +2,7 @@
 
 namespace Amp\File\Internal;
 
-use Amp\Loop;
-use Amp\Struct;
+use Revolt\EventLoop;
 
 /** @internal */
 final class Cache
@@ -25,8 +24,6 @@ final class Cache
         // instance and the loop's watcher. Otherwise this object could only be GC'd when the TTL watcher was cancelled
         // at the loop layer.
         $this->sharedState = $sharedState = new class {
-            use Struct;
-
             /** @var array[] */
             public array $cache = [];
             /** @var int[] */
@@ -56,10 +53,10 @@ final class Cache
             }
         };
 
-        $this->ttlWatcherId = Loop::repeat($gcInterval, [$sharedState, "collectGarbage"]);
+        $this->ttlWatcherId = EventLoop::repeat($gcInterval, [$sharedState, "collectGarbage"]);
         $this->maxSize = $maxSize;
 
-        Loop::unreference($this->ttlWatcherId);
+        EventLoop::unreference($this->ttlWatcherId);
     }
 
     public function __destruct()
@@ -67,7 +64,7 @@ final class Cache
         $this->sharedState->cache = [];
         $this->sharedState->cacheTimeouts = [];
 
-        Loop::cancel($this->ttlWatcherId);
+        EventLoop::cancel($this->ttlWatcherId);
     }
 
     public function get(string $key): ?array

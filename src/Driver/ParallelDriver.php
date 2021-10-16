@@ -6,14 +6,12 @@ use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
+use Amp\Future;
 use Amp\Parallel\Worker\Pool;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\TaskFailureThrowable;
 use Amp\Parallel\Worker\WorkerException;
-use Amp\Promise;
-use Amp\Success;
-use function Amp\async;
-use function Amp\await;
+use function Amp\coroutine;
 use function Amp\Parallel\Worker\pool;
 
 final class ParallelDriver implements Driver
@@ -28,8 +26,8 @@ final class ParallelDriver implements Driver
     /** @var \SplObjectStorage Worker storage. */
     private \SplObjectStorage $workerStorage;
 
-    /** @var Promise Pending worker request promise. */
-    private Promise $pendingWorker;
+    /** @var Future Pending worker request promise. */
+    private Future $pendingWorker;
 
     /**
      * @param Pool|null $pool
@@ -40,7 +38,7 @@ final class ParallelDriver implements Driver
         $this->pool = $pool ?? pool();
         $this->workerLimit = $workerLimit;
         $this->workerStorage = new \SplObjectStorage;
-        $this->pendingWorker = new Success;
+        $this->pendingWorker = Future::complete(null);
     }
 
     public function openFile(string $path, string $mode): File
@@ -68,11 +66,11 @@ final class ParallelDriver implements Driver
 
     private function selectWorker(): Worker
     {
-        await($this->pendingWorker); // Wait for any currently pending request for a worker.
+        $this->pendingWorker->await(); // Wait for any currently pending request for a worker.
 
         if ($this->workerStorage->count() < $this->workerLimit) {
-            $this->pendingWorker = async(fn() => $this->pool->getWorker());
-            $worker = await($this->pendingWorker);
+            $this->pendingWorker = coroutine(fn() => $this->pool->getWorker());
+            $worker = $this->pendingWorker->await();
 
             if ($this->workerStorage->contains($worker)) {
                 // amphp/parallel v1.x may return an already used worker from the pool.

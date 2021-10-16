@@ -8,11 +8,9 @@ use Amp\Deferred;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
-use Amp\Loop;
-use Amp\Promise;
-use Amp\Success;
-use function Amp\async;
-use function Amp\await;
+use Amp\Future;
+use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
+use function Amp\coroutine;
 
 final class UvFile implements File
 {
@@ -38,13 +36,13 @@ final class UvFile implements File
 
     private bool $writable = true;
 
-    private ?Promise $closing = null;
+    private ?Future $closing = null;
 
     /** @var bool True if ext-uv version is < 0.3.0. */
     private bool $priorVersion;
 
     /**
-     * @param \Amp\Loop\UvDriver $driver
+     * @param UvLoopDriver       $driver
      * @param Internal\UvPoll    $poll Poll for keeping the loop active.
      * @param resource           $fh File handle.
      * @param string             $path
@@ -52,7 +50,7 @@ final class UvFile implements File
      * @param int                $size
      */
     public function __construct(
-        Loop\UvDriver $driver,
+        UvLoopDriver $driver,
         Internal\UvPoll $poll,
         $fh,
         string $path,
@@ -79,7 +77,7 @@ final class UvFile implements File
         }
 
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $this->isActive = true;
 
@@ -89,16 +87,16 @@ final class UvFile implements File
             if (\is_int($buffer)) {
                 $error = \uv_strerror($buffer);
                 if ($error === "bad file descriptor") {
-                    $deferred->fail(new ClosedException("Reading from the file failed due to a closed handle"));
+                    $deferred->error(new ClosedException("Reading from the file failed due to a closed handle"));
                 } else {
-                    $deferred->fail(new StreamException("Reading from the file failed: " . $error));
+                    $deferred->error(new StreamException("Reading from the file failed: " . $error));
                 }
                 return;
             }
 
             $length = \strlen($buffer);
             $this->position += $length;
-            $deferred->resolve($length ? $buffer : null);
+            $deferred->complete($length ? $buffer : null);
         };
 
         if ($this->priorVersion) {
@@ -113,10 +111,14 @@ final class UvFile implements File
 
         \uv_fs_read($this->loop, $this->fh, $this->position, $length, $onRead);
 
-        return await($deferred->promise());
+        try {
+            return $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
-    public function write(string $data): void
+    public function write(string $data): Future
     {
         if ($this->isActive && $this->queue->isEmpty()) {
             throw new PendingOperationError;
@@ -129,28 +131,31 @@ final class UvFile implements File
         $this->isActive = true;
 
         if ($this->queue->isEmpty()) {
-            $promise = $this->push($data);
+            $future = $this->push($data);
         } else {
-            $promise = $this->queue->top();
-            $promise = async(function () use ($promise, $data): void {
-                await($promise);
-                await($this->push($data));
+            $future = $this->queue->top();
+            $future = coroutine(function () use ($future, $data): void {
+                $future->await();
+                $this->push($data)->await();
             });
         }
 
-        $this->queue->push($promise);
+        $this->queue->push($future);
 
-        await($promise);
+        return $future;
     }
 
-    public function end(string $data = ""): void
+    public function end(string $data = ""): Future
     {
-        try {
-            $this->write($data);
-            $this->writable = false;
-        } finally {
-            $this->close();
-        }
+        return coroutine(function () use ($data): void {
+            try {
+                $future = $this->write($data);
+                $this->writable = false;
+                $future->await();
+            } finally {
+                $this->close();
+            }
+        });
     }
 
     public function truncate(int $size): void
@@ -166,18 +171,18 @@ final class UvFile implements File
         $this->isActive = true;
 
         if ($this->queue->isEmpty()) {
-            $promise = $this->trim($size);
+            $future = $this->trim($size);
         } else {
-            $promise = $this->queue->top();
-            $promise = async(function () use ($promise, $size): void {
-                await($promise);
-                await($this->trim($size));
+            $future = $this->queue->top();
+            $future = coroutine(function () use ($future, $size): void {
+                $future->await();
+                $this->trim($size)->await();
             });
         }
 
-        $this->queue->push($promise);
+        $this->queue->push($future);
 
-        await($promise);
+        $future->await();
     }
 
     public function seek(int $offset, int $whence = \SEEK_SET): int
@@ -211,7 +216,7 @@ final class UvFile implements File
 
     public function eof(): bool
     {
-        return !$this->queue->isEmpty() ? false : ($this->size <= $this->position);
+        return $this->queue->isEmpty() && $this->size <= $this->position;
     }
 
     public function getPath(): string
@@ -227,35 +232,39 @@ final class UvFile implements File
     public function close(): void
     {
         if ($this->closing) {
-            await($this->closing);
+            $this->closing->await();
             return;
         }
 
         $deferred = new Deferred;
-        $this->poll->listen($this->closing = $deferred->promise());
+        $this->poll->listen();
 
         \uv_fs_close($this->loop, $this->fh, static function () use ($deferred): void {
             // Ignore errors when closing file, as the handle will become invalid anyway.
-            $deferred->resolve();
+            $deferred->complete(null);
         });
 
-        await($deferred->promise());
+        try {
+            $deferred->getFuture()->await();
+        } finally {
+            $this->poll->done();
+        }
     }
 
-    private function push(string $data): Promise
+    private function push(string $data): Future
     {
         $length = \strlen($data);
 
         if ($length === 0) {
-            return new Success(0);
+            return Future::complete(null);
         }
 
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $onWrite = function ($fh, $result) use ($deferred, $length): void {
             if ($this->queue->isEmpty()) {
-                $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
+                $deferred->error(new ClosedException('No pending write, the file may have been closed'));
             }
 
             $this->queue->shift();
@@ -266,32 +275,33 @@ final class UvFile implements File
             if ($result < 0) {
                 $error = \uv_strerror($result);
                 if ($error === "bad file descriptor") {
-                    $deferred->fail(new ClosedException("Writing to the file failed due to a closed handle"));
+                    $deferred->error(new ClosedException("Writing to the file failed due to a closed handle"));
                 } else {
-                    $deferred->fail(new StreamException("Writing to the file failed: " . $error));
+                    $deferred->error(new StreamException("Writing to the file failed: " . $error));
                 }
             } else {
                 $this->position += $length;
                 if ($this->position > $this->size) {
                     $this->size = $this->position;
                 }
-                $deferred->resolve($length);
+                $deferred->complete(null);
+                $this->poll->done();
             }
         };
 
         \uv_fs_write($this->loop, $this->fh, $data, $this->position, $onWrite);
 
-        return $deferred->promise();
+        return $deferred->getFuture();
     }
 
-    private function trim(int $size): Promise
+    private function trim(int $size): Future
     {
         $deferred = new Deferred;
-        $this->poll->listen($deferred->promise());
+        $this->poll->listen();
 
         $onTruncate = function ($fh) use ($deferred, $size): void {
             if ($this->queue->isEmpty()) {
-                $deferred->fail(new ClosedException('No pending write, the file may have been closed'));
+                $deferred->error(new ClosedException('No pending write, the file may have been closed'));
             }
 
             $this->queue->shift();
@@ -300,7 +310,8 @@ final class UvFile implements File
             }
 
             $this->size = $size;
-            $deferred->resolve();
+            $deferred->complete(null);
+            $this->poll->done();
         };
 
         \uv_fs_ftruncate(
@@ -310,6 +321,6 @@ final class UvFile implements File
             $onTruncate
         );
 
-        return $deferred->promise();
+        return $deferred->getFuture();
     }
 }

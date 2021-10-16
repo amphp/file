@@ -7,9 +7,7 @@ use Amp\File\Driver\EioDriver;
 use Amp\File\Driver\ParallelDriver;
 use Amp\File\Driver\StatusCachingDriver;
 use Amp\File\Driver\UvDriver;
-use Amp\Loop;
-
-const LOOP_STATE_IDENTIFIER = Driver::class;
+use Revolt\EventLoop;
 
 /**
  * Retrieve the application-wide filesystem instance.
@@ -20,9 +18,14 @@ const LOOP_STATE_IDENTIFIER = Driver::class;
  */
 function filesystem(?Driver $driver = null): Filesystem
 {
+    static $map;
+    $map ??= new \WeakMap();
+
+    $loop = EventLoop::getDriver();
+
     if ($driver === null) {
-        if ($filesystem = Loop::getState(LOOP_STATE_IDENTIFIER)) {
-            return $filesystem;
+        if (isset($map[$loop])) {
+            return $map[$loop];
         }
 
         $defaultDriver = createDefaultDriver();
@@ -40,7 +43,7 @@ function filesystem(?Driver $driver = null): Filesystem
         throw new \Error("Cannot use the parallel driver within a worker");
     }
 
-    Loop::setState(LOOP_STATE_IDENTIFIER, $filesystem);
+    $map[$loop] = $filesystem;
 
     return $filesystem;
 }
@@ -52,10 +55,10 @@ function filesystem(?Driver $driver = null): Filesystem
  */
 function createDefaultDriver(): Driver
 {
-    $driver = Loop::getDriver();
+    $driver = EventLoop::getDriver();
 
     if (UvDriver::isSupported($driver)) {
-        /** @var Loop\UvDriver $driver */
+        /** @var EventLoop\Driver\UvDriver $driver */
         return new UvDriver($driver);
     }
 

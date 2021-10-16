@@ -4,6 +4,7 @@ namespace Amp\File;
 
 use Amp\ByteStream\InputStream;
 use Amp\ByteStream\OutputStream;
+use Amp\Future;
 
 interface File extends InputStream, OutputStream
 {
@@ -27,14 +28,14 @@ interface File extends InputStream, OutputStream
      *
      * @param string $data
      */
-    public function write(string $data): void;
+    public function write(string $data): Future;
 
     /**
      * Write $data to the open file handle and close the handle once the write completes.
      *
      * @param string $data
      */
-    public function end(string $data = ""): void;
+    public function end(string $data = ""): Future;
 
     /**
      * Close the file handle.

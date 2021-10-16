@@ -8,13 +8,6 @@ use Amp\Sync\Test\AbstractMutexTest;
 
 final class AsyncFileMutexTest extends AbstractMutexTest
 {
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        $this->ignoreLoopWatchers();
-    }
-
     public function createMutex(): Mutex
     {
         return new AsyncFileMutex(\tempnam(\sys_get_temp_dir(), 'mutex-') . '.lock');
