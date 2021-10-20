@@ -11,8 +11,8 @@ use Amp\Future;
 use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
+use Revolt\EventLoop;
 use function Amp\coroutine;
-use function Revolt\launch;
 
 final class ParallelFile implements File
 {
@@ -60,7 +60,7 @@ final class ParallelFile implements File
         if ($this->id !== null && $this->worker->isRunning()) {
             $id = $this->id;
             $worker = $this->worker;
-            launch(static fn () => $worker->enqueue(new Internal\FileTask('fclose', [], $id)));
+            EventLoop::queue(static fn () => $worker->enqueue(new Internal\FileTask('fclose', [], $id)));
         }
     }
 
