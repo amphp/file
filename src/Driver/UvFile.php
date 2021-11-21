@@ -4,13 +4,14 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
+use Amp\CancellationToken;
 use Amp\Deferred;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Future;
 use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
-use function Amp\coroutine;
+use function Amp\launch;
 
 final class UvFile implements File
 {
@@ -70,7 +71,7 @@ final class UvFile implements File
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
     }
 
-    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->isActive) {
             throw new PendingOperationError;
@@ -83,6 +84,10 @@ final class UvFile implements File
 
         $onRead = function ($result, $buffer) use ($deferred): void {
             $this->isActive = false;
+
+            if ($deferred->isComplete()) {
+                return;
+            }
 
             if (\is_int($buffer)) {
                 $error = \uv_strerror($buffer);
@@ -111,9 +116,15 @@ final class UvFile implements File
 
         \uv_fs_read($this->loop, $this->fh, $this->position, $length, $onRead);
 
+        $id = $token?->subscribe(function (\Throwable $exception) use ($deferred): void {
+            $this->isActive = false;
+            $deferred->error($exception);
+        });
+
         try {
             return $deferred->getFuture()->await();
         } finally {
+            $token?->unsubscribe($id);
             $this->poll->done();
         }
     }
@@ -134,7 +145,7 @@ final class UvFile implements File
             $future = $this->push($data);
         } else {
             $future = $this->queue->top();
-            $future = coroutine(function () use ($future, $data): void {
+            $future = launch(function () use ($future, $data): void {
                 $future->await();
                 $this->push($data)->await();
             });
@@ -147,7 +158,7 @@ final class UvFile implements File
 
     public function end(string $data = ""): Future
     {
-        return coroutine(function () use ($data): void {
+        return launch(function () use ($data): void {
             try {
                 $future = $this->write($data);
                 $this->writable = false;
@@ -174,7 +185,7 @@ final class UvFile implements File
             $future = $this->trim($size);
         } else {
             $future = $this->queue->top();
-            $future = coroutine(function () use ($future, $size): void {
+            $future = launch(function () use ($future, $size): void {
                 $future->await();
                 $this->trim($size)->await();
             });
@@ -214,7 +225,7 @@ final class UvFile implements File
         return $this->position;
     }
 
-    public function eof(): bool
+    public function atEnd(): bool
     {
         return $this->queue->isEmpty() && $this->size <= $this->position;
     }

@@ -2,9 +2,10 @@
 
 namespace Amp\File\Driver;
 
+use Amp\CancellationToken;
 use Amp\File\File;
 use Amp\Future;
-use function Amp\coroutine;
+use function Amp\launch;
 
 final class StatusCachingFile implements File
 {
@@ -25,14 +26,14 @@ final class StatusCachingFile implements File
         $this->invalidateCallback = $invalidateCallback;
     }
 
-    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
-        return $this->file->read($length);
+        return $this->file->read($token, $length);
     }
 
     public function write(string $data): Future
     {
-        return coroutine(function () use ($data): void {
+        return launch(function () use ($data): void {
             try {
                 $this->file->write($data)->await();
             } finally {
@@ -43,7 +44,7 @@ final class StatusCachingFile implements File
 
     public function end(string $data = ""): Future
     {
-        return coroutine(function () use ($data): void {
+        return launch(function () use ($data): void {
             try {
                 $this->file->end($data)->await();
             } finally {
@@ -67,9 +68,9 @@ final class StatusCachingFile implements File
         return $this->file->tell();
     }
 
-    public function eof(): bool
+    public function atEnd(): bool
     {
-        return $this->file->eof();
+        return $this->file->atEnd();
     }
 
     public function getPath(): string

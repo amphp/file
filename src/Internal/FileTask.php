@@ -5,6 +5,7 @@ namespace Amp\File\Internal;
 use Amp\CancellationToken;
 use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\BlockingFile;
+use Amp\File\File;
 use Amp\File\FilesystemException;
 use Amp\Parallel\Worker\Environment;
 use Amp\Parallel\Worker\Task;
@@ -109,10 +110,14 @@ final class FileTask implements Task
 
             switch ($this->operation) {
                 case "fread":
+                    \array_shift($this->args);
+                    return $file->read($token, ...$this->args);
                 case "fwrite":
+                    return $file->write(...$this->args)->await();
                 case "fseek":
+                    return $file->seek(...$this->args);
                 case "ftruncate":
-                    return ([$file, \substr($this->operation, 1)])(...$this->args);
+                    return $file->truncate(...$this->args);
 
                 case "fclose":
                     $environment->delete($id);

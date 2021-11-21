@@ -7,7 +7,6 @@ use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
-use Revolt\EventLoop;
 use Revolt\EventLoop\Driver as EventLoopDriver;
 
 final class EioDriver implements Driver

@@ -7,7 +7,6 @@ use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
-use Amp\Future;
 use Revolt\EventLoop\Driver as EventLoopDriver;
 use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
 

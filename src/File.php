@@ -2,78 +2,25 @@
 
 namespace Amp\File;
 
+use Amp\ByteStream\ClosableStream;
 use Amp\ByteStream\InputStream;
 use Amp\ByteStream\OutputStream;
-use Amp\Future;
+use Amp\ByteStream\SeekableStream;
+use Amp\CancellationToken;
 
-interface File extends InputStream, OutputStream
+interface File extends InputStream, OutputStream, ClosableStream, SeekableStream
 {
     public const DEFAULT_READ_LENGTH = 8192;
-
-    public const SEEK_SET = \SEEK_SET;
-    public const SEEK_CUR = \SEEK_CUR;
-    public const SEEK_END = \SEEK_END;
 
     /**
      * Read $length bytes from the open file handle.
      *
+     * @param CancellationToken|null $token
      * @param int $length
      *
      * @return string|null
      */
-    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string;
-
-    /**
-     * Write $data to the open file handle.
-     *
-     * @param string $data
-     */
-    public function write(string $data): Future;
-
-    /**
-     * Write $data to the open file handle and close the handle once the write completes.
-     *
-     * @param string $data
-     */
-    public function end(string $data = ""): Future;
-
-    /**
-     * Close the file handle.
-     *
-     * Applications are not required to manually close handles -- they will
-     * be unloaded automatically when the object is garbage collected.
-     */
-    public function close(): void;
-
-    /**
-     * Set the handle's internal pointer position.
-     *
-     * $whence values:
-     *
-     * SEEK_SET - Set position equal to offset bytes.
-     * SEEK_CUR - Set position to current location plus offset.
-     * SEEK_END - Set position to end-of-file plus offset.
-     *
-     * @param int $position
-     * @param int $whence
-     *
-     * @return int New offset position.
-     */
-    public function seek(int $position, int $whence = self::SEEK_SET): int;
-
-    /**
-     * Return the current internal offset position of the file handle.
-     *
-     * @return int
-     */
-    public function tell(): int;
-
-    /**
-     * Test for "end-of-file" on the file handle.
-     *
-     * @return bool
-     */
-    public function eof(): bool;
+    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string;
 
     /**
      * Retrieve the path used when opening the file handle.

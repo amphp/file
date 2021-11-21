@@ -4,12 +4,13 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
+use Amp\CancellationToken;
 use Amp\Deferred;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Future;
-use function Amp\coroutine;
+use function Amp\launch;
 
 final class EioFile implements File
 {
@@ -46,7 +47,7 @@ final class EioFile implements File
         $this->queue = new \SplQueue;
     }
 
-    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->isActive) {
             throw new PendingOperationError;
@@ -63,6 +64,10 @@ final class EioFile implements File
         $onRead = function (Deferred $deferred, $result, $req): void {
             $this->isActive = false;
 
+            if ($deferred->isComplete()) {
+                return;
+            }
+
             if ($result === -1) {
                 $error = \eio_get_last_error($req);
                 if ($error === "Bad file descriptor") {
@@ -76,7 +81,7 @@ final class EioFile implements File
             }
         };
 
-        \eio_read(
+        $request = \eio_read(
             $this->fh,
             $length,
             $this->position,
@@ -85,9 +90,16 @@ final class EioFile implements File
             $deferred
         );
 
+        $id = $token?->subscribe(function (\Throwable $exception) use ($request, $deferred): void {
+            $this->isActive = false;
+            $deferred->error($exception);
+            \eio_cancel($request);
+        });
+
         try {
             return $deferred->getFuture()->await();
         } finally {
+            $token?->unsubscribe($id);
             $this->poll->done();
         }
     }
@@ -108,7 +120,7 @@ final class EioFile implements File
             $future = $this->push($data);
         } else {
             $future = $this->queue->top();
-            $future = coroutine(function () use ($future, $data): void {
+            $future = launch(function () use ($future, $data): void {
                 $future->await();
                 $this->push($data)->await();
             });
@@ -121,7 +133,7 @@ final class EioFile implements File
 
     public function end(string $data = ""): Future
     {
-        return coroutine(function () use ($data): void {
+        return launch(function () use ($data): void {
             try {
                 $future = $this->write($data);
                 $this->writable = false;
@@ -171,7 +183,7 @@ final class EioFile implements File
             $future = $this->trim($size);
         } else {
             $future = $this->queue->top();
-            $future = coroutine(function () use ($future, $size): void {
+            $future = launch(function () use ($future, $size): void {
                 $future->await();
                 $this->trim($size)->await();
             });
@@ -210,7 +222,7 @@ final class EioFile implements File
         return $this->position;
     }
 
-    public function eof(): bool
+    public function atEnd(): bool
     {
         return $this->queue->isEmpty() && $this->size <= $this->position;
     }

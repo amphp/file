@@ -20,7 +20,7 @@ abstract class FileTest extends FilesystemTest
         $handle->seek(0);
         $contents = $handle->read();
         $this->assertSame(6, $handle->tell());
-        $this->assertTrue($handle->eof());
+        $this->assertTrue($handle->atEnd());
         $this->assertSame("foobar", $contents);
 
         $handle->close();
@@ -85,7 +85,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame("barfoobaz", $handle->read());
     }
 
-    public function testReadingToEof()
+    public function testReadingToatEnd()
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $contents = "";
@@ -94,8 +94,8 @@ abstract class FileTest extends FilesystemTest
         $stat = $this->driver->getStatus(__FILE__);
         $chunkSize = (int) \floor(($stat["size"] / 5));
 
-        while (!$handle->eof()) {
-            $chunk = $handle->read($chunkSize);
+        while (!$handle->atEnd()) {
+            $chunk = $handle->read(length: $chunkSize);
             $contents .= $chunk;
             $position += \strlen($chunk ?? '');
             $this->assertSame($position, $handle->tell());
@@ -112,8 +112,8 @@ abstract class FileTest extends FilesystemTest
         $handle = $this->driver->openFile(__FILE__, "r");
 
         $contents = "";
-        $contents .= $handle->read(10);
-        $contents .= $handle->read(10);
+        $contents .= $handle->read(length: 10);
+        $contents .= $handle->read(length: 10);
 
         $expected = \substr($this->driver->read(__FILE__), 0, 20);
         $this->assertSame($expected, $contents);
@@ -127,7 +127,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame(0, $handle->tell());
         $handle->seek(10);
         $this->assertSame(10, $handle->tell());
-        $chunk = $handle->read(90);
+        $chunk = $handle->read(length: 90);
         $this->assertSame(100, $handle->tell());
         $expected = \substr($this->driver->read(__FILE__), 10, 90);
         $this->assertSame($expected, $chunk);
@@ -139,8 +139,9 @@ abstract class FileTest extends FilesystemTest
     {
         $this->expectException(\Error::class);
 
+        $handle = $this->driver->openFile(__FILE__, "r");
+
         try {
-            $handle = $this->driver->openFile(__FILE__, "r");
             $handle->seek(0, 99999);
         } finally {
             $handle->close();
@@ -204,7 +205,7 @@ abstract class FileTest extends FilesystemTest
         $handle->truncate(4);
         $handle->seek(0);
         $contents = $handle->read();
-        $this->assertTrue($handle->eof());
+        $this->assertTrue($handle->atEnd());
         $this->assertSame("foob", $contents);
 
         $handle->write("bar")->await();
@@ -229,7 +230,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame(3, $handle->tell());
         $handle->seek(0);
         $contents = $handle->read();
-        $this->assertTrue($handle->eof());
+        $this->assertTrue($handle->atEnd());
         $this->assertSame("foo\0\0\0", $contents);
 
         $handle->write("bar")->await();

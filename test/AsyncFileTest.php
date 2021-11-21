@@ -2,9 +2,12 @@
 
 namespace Amp\File\Test;
 
+use Amp\CancellationTokenSource;
+use Amp\CancelledException;
 use Amp\File;
 use Amp\File\PendingOperationError;
-use function Amp\coroutine;
+use Amp\TimeoutCancellationToken;
+use function Amp\launch;
 
 abstract class AsyncFileTest extends FileTest
 {
@@ -14,8 +17,8 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile(__FILE__, "r");
 
-        $promise1 = coroutine(fn() => $handle->read(20));
-        $promise2 = coroutine(fn() => $handle->read(20));
+        $promise1 = launch(fn() => $handle->read(length: 20));
+        $promise2 = launch(fn() => $handle->read(length: 20));
 
         $expected = \substr(File\read(__FILE__), 0, 20);
         $this->assertSame($expected, $promise1->await());
@@ -29,8 +32,8 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile(__FILE__, "r");
 
-        $promise1 = coroutine(fn() => $handle->read(10));
-        $promise2 = coroutine(fn() => $handle->read(0));
+        $promise1 = launch(fn() => $handle->read(length: 10));
+        $promise2 = launch(fn() => $handle->read(length: 0));
 
         $expected = \substr(File\read(__FILE__), 0, 10);
         $this->assertSame($expected, $promise1->await());
@@ -49,7 +52,7 @@ abstract class AsyncFileTest extends FileTest
         $data = "test";
 
         $promise1 = $handle->write($data);
-        $promise2 = coroutine(fn() => $handle->read(10));
+        $promise2 = launch(fn() => $handle->read(length: 10));
 
         $this->assertNull($promise1->await());
 
@@ -64,11 +67,32 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile($path, "c+");
 
-        $promise1 = coroutine(fn() => $handle->read(10));
+        $promise1 = launch(fn() => $handle->read(length: 10));
         $promise2 = $handle->write("test");
 
         $this->assertNull($promise1->await());
 
         $promise2->await();
+    }
+
+    public function testCancelReadThenReadAgain()
+    {
+        $path = Fixture::path() . "/temp";
+
+        $handle = $this->driver->openFile($path, "c+");
+
+        $tokenSource = new CancellationTokenSource();
+        $tokenSource->cancel();
+
+        $handle->write("test")->await();
+        $handle->seek(0);
+
+        try {
+            $handle->read(token: $tokenSource->getToken(), length: 2);
+            $handle->seek(0); // If the read succeeds (e.g.: ParallelFile), we need to seek back to 0.
+        } catch (CancelledException) {
+        }
+
+        $this->assertSame("test", $handle->read());
     }
 }

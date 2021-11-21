@@ -4,15 +4,17 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
+use Amp\CancellationToken;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Future;
 use Amp\Parallel\Worker\TaskException;
+use Amp\Parallel\Worker\TaskFailureException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
 use Revolt\EventLoop;
-use function Amp\coroutine;
+use function Amp\launch;
 
 final class ParallelFile implements File
 {
@@ -77,7 +79,7 @@ final class ParallelFile implements File
 
         $this->writable = false;
 
-        $this->closing = coroutine(function (): void {
+        $this->closing = launch(function (): void {
             $id = $this->id;
             $this->id = null;
             $this->worker->enqueue(new Internal\FileTask('fclose', [], $id));
@@ -116,12 +118,12 @@ final class ParallelFile implements File
         }
     }
 
-    public function eof(): bool
+    public function atEnd(): bool
     {
         return $this->pendingWrites === 0 && $this->size <= $this->position;
     }
 
-    public function read(int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->id === null) {
             throw new ClosedException("The file has been closed");
@@ -134,12 +136,12 @@ final class ParallelFile implements File
         $this->busy = true;
 
         try {
-            $data = $this->worker->enqueue(new Internal\FileTask('fread', [$length], $this->id));
+            $data = $this->worker->enqueue(new Internal\FileTask('fread', [null, $length], $this->id), $token);
 
             if ($data !== null) {
                 $this->position += \strlen($data);
             }
-        } catch (TaskException $exception) {
+        } catch (TaskFailureException $exception) {
             throw new StreamException("Reading from the file failed", 0, $exception);
         } catch (WorkerException $exception) {
             throw new StreamException("Sending the task to the worker failed", 0, $exception);
@@ -167,7 +169,7 @@ final class ParallelFile implements File
         ++$this->pendingWrites;
         $this->busy = true;
 
-        return coroutine(function () use ($data): void {
+        return launch(function () use ($data): void {
             try {
                 $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
                 $this->position += \strlen($data);
@@ -185,7 +187,7 @@ final class ParallelFile implements File
 
     public function end(string $data = ""): Future
     {
-        return coroutine(function () use ($data): void {
+        return launch(function () use ($data): void {
             try {
                 $future = $this->write($data);
                 $this->writable = false;
