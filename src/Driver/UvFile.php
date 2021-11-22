@@ -262,6 +262,11 @@ final class UvFile implements File
         }
     }
 
+    public function isClosed(): bool
+    {
+        return $this->closing !== null;
+    }
+
     private function push(string $data): Future
     {
         $length = \strlen($data);

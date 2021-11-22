@@ -115,6 +115,11 @@ final class BlockingFile implements File
         }
     }
 
+    public function isClosed(): bool
+    {
+        return $this->handle === null;
+    }
+
     public function truncate(int $size): void
     {
         if ($this->handle === null) {
@@ -177,7 +182,7 @@ final class BlockingFile implements File
             throw new ClosedException("The file '{$this->path}' has been closed");
         }
 
-        return \fatEnd($this->handle);
+        return \feof($this->handle);
     }
 
     public function getPath(): string

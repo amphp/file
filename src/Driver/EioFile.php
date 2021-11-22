@@ -167,6 +167,11 @@ final class EioFile implements File
         }
     }
 
+    public function isClosed(): bool
+    {
+        return $this->closing !== null;
+    }
+
     public function truncate(int $size): void
     {
         if ($this->isActive && $this->queue->isEmpty()) {

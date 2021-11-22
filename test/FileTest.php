@@ -85,7 +85,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame("barfoobaz", $handle->read());
     }
 
-    public function testReadingToatEnd()
+    public function testReadingToEnd()
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $contents = "";

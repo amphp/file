@@ -88,6 +88,11 @@ final class ParallelFile implements File
         $this->closing->await();
     }
 
+    public function isClosed(): bool
+    {
+        return $this->closing !== null;
+    }
+
     public function truncate(int $size): void
     {
         if ($this->id === null) {

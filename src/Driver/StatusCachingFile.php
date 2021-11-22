@@ -58,6 +58,11 @@ final class StatusCachingFile implements File
         $this->file->close();
     }
 
+    public function isClosed(): bool
+    {
+        return $this->file->isClosed();
+    }
+
     public function seek(int $position, int $whence = self::SEEK_SET): int
     {
         return $this->file->seek($position, $whence);
