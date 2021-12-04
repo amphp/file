@@ -2,10 +2,10 @@
 
 namespace Amp\File\Driver;
 
-use Amp\CancellationToken;
+use Amp\Cancellation;
 use Amp\File\File;
 use Amp\Future;
-use function Amp\launch;
+use function Amp\async;
 
 final class StatusCachingFile implements File
 {
@@ -26,14 +26,14 @@ final class StatusCachingFile implements File
         $this->invalidateCallback = $invalidateCallback;
     }
 
-    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         return $this->file->read($token, $length);
     }
 
     public function write(string $data): Future
     {
-        return launch(function () use ($data): void {
+        return async(function () use ($data): void {
             try {
                 $this->file->write($data)->await();
             } finally {
@@ -44,7 +44,7 @@ final class StatusCachingFile implements File
 
     public function end(string $data = ""): Future
     {
-        return launch(function () use ($data): void {
+        return async(function () use ($data): void {
             try {
                 $this->file->end($data)->await();
             } finally {
@@ -95,6 +95,21 @@ final class StatusCachingFile implements File
         } finally {
             $this->invalidate();
         }
+    }
+
+    public function isReadable(): bool
+    {
+        return $this->file->isReadable();
+    }
+
+    public function isSeekable(): bool
+    {
+        $this->file->isSeekable();
+    }
+
+    public function isWritable(): bool
+    {
+        $this->file->isWritable();
     }
 
     private function invalidate(): void

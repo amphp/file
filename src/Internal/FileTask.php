@@ -2,7 +2,7 @@
 
 namespace Amp\File\Internal;
 
-use Amp\CancellationToken;
+use Amp\Cancellation;
 use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\BlockingFile;
 use Amp\File\File;
@@ -48,7 +48,7 @@ final class FileTask implements Task
         $this->id = $id;
     }
 
-    public function run(Environment $environment, CancellationToken $token): mixed
+    public function run(Environment $environment, Cancellation $token): mixed
     {
         if ('f' === $this->operation[0]) {
             if ("fopen" === $this->operation) {

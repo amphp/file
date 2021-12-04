@@ -4,7 +4,7 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
-use Amp\CancellationToken;
+use Amp\Cancellation;
 use Amp\File\File;
 use Amp\Future;
 
@@ -34,7 +34,7 @@ final class BlockingFile implements File
         }
     }
 
-    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->handle === null) {
             throw new ClosedException("The file '{$this->path}' has been closed");
@@ -193,5 +193,20 @@ final class BlockingFile implements File
     public function getMode(): string
     {
         return $this->mode;
+    }
+
+    public function isReadable(): bool
+    {
+        return $this->handle !== null;
+    }
+
+    public function isSeekable(): bool
+    {
+        return $this->handle !== null;
+    }
+
+    public function isWritable(): bool
+    {
+        return $this->handle !== null;
     }
 }

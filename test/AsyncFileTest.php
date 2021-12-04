@@ -2,12 +2,12 @@
 
 namespace Amp\File\Test;
 
-use Amp\CancellationTokenSource;
+use Amp\CancellationSource;
 use Amp\CancelledException;
 use Amp\File;
 use Amp\File\PendingOperationError;
-use Amp\TimeoutCancellationToken;
-use function Amp\launch;
+use Amp\TimeoutCancellation;
+use function Amp\async;
 
 abstract class AsyncFileTest extends FileTest
 {
@@ -17,8 +17,8 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile(__FILE__, "r");
 
-        $promise1 = launch(fn() => $handle->read(length: 20));
-        $promise2 = launch(fn() => $handle->read(length: 20));
+        $promise1 = async(fn() => $handle->read(length: 20));
+        $promise2 = async(fn() => $handle->read(length: 20));
 
         $expected = \substr(File\read(__FILE__), 0, 20);
         $this->assertSame($expected, $promise1->await());
@@ -32,8 +32,8 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile(__FILE__, "r");
 
-        $promise1 = launch(fn() => $handle->read(length: 10));
-        $promise2 = launch(fn() => $handle->read(length: 0));
+        $promise1 = async(fn() => $handle->read(length: 10));
+        $promise2 = async(fn() => $handle->read(length: 0));
 
         $expected = \substr(File\read(__FILE__), 0, 10);
         $this->assertSame($expected, $promise1->await());
@@ -52,7 +52,7 @@ abstract class AsyncFileTest extends FileTest
         $data = "test";
 
         $promise1 = $handle->write($data);
-        $promise2 = launch(fn() => $handle->read(length: 10));
+        $promise2 = async(fn() => $handle->read(length: 10));
 
         $this->assertNull($promise1->await());
 
@@ -67,7 +67,7 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile($path, "c+");
 
-        $promise1 = launch(fn() => $handle->read(length: 10));
+        $promise1 = async(fn() => $handle->read(length: 10));
         $promise2 = $handle->write("test");
 
         $this->assertNull($promise1->await());
@@ -81,7 +81,7 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile($path, "c+");
 
-        $tokenSource = new CancellationTokenSource();
+        $tokenSource = new CancellationSource();
         $tokenSource->cancel();
 
         $handle->write("test")->await();

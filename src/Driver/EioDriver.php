@@ -2,7 +2,7 @@
 
 namespace Amp\File\Driver;
 
-use Amp\Deferred;
+use Amp\DeferredFuture;
 use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\FilesystemException;
@@ -35,7 +35,7 @@ final class EioDriver implements Driver
 
         $chmod = ($flags & \EIO_O_CREAT) ? 0644 : 0;
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $openArr = [$mode, $path, $deferred];
@@ -50,7 +50,7 @@ final class EioDriver implements Driver
 
     public function getStatus(string $path): ?array
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -66,7 +66,7 @@ final class EioDriver implements Driver
 
     public function getLinkStatus(string $path): ?array
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -81,7 +81,7 @@ final class EioDriver implements Driver
 
     public function createSymlink(string $target, string $link): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -96,7 +96,7 @@ final class EioDriver implements Driver
 
     public function createHardlink(string $target, string $link): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -111,7 +111,7 @@ final class EioDriver implements Driver
 
     public function resolveSymlink(string $path): string
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -126,7 +126,7 @@ final class EioDriver implements Driver
 
     public function move(string $from, string $to): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -141,7 +141,7 @@ final class EioDriver implements Driver
 
     public function deleteFile(string $path): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -161,7 +161,7 @@ final class EioDriver implements Driver
 
     public function createDirectory(string $path, int $mode = 0777): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         \eio_mkdir($path, $mode, \EIO_PRI_DEFAULT, [$this, "onGenericResult"], $deferred);
@@ -175,7 +175,7 @@ final class EioDriver implements Driver
 
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -212,7 +212,7 @@ final class EioDriver implements Driver
 
     public function deleteDirectory(string $path): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -228,7 +228,7 @@ final class EioDriver implements Driver
 
     public function listFiles(string $path): array
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $flags = \EIO_READDIR_STAT_ORDER | \EIO_READDIR_DIRS_FIRST;
@@ -244,7 +244,7 @@ final class EioDriver implements Driver
 
     public function changePermissions(string $path, int $mode): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -259,7 +259,7 @@ final class EioDriver implements Driver
 
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -277,7 +277,7 @@ final class EioDriver implements Driver
         $modificationTime = $modificationTime ?? \time();
         $accessTime = $accessTime ?? $modificationTime;
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
@@ -296,7 +296,7 @@ final class EioDriver implements Driver
         $mode = 0;
         $priority = \EIO_PRI_DEFAULT;
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         \eio_open($path, $flags, $mode, $priority, [$this, "onGetOpen"], $deferred);
@@ -314,7 +314,7 @@ final class EioDriver implements Driver
         $mode = \EIO_S_IRUSR | \EIO_S_IWUSR | \EIO_S_IXUSR;
         $priority = \EIO_PRI_DEFAULT;
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $data = [$contents, $deferred];
@@ -405,7 +405,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onLstat(Deferred $deferred, $result, $req): void
+    private function onLstat(DeferredFuture $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->complete(null);
@@ -414,7 +414,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onReadlink(Deferred $deferred, $result, $req): void
+    private function onReadlink(DeferredFuture $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->error(new FilesystemException(\eio_get_last_error($req)));
@@ -423,7 +423,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onGenericResult(Deferred $deferred, $result, $req): void
+    private function onGenericResult(DeferredFuture $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->error(new FilesystemException(\eio_get_last_error($req)));
@@ -454,7 +454,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onScandir(Deferred $deferred, $result, $req): void
+    private function onScandir(DeferredFuture $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->error(new FilesystemException(\eio_get_last_error($req)));
@@ -465,7 +465,7 @@ final class EioDriver implements Driver
         }
     }
 
-    private function onGetOpen(Deferred $deferred, $result, $req): void
+    private function onGetOpen(DeferredFuture $deferred, $result, $req): void
     {
         if ($result === -1) {
             $deferred->error(new FilesystemException(\eio_get_last_error($req)));

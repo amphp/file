@@ -2,7 +2,7 @@
 
 namespace Amp\File\Driver;
 
-use Amp\CancellationToken;
+use Amp\Cancellation;
 use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\FilesystemException;
@@ -12,7 +12,7 @@ use Amp\Parallel\Worker\Pool;
 use Amp\Parallel\Worker\TaskFailureThrowable;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
-use function Amp\launch;
+use function Amp\async;
 use function Amp\Parallel\Worker\pool;
 
 final class ParallelDriver implements Driver
@@ -70,7 +70,7 @@ final class ParallelDriver implements Driver
         $this->pendingWorker->await(); // Wait for any currently pending request for a worker.
 
         if ($this->workerStorage->count() < $this->workerLimit) {
-            $this->pendingWorker = launch(fn() => $this->pool->getWorker());
+            $this->pendingWorker = async(fn() => $this->pool->getWorker());
             $worker = $this->pendingWorker->await();
 
             if ($this->workerStorage->contains($worker)) {

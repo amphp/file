@@ -4,13 +4,13 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
-use Amp\CancellationToken;
-use Amp\Deferred;
+use Amp\Cancellation;
+use Amp\DeferredFuture;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Future;
-use function Amp\launch;
+use function Amp\async;
 
 final class EioFile implements File
 {
@@ -47,7 +47,7 @@ final class EioFile implements File
         $this->queue = new \SplQueue;
     }
 
-    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->isActive) {
             throw new PendingOperationError;
@@ -58,10 +58,10 @@ final class EioFile implements File
         $remaining = $this->size - $this->position;
         $length = $length > $remaining ? $remaining : $length;
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
-        $onRead = function (Deferred $deferred, $result, $req): void {
+        $onRead = function (DeferredFuture $deferred, $result, $req): void {
             $this->isActive = false;
 
             if ($deferred->isComplete()) {
@@ -120,7 +120,7 @@ final class EioFile implements File
             $future = $this->push($data);
         } else {
             $future = $this->queue->top();
-            $future = launch(function () use ($future, $data): void {
+            $future = async(function () use ($future, $data): void {
                 $future->await();
                 $this->push($data)->await();
             });
@@ -133,7 +133,7 @@ final class EioFile implements File
 
     public function end(string $data = ""): Future
     {
-        return launch(function () use ($data): void {
+        return async(function () use ($data): void {
             try {
                 $future = $this->write($data);
                 $this->writable = false;
@@ -151,11 +151,11 @@ final class EioFile implements File
             return;
         }
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->closing = $deferred->getFuture();
         $this->poll->listen();
 
-        \eio_close($this->fh, \EIO_PRI_DEFAULT, static function (Deferred $deferred): void {
+        \eio_close($this->fh, \EIO_PRI_DEFAULT, static function (DeferredFuture $deferred): void {
             // Ignore errors when closing file, as the handle will become invalid anyway.
             $deferred->complete(null);
         }, $deferred);
@@ -188,7 +188,7 @@ final class EioFile implements File
             $future = $this->trim($size);
         } else {
             $future = $this->queue->top();
-            $future = launch(function () use ($future, $size): void {
+            $future = async(function () use ($future, $size): void {
                 $future->await();
                 $this->trim($size)->await();
             });
@@ -250,10 +250,10 @@ final class EioFile implements File
             return Future::complete(null);
         }
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
-        $onWrite = function (Deferred $deferred, $result, $req): void {
+        $onWrite = function (DeferredFuture $deferred, $result, $req): void {
             if ($this->queue->isEmpty()) {
                 $deferred->error(new ClosedException('No pending write, the file may have been closed'));
             }
@@ -297,10 +297,10 @@ final class EioFile implements File
 
     private function trim(int $size): Future
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
-        $onTruncate = function (Deferred $deferred, $result, $req) use ($size): void {
+        $onTruncate = function (DeferredFuture $deferred, $result, $req) use ($size): void {
             if ($this->queue->isEmpty()) {
                 $deferred->error(new ClosedException('No pending write, the file may have been closed'));
             }
@@ -333,5 +333,20 @@ final class EioFile implements File
         );
 
         return $deferred->getFuture();
+    }
+
+    public function isReadable(): bool
+    {
+        return !$this->isClosed();
+    }
+
+    public function isSeekable(): bool
+    {
+        return !$this->isClosed();
+    }
+
+    public function isWritable(): bool
+    {
+        return $this->writable;
     }
 }

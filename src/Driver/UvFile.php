@@ -4,14 +4,14 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
-use Amp\CancellationToken;
-use Amp\Deferred;
+use Amp\Cancellation;
+use Amp\DeferredFuture;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Future;
 use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
-use function Amp\launch;
+use function Amp\async;
 
 final class UvFile implements File
 {
@@ -71,13 +71,13 @@ final class UvFile implements File
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
     }
 
-    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->isActive) {
             throw new PendingOperationError;
         }
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $this->isActive = true;
@@ -145,7 +145,7 @@ final class UvFile implements File
             $future = $this->push($data);
         } else {
             $future = $this->queue->top();
-            $future = launch(function () use ($future, $data): void {
+            $future = async(function () use ($future, $data): void {
                 $future->await();
                 $this->push($data)->await();
             });
@@ -158,7 +158,7 @@ final class UvFile implements File
 
     public function end(string $data = ""): Future
     {
-        return launch(function () use ($data): void {
+        return async(function () use ($data): void {
             try {
                 $future = $this->write($data);
                 $this->writable = false;
@@ -185,7 +185,7 @@ final class UvFile implements File
             $future = $this->trim($size);
         } else {
             $future = $this->queue->top();
-            $future = launch(function () use ($future, $size): void {
+            $future = async(function () use ($future, $size): void {
                 $future->await();
                 $this->trim($size)->await();
             });
@@ -247,7 +247,7 @@ final class UvFile implements File
             return;
         }
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         \uv_fs_close($this->loop, $this->fh, static function () use ($deferred): void {
@@ -275,7 +275,7 @@ final class UvFile implements File
             return Future::complete(null);
         }
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $onWrite = function ($fh, $result) use ($deferred, $length): void {
@@ -312,7 +312,7 @@ final class UvFile implements File
 
     private function trim(int $size): Future
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $onTruncate = function ($fh) use ($deferred, $size): void {
@@ -338,5 +338,20 @@ final class UvFile implements File
         );
 
         return $deferred->getFuture();
+    }
+
+    public function isReadable(): bool
+    {
+        return !$this->isClosed();
+    }
+
+    public function isSeekable(): bool
+    {
+        return !$this->isClosed();
+    }
+
+    public function isWritable(): bool
+    {
+        return $this->writable;
     }
 }

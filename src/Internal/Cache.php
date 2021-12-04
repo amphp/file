@@ -53,7 +53,7 @@ final class Cache
             }
         };
 
-        $this->ttlWatcherId = EventLoop::repeat($gcInterval, [$sharedState, "collectGarbage"]);
+        $this->ttlWatcherId = EventLoop::repeat($gcInterval, \Closure::fromCallable([$sharedState, "collectGarbage"]));
         $this->maxSize = $maxSize;
 
         EventLoop::unreference($this->ttlWatcherId);

@@ -4,7 +4,7 @@ namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
-use Amp\CancellationToken;
+use Amp\Cancellation;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
@@ -14,7 +14,7 @@ use Amp\Parallel\Worker\TaskFailureException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
 use Revolt\EventLoop;
-use function Amp\launch;
+use function Amp\async;
 
 final class ParallelFile implements File
 {
@@ -79,7 +79,7 @@ final class ParallelFile implements File
 
         $this->writable = false;
 
-        $this->closing = launch(function (): void {
+        $this->closing = async(function (): void {
             $id = $this->id;
             $this->id = null;
             $this->worker->enqueue(new Internal\FileTask('fclose', [], $id));
@@ -128,7 +128,7 @@ final class ParallelFile implements File
         return $this->pendingWrites === 0 && $this->size <= $this->position;
     }
 
-    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->id === null) {
             throw new ClosedException("The file has been closed");
@@ -174,7 +174,7 @@ final class ParallelFile implements File
         ++$this->pendingWrites;
         $this->busy = true;
 
-        return launch(function () use ($data): void {
+        return async(function () use ($data): void {
             try {
                 $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
                 $this->position += \strlen($data);
@@ -192,7 +192,7 @@ final class ParallelFile implements File
 
     public function end(string $data = ""): Future
     {
-        return launch(function () use ($data): void {
+        return async(function () use ($data): void {
             try {
                 $future = $this->write($data);
                 $this->writable = false;
@@ -251,5 +251,20 @@ final class ParallelFile implements File
     public function getMode(): string
     {
         return $this->mode;
+    }
+
+    public function isReadable(): bool
+    {
+        return $this->id !== null;
+    }
+
+    public function isSeekable(): bool
+    {
+        return $this->id !== null;
+    }
+
+    public function isWritable(): bool
+    {
+        return $this->id !== null && $this->writable;
     }
 }

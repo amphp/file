@@ -2,7 +2,7 @@
 
 namespace Amp\File\Driver;
 
-use Amp\Deferred;
+use Amp\DeferredFuture;
 use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\FilesystemException;
@@ -46,7 +46,7 @@ final class UvDriver implements Driver
         $flags = $this->parseMode($mode);
         $chmod = ($flags & \UV::O_CREAT) ? 0644 : 0;
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $openArr = [$mode, $path, $deferred];
@@ -68,7 +68,7 @@ final class UvDriver implements Driver
 
     public function getStatus(string $path): ?array
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $callback = static function ($stat) use ($deferred, $path): void {
@@ -109,7 +109,7 @@ final class UvDriver implements Driver
 
     public function getLinkStatus(string $path): ?array
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         if ($this->priorVersion) {
@@ -133,7 +133,7 @@ final class UvDriver implements Driver
 
     public function createSymlink(string $target, string $link): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen($deferred->getFuture());
 
         $callback = $this->createGenericCallback($deferred, "Could not create symbolic link");
@@ -144,7 +144,7 @@ final class UvDriver implements Driver
 
     public function createHardlink(string $target, string $link): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         \uv_fs_link($this->loop, $target, $link, $this->createGenericCallback($deferred, "Could not create hard link"));
@@ -158,7 +158,7 @@ final class UvDriver implements Driver
 
     public function resolveSymlink(string $path): string
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         if ($this->priorVersion) {
@@ -192,7 +192,7 @@ final class UvDriver implements Driver
 
     public function move(string $from, string $to): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         \uv_fs_rename($this->loop, $from, $to, $this->createGenericCallback($deferred, "Could not rename file"));
@@ -206,7 +206,7 @@ final class UvDriver implements Driver
 
     public function deleteFile(string $path): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         \uv_fs_unlink($this->loop, $path, $this->createGenericCallback($deferred, "Could not unlink file"));
@@ -220,7 +220,7 @@ final class UvDriver implements Driver
 
     public function createDirectory(string $path, int $mode = 0777): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         \uv_fs_mkdir($this->loop, $path, $mode, $this->createGenericCallback($deferred, "Could not create directory"));
@@ -234,7 +234,7 @@ final class UvDriver implements Driver
 
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $path = \str_replace("/", DIRECTORY_SEPARATOR, $path);
@@ -273,7 +273,7 @@ final class UvDriver implements Driver
 
     public function deleteDirectory(string $path): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         \uv_fs_rmdir($this->loop, $path, $this->createGenericCallback($deferred, "Could not remove directory"));
@@ -287,7 +287,7 @@ final class UvDriver implements Driver
 
     public function listFiles(string $path): array
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         if ($this->priorVersion) {
@@ -322,7 +322,7 @@ final class UvDriver implements Driver
 
     public function changePermissions(string $path, int $mode): void
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $callback = $this->createGenericCallback($deferred, "Could not change file permissions");
@@ -338,7 +338,7 @@ final class UvDriver implements Driver
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
         // @TODO Return a failure in windows environments
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $callback = $this->createGenericCallback($deferred, "Could not change file owner");
@@ -356,7 +356,7 @@ final class UvDriver implements Driver
         $modificationTime = $modificationTime ?? \time();
         $accessTime = $accessTime ?? $modificationTime;
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $callback = $this->createGenericCallback($deferred, "Could not touch file");
@@ -378,7 +378,7 @@ final class UvDriver implements Driver
             throw new FilesystemException("Failed opening file handle: {$path}");
         }
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         $stat = $this->doFsStat($fh);
 
@@ -421,7 +421,7 @@ final class UvDriver implements Driver
             throw new FilesystemException("Failed opening write file handle");
         }
 
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         \uv_fs_write($this->loop, $fh, $contents, 0, function ($fh, $result) use ($deferred): void {
             \uv_fs_close($this->loop, $fh, static function () use ($deferred, $result): void {
@@ -506,7 +506,7 @@ final class UvDriver implements Driver
 
     private function doFsOpen(string $path, int $flags, int $mode): mixed
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         \uv_fs_open($this->loop, $path, $flags, $mode, static function ($fh) use ($deferred) {
             $deferred->complete($fh);
@@ -517,7 +517,7 @@ final class UvDriver implements Driver
 
     private function doFsStat($fh): array
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         \uv_fs_fstat($this->loop, $fh, static function ($fh, $stat) use ($deferred): void {
             if (\is_resource($fh)) {
@@ -534,7 +534,7 @@ final class UvDriver implements Driver
 
     private function doFsRead($fh, int $offset, int $length): string
     {
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         if ($this->priorVersion) {
             $callback = static function ($fh, $readBytes, $buffer) use ($deferred): void {
@@ -555,7 +555,7 @@ final class UvDriver implements Driver
     {
     }
 
-    private function createGenericCallback(Deferred $deferred, string $error): \Closure
+    private function createGenericCallback(DeferredFuture $deferred, string $error): \Closure
     {
         $callback = static function (int $result) use ($deferred, $error): void {
             if ($result !== 0) {

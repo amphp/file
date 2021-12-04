@@ -3,24 +3,24 @@
 namespace Amp\File;
 
 use Amp\ByteStream\ClosableStream;
-use Amp\ByteStream\InputStream;
-use Amp\ByteStream\OutputStream;
+use Amp\ByteStream\ReadableStream;
 use Amp\ByteStream\SeekableStream;
-use Amp\CancellationToken;
+use Amp\ByteStream\WritableStream;
+use Amp\Cancellation;
 
-interface File extends InputStream, OutputStream, ClosableStream, SeekableStream
+interface File extends ReadableStream, WritableStream, ClosableStream, SeekableStream
 {
     public const DEFAULT_READ_LENGTH = 8192;
 
     /**
      * Read $length bytes from the open file handle.
      *
-     * @param CancellationToken|null $token
+     * @param Cancellation|null $token
      * @param int $length
      *
      * @return string|null
      */
-    public function read(?CancellationToken $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string;
+    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string;
 
     /**
      * Retrieve the path used when opening the file handle.
