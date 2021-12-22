@@ -7,6 +7,7 @@ use Amp\Cancellation;
 use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\BlockingFile;
 use Amp\File\FilesystemException;
+use Amp\Parallel\Sync\Channel;
 use Amp\Parallel\Worker\Task;
 
 /**
@@ -53,7 +54,7 @@ final class FileTask implements Task
      * @throws \Amp\ByteStream\ClosedException
      * @throws \Amp\ByteStream\StreamException
      */
-    public function run(Cache $cache, Cancellation $cancellation): mixed
+    public function run(Channel $channel, Cache $cache, Cancellation $cancellation): mixed
     {
         if ('f' === $this->operation[0]) {
             if ("fopen" === $this->operation) {
@@ -118,7 +119,7 @@ final class FileTask implements Task
                     \array_shift($this->args);
                     return $file->read($cancellation, ...$this->args);
                 case "fwrite":
-                    return $file->write(...$this->args)->await();
+                    return $file->write(...$this->args);
                 case "fseek":
                     return $file->seek(...$this->args);
                 case "ftruncate":

@@ -2,11 +2,10 @@
 
 namespace Amp\File\Test;
 
-use Amp\CancellationSource;
 use Amp\CancelledException;
+use Amp\DeferredCancellation;
 use Amp\File;
 use Amp\File\PendingOperationError;
-use Amp\TimeoutCancellation;
 use function Amp\async;
 
 abstract class AsyncFileTest extends FileTest
@@ -51,7 +50,7 @@ abstract class AsyncFileTest extends FileTest
 
         $data = "test";
 
-        $promise1 = $handle->write($data);
+        $promise1 = async(fn() => $handle->write($data));
         $promise2 = async(fn() => $handle->read(length: 10));
 
         $this->assertNull($promise1->await());
@@ -68,7 +67,7 @@ abstract class AsyncFileTest extends FileTest
         $handle = $this->driver->openFile($path, "c+");
 
         $promise1 = async(fn() => $handle->read(length: 10));
-        $promise2 = $handle->write("test");
+        $promise2 = async(fn() => $handle->write("test"));
 
         $this->assertNull($promise1->await());
 
@@ -81,14 +80,14 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile($path, "c+");
 
-        $tokenSource = new CancellationSource();
-        $tokenSource->cancel();
+        $deferredCancellation = new DeferredCancellation();
+        $deferredCancellation->cancel();
 
-        $handle->write("test")->await();
+        $handle->write("test");
         $handle->seek(0);
 
         try {
-            $handle->read(cancellation: $tokenSource->getToken(), length: 2);
+            $handle->read(cancellation: $deferredCancellation->getCancellation(), length: 2);
             $handle->seek(0); // If the read succeeds (e.g.: ParallelFile), we need to seek back to 0.
         } catch (CancelledException) {
         }

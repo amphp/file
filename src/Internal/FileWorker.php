@@ -7,18 +7,17 @@ use Amp\Parallel\Worker\Task;
 use Amp\Parallel\Worker\Worker;
 
 /** @internal */
-final class FileWorker implements Worker
+final class FileWorker
 {
-    /** @var callable */
-    private $push;
+    private \Closure $push;
 
     private Worker $worker;
 
     /**
      * @param Worker $worker
-     * @param callable $push Callable to push the worker back into the queue.
+     * @param \Closure(Worker):void $push Closure to push the worker back into the queue.
      */
-    public function __construct(Worker $worker, callable $push)
+    public function __construct(Worker $worker, \Closure $push)
     {
         $this->worker = $worker;
         $this->push = $push;
@@ -44,7 +43,7 @@ final class FileWorker implements Worker
 
     public function execute(Task $task, ?Cancellation $cancellation = null): mixed
     {
-        return $this->worker->execute($task, $cancellation);
+        return $this->worker->enqueue($task, $cancellation)->getFuture()->await();
     }
 
     public function shutdown(): int

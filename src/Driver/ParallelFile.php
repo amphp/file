@@ -10,14 +10,13 @@ use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Future;
 use Amp\Parallel\Worker\TaskFailureException;
-use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
 use Revolt\EventLoop;
 use function Amp\async;
 
 final class ParallelFile implements File
 {
-    private Worker $worker;
+    private Internal\FileWorker $worker;
 
     private ?int $id;
 
@@ -40,13 +39,13 @@ final class ParallelFile implements File
     private ?Future $closing = null;
 
     /**
-     * @param Worker $worker
+     * @param Internal\FileWorker $worker
      * @param int $id
      * @param string $path
      * @param int $size
      * @param string $mode
      */
-    public function __construct(Worker $worker, int $id, string $path, int $size, string $mode)
+    public function __construct(Internal\FileWorker $worker, int $id, string $path, int $size, string $mode)
     {
         $this->worker = $worker;
         $this->id = $id;

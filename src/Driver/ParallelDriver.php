@@ -190,7 +190,7 @@ final class ParallelDriver implements Driver
     private function runFileTask(Internal\FileTask $task): mixed
     {
         try {
-            return $this->pool->execute($task);
+            return $this->pool->enqueue($task)->getFuture()->await();
         } catch (TaskFailureThrowable $exception) {
             throw new FilesystemException("The file operation failed", $exception);
         } catch (WorkerException $exception) {
