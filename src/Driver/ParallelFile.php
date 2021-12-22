@@ -9,7 +9,6 @@ use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Future;
-use Amp\Parallel\Worker\TaskException;
 use Amp\Parallel\Worker\TaskFailureException;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
@@ -42,9 +41,9 @@ final class ParallelFile implements File
 
     /**
      * @param Worker $worker
-     * @param int    $id
+     * @param int $id
      * @param string $path
-     * @param int    $size
+     * @param int $size
      * @param string $mode
      */
     public function __construct(Worker $worker, int $id, string $path, int $size, string $mode)
@@ -62,7 +61,7 @@ final class ParallelFile implements File
         if ($this->id !== null && $this->worker->isRunning()) {
             $id = $this->id;
             $worker = $this->worker;
-            EventLoop::queue(static fn () => $worker->enqueue(new Internal\FileTask('fclose', [], $id)));
+            EventLoop::queue(static fn () => $worker->execute(new Internal\FileTask('fclose', [], $id)));
         }
     }
 
@@ -82,7 +81,7 @@ final class ParallelFile implements File
         $this->closing = async(function (): void {
             $id = $this->id;
             $this->id = null;
-            $this->worker->enqueue(new Internal\FileTask('fclose', [], $id));
+            $this->worker->execute(new Internal\FileTask('fclose', [], $id));
         });
 
         $this->closing->await();
@@ -111,8 +110,8 @@ final class ParallelFile implements File
         $this->busy = true;
 
         try {
-            $this->worker->enqueue(new Internal\FileTask('ftruncate', [$size], $this->id));
-        } catch (TaskException $exception) {
+            $this->worker->execute(new Internal\FileTask('ftruncate', [$size], $this->id));
+        } catch (TaskFailureException $exception) {
             throw new StreamException("Reading from the file failed", 0, $exception);
         } catch (WorkerException $exception) {
             throw new StreamException("Sending the task to the worker failed", 0, $exception);
@@ -128,7 +127,7 @@ final class ParallelFile implements File
         return $this->pendingWrites === 0 && $this->size <= $this->position;
     }
 
-    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->id === null) {
             throw new ClosedException("The file has been closed");
@@ -141,7 +140,7 @@ final class ParallelFile implements File
         $this->busy = true;
 
         try {
-            $data = $this->worker->enqueue(new Internal\FileTask('fread', [null, $length], $this->id), $token);
+            $data = $this->worker->execute(new Internal\FileTask('fread', [null, $length], $this->id), $cancellation);
 
             if ($data !== null) {
                 $this->position += \strlen($data);
@@ -157,7 +156,7 @@ final class ParallelFile implements File
         return $data;
     }
 
-    public function write(string $data): Future
+    public function write(string $bytes): void
     {
         if ($this->id === null) {
             throw new ClosedException("The file has been closed");
@@ -174,33 +173,24 @@ final class ParallelFile implements File
         ++$this->pendingWrites;
         $this->busy = true;
 
-        return async(function () use ($data): void {
-            try {
-                $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
-                $this->position += \strlen($data);
-            } catch (TaskException $exception) {
-                throw new StreamException("Writing to the file failed", 0, $exception);
-            } catch (WorkerException $exception) {
-                throw new StreamException("Sending the task to the worker failed", 0, $exception);
-            } finally {
-                if (--$this->pendingWrites === 0) {
-                    $this->busy = false;
-                }
+        try {
+            $this->worker->execute(new Internal\FileTask('fwrite', [$bytes], $this->id));
+            $this->position += \strlen($bytes);
+        } catch (TaskFailureException $exception) {
+            throw new StreamException("Writing to the file failed", 0, $exception);
+        } catch (WorkerException $exception) {
+            throw new StreamException("Sending the task to the worker failed", 0, $exception);
+        } finally {
+            if (--$this->pendingWrites === 0) {
+                $this->busy = false;
             }
-        });
+        }
     }
 
-    public function end(string $data = ""): Future
+    public function end(): void
     {
-        return async(function () use ($data): void {
-            try {
-                $future = $this->write($data);
-                $this->writable = false;
-                $future->await();
-            } finally {
-                $this->close();
-            }
-        });
+        $this->writable = false;
+        $this->close();
     }
 
     public function seek(int $offset, int $whence = SEEK_SET): int
@@ -218,7 +208,7 @@ final class ParallelFile implements File
             case self::SEEK_CUR:
             case self::SEEK_END:
                 try {
-                    $this->position = $this->worker->enqueue(
+                    $this->position = $this->worker->execute(
                         new Internal\FileTask('fseek', [$offset, $whence], $this->id)
                     );
 
@@ -227,7 +217,7 @@ final class ParallelFile implements File
                     }
 
                     return $this->position;
-                } catch (TaskException $exception) {
+                } catch (TaskFailureException $exception) {
                     throw new StreamException('Seeking in the file failed.', 0, $exception);
                 } catch (WorkerException $exception) {
                     throw new StreamException("Sending the task to the worker failed", 0, $exception);

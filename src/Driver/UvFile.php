@@ -43,12 +43,12 @@ final class UvFile implements File
     private bool $priorVersion;
 
     /**
-     * @param UvLoopDriver       $driver
-     * @param Internal\UvPoll    $poll Poll for keeping the loop active.
-     * @param resource           $fh File handle.
-     * @param string             $path
-     * @param string             $mode
-     * @param int                $size
+     * @param UvLoopDriver $driver
+     * @param Internal\UvPoll $poll Poll for keeping the loop active.
+     * @param resource $fh File handle.
+     * @param string $path
+     * @param string $mode
+     * @param int $size
      */
     public function __construct(
         UvLoopDriver $driver,
@@ -71,7 +71,7 @@ final class UvFile implements File
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
     }
 
-    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->isActive) {
             throw new PendingOperationError;
@@ -116,7 +116,7 @@ final class UvFile implements File
 
         \uv_fs_read($this->loop, $this->fh, $this->position, $length, $onRead);
 
-        $id = $token?->subscribe(function (\Throwable $exception) use ($deferred): void {
+        $id = $cancellation?->subscribe(function (\Throwable $exception) use ($deferred): void {
             $this->isActive = false;
             $deferred->error($exception);
         });
@@ -124,12 +124,12 @@ final class UvFile implements File
         try {
             return $deferred->getFuture()->await();
         } finally {
-            $token?->unsubscribe($id);
+            $cancellation?->unsubscribe($id);
             $this->poll->done();
         }
     }
 
-    public function write(string $data): Future
+    public function write(string $bytes): void
     {
         if ($this->isActive && $this->queue->isEmpty()) {
             throw new PendingOperationError;
@@ -142,31 +142,24 @@ final class UvFile implements File
         $this->isActive = true;
 
         if ($this->queue->isEmpty()) {
-            $future = $this->push($data);
+            $future = $this->push($bytes);
         } else {
             $future = $this->queue->top();
-            $future = async(function () use ($future, $data): void {
+            $future = async(function () use ($future, $bytes): void {
                 $future->await();
-                $this->push($data)->await();
+                $this->push($bytes)->await();
             });
         }
 
         $this->queue->push($future);
 
-        return $future;
+        $future->await();
     }
 
-    public function end(string $data = ""): Future
+    public function end(): void
     {
-        return async(function () use ($data): void {
-            try {
-                $future = $this->write($data);
-                $this->writable = false;
-                $future->await();
-            } finally {
-                $this->close();
-            }
-        });
+        $this->writable = false;
+        $this->close();
     }
 
     public function truncate(int $size): void

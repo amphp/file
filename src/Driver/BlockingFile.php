@@ -6,7 +6,6 @@ use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Cancellation;
 use Amp\File\File;
-use Amp\Future;
 
 final class BlockingFile implements File
 {
@@ -17,8 +16,8 @@ final class BlockingFile implements File
 
     /**
      * @param resource $handle An open filesystem descriptor.
-     * @param string   $path File path.
-     * @param string   $mode File open mode.
+     * @param string $path File path.
+     * @param string $mode File open mode.
      */
     public function __construct($handle, string $path, string $mode)
     {
@@ -34,7 +33,7 @@ final class BlockingFile implements File
         }
     }
 
-    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->handle === null) {
             throw new ClosedException("The file '{$this->path}' has been closed");
@@ -56,7 +55,7 @@ final class BlockingFile implements File
         }
     }
 
-    public function write(string $data): Future
+    public function write(string $bytes): void
     {
         if ($this->handle === null) {
             throw new ClosedException("The file '{$this->path}' has been closed");
@@ -67,28 +66,22 @@ final class BlockingFile implements File
                 throw new StreamException("Failed writing to file '{$this->path}': {$message}");
             });
 
-            $length = \fwrite($this->handle, $data);
+            $length = \fwrite($this->handle, $bytes);
             if ($length === false) {
                 throw new StreamException("Failed writing to file '{$this->path}'");
             }
         } finally {
             \restore_error_handler();
         }
-
-        return Future::complete(null);
     }
 
-    public function end(string $data = ""): Future
+    public function end(): void
     {
-        $this->write($data);
-
         try {
             $this->close();
-        } catch (\Throwable $exception) {
+        } catch (\Throwable) {
             // ignore any errors
         }
-
-        return Future::complete(null);
     }
 
     public function close(): void

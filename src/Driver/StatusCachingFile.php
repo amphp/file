@@ -26,16 +26,16 @@ final class StatusCachingFile implements File
         $this->invalidateCallback = $invalidateCallback;
     }
 
-    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string
+    public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
-        return $this->file->read($token, $length);
+        return $this->file->read($cancellation, $length);
     }
 
-    public function write(string $data): Future
+    public function write(string $bytes): Future
     {
-        return async(function () use ($data): void {
+        return async(function () use ($bytes): void {
             try {
-                $this->file->write($data)->await();
+                $this->file->write($bytes)->await();
             } finally {
                 $this->invalidate();
             }

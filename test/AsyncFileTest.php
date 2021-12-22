@@ -88,7 +88,7 @@ abstract class AsyncFileTest extends FileTest
         $handle->seek(0);
 
         try {
-            $handle->read(token: $tokenSource->getToken(), length: 2);
+            $handle->read(cancellation: $tokenSource->getToken(), length: 2);
             $handle->seek(0); // If the read succeeds (e.g.: ParallelFile), we need to seek back to 0.
         } catch (CancelledException) {
         }

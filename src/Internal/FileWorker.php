@@ -32,42 +32,27 @@ final class FileWorker implements Worker
         ($this->push)($this->worker);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function isRunning(): bool
     {
         return $this->worker->isRunning();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function isIdle(): bool
     {
         return $this->worker->isIdle();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function enqueue(Task $task, ?Cancellation $token = null): mixed
+    public function execute(Task $task, ?Cancellation $cancellation = null): mixed
     {
-        return $this->worker->enqueue($task, $token);
+        return $this->worker->execute($task, $cancellation);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function shutdown(): int
     {
         return $this->worker->shutdown();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function kill()
+    public function kill(): void
     {
         $this->worker->kill();
     }

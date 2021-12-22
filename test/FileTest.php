@@ -9,14 +9,14 @@ abstract class FileTest extends FilesystemTest
 {
     protected File\Driver $driver;
 
-    public function testWrite()
+    public function testWrite(): void
     {
         $path = Fixture::path() . "/write";
         $handle = $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
 
-        $handle->write("foo")->await();
-        $handle->write("bar")->await();
+        $handle->write("foo");
+        $handle->write("bar");
         $handle->seek(0);
         $contents = $handle->read();
         $this->assertSame(6, $handle->tell());
@@ -26,30 +26,30 @@ abstract class FileTest extends FilesystemTest
         $handle->close();
     }
 
-    public function testEmptyWrite()
+    public function testEmptyWrite(): void
     {
         $path = Fixture::path() . "/write";
 
         $handle = $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
 
-        $handle->write("")->await();
+        $handle->write("");
         $this->assertSame(0, $handle->tell());
 
         $handle->close();
     }
 
-    public function testWriteAfterClose()
+    public function testWriteAfterClose(): void
     {
         $path = Fixture::path() . "/write";
         $handle = $this->driver->openFile($path, "c+");
         $handle->close();
 
         $this->expectException(ClosedException::class);
-        $handle->write("bar")->await();
+        $handle->write("bar");
     }
 
-    public function testDoubleClose()
+    public function testDoubleClose(): void
     {
         $path = Fixture::path() . "/write";
         /** @var File\File $handle */
@@ -60,32 +60,32 @@ abstract class FileTest extends FilesystemTest
         $this->expectNotToPerformAssertions();
     }
 
-    public function testWriteAfterEnd()
+    public function testWriteAfterEnd(): void
     {
         $path = Fixture::path() . "/write";
         $handle = $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
-        $handle->end("foo")->await();
+        $handle->end("foo");
 
         $this->expectException(ClosedException::class);
-        $handle->write("bar")->await();
+        $handle->write("bar");
     }
 
-    public function testWriteInAppendMode()
+    public function testWriteInAppendMode(): void
     {
         $path = Fixture::path() . "/write";
         $handle = $this->driver->openFile($path, "a+");
         $this->assertSame(0, $handle->tell());
         $handle->write("bar");
         $handle->write("foo");
-        $handle->write("baz")->await();
+        $handle->write("baz");
         $this->assertSame(9, $handle->tell());
         $handle->seek(0);
         $this->assertSame(0, $handle->tell());
         $this->assertSame("barfoobaz", $handle->read());
     }
 
-    public function testReadingToEnd()
+    public function testReadingToEnd(): void
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $contents = "";
@@ -107,7 +107,7 @@ abstract class FileTest extends FilesystemTest
         $handle->close();
     }
 
-    public function testSequentialReads()
+    public function testSequentialReads(): void
     {
         $handle = $this->driver->openFile(__FILE__, "r");
 
@@ -121,7 +121,7 @@ abstract class FileTest extends FilesystemTest
         $handle->close();
     }
 
-    public function testReadingFromOffset()
+    public function testReadingFromOffset(): void
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
@@ -135,7 +135,7 @@ abstract class FileTest extends FilesystemTest
         $handle->close();
     }
 
-    public function testSeekThrowsOnInvalidWhence()
+    public function testSeekThrowsOnInvalidWhence(): void
     {
         $this->expectException(\Error::class);
 
@@ -148,7 +148,7 @@ abstract class FileTest extends FilesystemTest
         }
     }
 
-    public function testSeekSetCur()
+    public function testSeekSetCur(): void
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
@@ -159,7 +159,7 @@ abstract class FileTest extends FilesystemTest
         $handle->close();
     }
 
-    public function testSeekSetEnd()
+    public function testSeekSetEnd(): void
     {
         $size = \filesize(__FILE__);
         $handle = $this->driver->openFile(__FILE__, "r");
@@ -169,21 +169,21 @@ abstract class FileTest extends FilesystemTest
         $handle->close();
     }
 
-    public function testPath()
+    public function testPath(): void
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame(__FILE__, $handle->getPath());
         $handle->close();
     }
 
-    public function testMode()
+    public function testMode(): void
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame("r", $handle->getMode());
         $handle->close();
     }
 
-    public function testClose()
+    public function testClose(): void
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $handle->close();
@@ -195,20 +195,20 @@ abstract class FileTest extends FilesystemTest
     /**
      * @depends testWrite
      */
-    public function testTruncateToSmallerSize()
+    public function testTruncateToSmallerSize(): void
     {
         $path = Fixture::path() . "/write";
         $handle = $this->driver->openFile($path, "c+");
 
         $handle->write("foo");
-        $handle->write("bar")->await();
+        $handle->write("bar");
         $handle->truncate(4);
         $handle->seek(0);
         $contents = $handle->read();
         $this->assertTrue($handle->atEnd());
         $this->assertSame("foob", $contents);
 
-        $handle->write("bar")->await();
+        $handle->write("bar");
         $this->assertSame(7, $handle->tell());
         $handle->seek(0);
         $contents = $handle->read();
@@ -220,12 +220,12 @@ abstract class FileTest extends FilesystemTest
     /**
      * @depends testWrite
      */
-    public function testTruncateToLargerSize()
+    public function testTruncateToLargerSize(): void
     {
         $path = Fixture::path() . "/write";
         $handle = $this->driver->openFile($path, "c+");
 
-        $handle->write("foo")->await();
+        $handle->write("foo");
         $handle->truncate(6);
         $this->assertSame(3, $handle->tell());
         $handle->seek(0);
@@ -233,7 +233,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertTrue($handle->atEnd());
         $this->assertSame("foo\0\0\0", $contents);
 
-        $handle->write("bar")->await();
+        $handle->write("bar");
         $this->assertSame(9, $handle->tell());
         $handle->seek(0);
         $contents = $handle->read();

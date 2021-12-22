@@ -80,6 +80,8 @@ function createDefaultDriver(): Driver
  * @param string $mode
  *
  * @return File
+ *
+ * @throws FilesystemException
  */
 function openFile(string $path, string $mode): File
 {

@@ -2,25 +2,62 @@
 
 namespace Amp\File;
 
-use Amp\ByteStream\ClosableStream;
 use Amp\ByteStream\ReadableStream;
-use Amp\ByteStream\SeekableStream;
 use Amp\ByteStream\WritableStream;
 use Amp\Cancellation;
 
-interface File extends ReadableStream, WritableStream, ClosableStream, SeekableStream
+interface File extends ReadableStream, WritableStream
 {
+    public const SEEK_SET = \SEEK_SET;
+    public const SEEK_CUR = \SEEK_CUR;
+    public const SEEK_END = \SEEK_END;
+
     public const DEFAULT_READ_LENGTH = 8192;
 
     /**
      * Read $length bytes from the open file handle.
      *
-     * @param Cancellation|null $token
+     * @param Cancellation|null $cancellation
      * @param int $length
      *
      * @return string|null
      */
-    public function read(?Cancellation $token = null, int $length = self::DEFAULT_READ_LENGTH): ?string;
+    public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string;
+
+    /**
+     * Set the internal pointer position.
+     *
+     * $whence values:
+     *
+     * SEEK_SET - Set position equal to offset bytes.
+     * SEEK_CUR - Set position to current location plus offset.
+     * SEEK_END - Set position to end-of-file plus offset.
+     *
+     * @param int $position
+     * @param int $whence
+     *
+     * @return int New offset position.
+     */
+    public function seek(int $position, int $whence = self::SEEK_SET): int;
+
+    /**
+     * Return the current internal offset position of the file handle.
+     *
+     * @return int
+     */
+    public function tell(): int;
+
+    /**
+     * Test for being at the end of the stream (a.k.a. "end-of-file").
+     *
+     * @return bool
+     */
+    public function atEnd(): bool;
+
+    /**
+     * @return bool Seeking may become unavailable if the underlying source is closed or lost.
+     */
+    public function isSeekable(): bool;
 
     /**
      * Retrieve the path used when opening the file handle.

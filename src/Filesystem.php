@@ -18,6 +18,8 @@ final class Filesystem
      * @param string $mode
      *
      * @return File
+     *
+     * @throws FilesystemException
      */
     public function openFile(string $path, string $mode): File
     {

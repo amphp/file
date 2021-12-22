@@ -7,8 +7,8 @@ use Amp\Sync\Lock;
 use Amp\Sync\Mutex;
 use Amp\Sync\SyncException;
 use function Amp\delay;
-use function Amp\File\openFile;
 use function Amp\File\deleteFile;
+use function Amp\File\openFile;
 
 final class AsyncFileMutex implements Mutex
 {
@@ -36,13 +36,13 @@ final class AsyncFileMutex implements Mutex
             try {
                 $file = openFile($this->fileName, 'x');
                 break;
-            } catch (FilesystemException $exception) {
+            } catch (FilesystemException) {
                 delay(self::LATENCY_TIMEOUT);
             }
         }
 
         // Return a lock object that can be used to release the lock on the mutex.
-        $lock = new Lock(0, fn() => $this->release());
+        $lock = new Lock(fn () => $this->release());
 
         $file->close();
 
@@ -51,6 +51,8 @@ final class AsyncFileMutex implements Mutex
 
     /**
      * Releases the lock on the mutex.
+     *
+     * @throws SyncException
      */
     private function release(): void
     {

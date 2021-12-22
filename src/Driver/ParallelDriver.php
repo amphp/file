@@ -2,7 +2,6 @@
 
 namespace Amp\File\Driver;
 
-use Amp\Cancellation;
 use Amp\File\Driver;
 use Amp\File\File;
 use Amp\File\FilesystemException;
@@ -39,7 +38,7 @@ final class ParallelDriver implements Driver
         $this->pool = $pool ?? pool();
         $this->workerLimit = $workerLimit;
         $this->workerStorage = new \SplObjectStorage;
-        $this->pendingWorker = Future::complete(null);
+        $this->pendingWorker = Future::complete();
     }
 
     public function openFile(string $path, string $mode): File
@@ -55,7 +54,7 @@ final class ParallelDriver implements Driver
         });
 
         try {
-            [$id, $size, $mode] = $worker->enqueue(new Internal\FileTask("fopen", [$path, $mode]));
+            [$id, $size, $mode] = $worker->execute(new Internal\FileTask("fopen", [$path, $mode]));
         } catch (TaskFailureThrowable $exception) {
             throw new FilesystemException("Could not open file", $exception);
         } catch (WorkerException $exception) {
@@ -191,7 +190,7 @@ final class ParallelDriver implements Driver
     private function runFileTask(Internal\FileTask $task): mixed
     {
         try {
-            return $this->pool->enqueue($task);
+            return $this->pool->execute($task);
         } catch (TaskFailureThrowable $exception) {
             throw new FilesystemException("The file operation failed", $exception);
         } catch (WorkerException $exception) {

@@ -2,12 +2,11 @@
 
 namespace Amp\File\Internal;
 
+use Amp\Cache\Cache;
 use Amp\Cancellation;
 use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\BlockingFile;
-use Amp\File\File;
 use Amp\File\FilesystemException;
-use Amp\Parallel\Worker\Environment;
 use Amp\Parallel\Worker\Task;
 
 /**
@@ -31,8 +30,8 @@ final class FileTask implements Task
     private ?int $id;
 
     /**
-     * @param string   $operation
-     * @param array    $args
+     * @param string $operation
+     * @param array $args
      * @param int|null $id File ID.
      *
      * @throws \Error
@@ -48,7 +47,13 @@ final class FileTask implements Task
         $this->id = $id;
     }
 
-    public function run(Environment $environment, Cancellation $token): mixed
+    /**
+     * @throws FilesystemException
+     * @throws \Amp\Cache\CacheException
+     * @throws \Amp\ByteStream\ClosedException
+     * @throws \Amp\ByteStream\StreamException
+     */
+    public function run(Cache $cache, Cancellation $cancellation): mixed
     {
         if ('f' === $this->operation[0]) {
             if ("fopen" === $this->operation) {
@@ -85,7 +90,7 @@ final class FileTask implements Task
                 $file = new BlockingFile($handle, $path, $mode);
                 $id = (int) $handle;
                 $size = \fstat($handle)["size"];
-                $environment->set(self::makeId($id), $file);
+                $cache->set(self::makeId($id), $file);
 
                 return [$id, $size, $mode];
             }
@@ -96,14 +101,14 @@ final class FileTask implements Task
 
             $id = self::makeId($this->id);
 
-            if (!$environment->exists($id)) {
+            $file = $cache->get($id);
+            if ($file === null) {
                 throw new FilesystemException(\sprintf(
                     "No file handle with the ID %d has been opened on the worker",
                     $this->id
                 ));
             }
 
-            $file = $environment->get($id);
             if (!$file instanceof BlockingFile) {
                 throw new FilesystemException("File storage found in inconsistent state");
             }
@@ -111,7 +116,7 @@ final class FileTask implements Task
             switch ($this->operation) {
                 case "fread":
                     \array_shift($this->args);
-                    return $file->read($token, ...$this->args);
+                    return $file->read($cancellation, ...$this->args);
                 case "fwrite":
                     return $file->write(...$this->args)->await();
                 case "fseek":
@@ -120,7 +125,7 @@ final class FileTask implements Task
                     return $file->truncate(...$this->args);
 
                 case "fclose":
-                    $environment->delete($id);
+                    $cache->delete($id);
                     $file->close();
                     return null;
 

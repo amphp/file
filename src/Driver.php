@@ -11,6 +11,8 @@ interface Driver
      * @param string $mode
      *
      * @return File
+     *
+     * @throws FilesystemException
      */
     public function openFile(string $path, string $mode): File;
 
@@ -41,6 +43,8 @@ interface Driver
      *
      * @param string $target
      * @param string $link
+     *
+     * @throws FilesystemException
      */
     public function createSymlink(string $target, string $link): void;
 
@@ -49,6 +53,8 @@ interface Driver
      *
      * @param string $target
      * @param string $link
+     *
+     * @throws FilesystemException
      */
     public function createHardlink(string $target, string $link): void;
 
@@ -56,6 +62,8 @@ interface Driver
      * Resolve the symlink at $path.
      *
      * @param string $target
+     *
+     * @throws FilesystemException
      */
     public function resolveSymlink(string $target): string;
 
@@ -64,6 +72,8 @@ interface Driver
      *
      * @param string $from
      * @param string $to
+     *
+     * @throws FilesystemException
      */
     public function move(string $from, string $to): void;
 
@@ -71,6 +81,8 @@ interface Driver
      * Delete a file.
      *
      * @param string $path
+     *
+     * @throws FilesystemException
      */
     public function deleteFile(string $path): void;
 
@@ -78,7 +90,9 @@ interface Driver
      * Create a directory.
      *
      * @param string $path
-     * @param int    $mode
+     * @param int $mode
+     *
+     * @throws FilesystemException
      */
     public function createDirectory(string $path, int $mode = 0777): void;
 
@@ -86,7 +100,7 @@ interface Driver
      * Create a directory recursively.
      *
      * @param string $path
-     * @param int    $mode
+     * @param int $mode
      */
     public function createDirectoryRecursively(string $path, int $mode = 0777): void;
 
@@ -112,14 +126,14 @@ interface Driver
      * chmod a file or directory.
      *
      * @param string $path
-     * @param int    $mode
+     * @param int $mode
      */
     public function changePermissions(string $path, int $mode): void;
 
     /**
      * chown a file or directory.
      *
-     * @param string   $path
+     * @param string $path
      * @param int|null $uid
      * @param int|null $gid
      */
@@ -130,7 +144,7 @@ interface Driver
      *
      * If the file does not exist it will be created automatically.
      *
-     * @param string   $path
+     * @param string $path
      * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
      * @param int|null $accessTime The access time. If $atime is not supplied, value passed to the $time parameter is
      *     used.
