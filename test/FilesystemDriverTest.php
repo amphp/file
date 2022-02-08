@@ -112,7 +112,9 @@ abstract class FilesystemDriverTest extends FilesystemTest
     {
         $link = $linkResolver();
 
-        if (IS_WINDOWS && File\isFile($link)) {
+        \clearstatcache(true);
+
+        if (IS_WINDOWS && \is_file($link)) {
             self::assertSame($link, $this->driver->resolveSymlink($link));
         } else {
             $this->expectException(FilesystemException::class);
@@ -356,7 +358,12 @@ abstract class FilesystemDriverTest extends FilesystemTest
 
         $this->driver->createDirectoryRecursively($dir, 0764);
         $stat = $this->driver->getStatus($dir);
-        $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
+
+        if (IS_WINDOWS) {
+            $this->assertSame('0777', $this->getPermissionsFromStatus($stat));
+        } else {
+            $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
+        }
     }
 
     public function testCreateDirectoryFailsOnNonexistentPath(): void
