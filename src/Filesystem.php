@@ -240,6 +240,8 @@ final class Filesystem
      * @fails \Amp\Files\FilesystemException If the operation fails.
      *
      * @return string
+     *
+     * @throws FilesystemException
      */
     public function resolveSymlink(string $path): string
     {
@@ -251,7 +253,8 @@ final class Filesystem
      *
      * @param string $from
      * @param string $to
-     * @fails \Amp\Files\FilesystemException If the operation fails.
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function move(string $from, string $to): void
     {
@@ -262,7 +265,8 @@ final class Filesystem
      * Delete a file.
      *
      * @param string $path
-     * @fails \Amp\Files\FilesystemException If the operation fails.
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function deleteFile(string $path): void
     {
@@ -273,8 +277,9 @@ final class Filesystem
      * Create a directory.
      *
      * @param string $path
-     * @param int    $mode
-     * @fails \Amp\Files\FilesystemException If the operation fails.
+     * @param int $mode
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function createDirectory(string $path, int $mode = 0777): void
     {
@@ -285,8 +290,9 @@ final class Filesystem
      * Create a directory recursively.
      *
      * @param string $path
-     * @param int    $mode
-     * @fails \Amp\Files\FilesystemException If the operation fails.
+     * @param int $mode
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
@@ -297,7 +303,8 @@ final class Filesystem
      * Delete a directory.
      *
      * @param string $path
-     * @fails \Amp\Files\FilesystemException If the operation fails.
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function deleteDirectory(string $path): void
     {
@@ -312,6 +319,8 @@ final class Filesystem
      * @param string $path
      *
      * @return list<string>
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function listFiles(string $path): array
     {
@@ -322,7 +331,7 @@ final class Filesystem
      * Change permissions of a file or directory.
      *
      * @param string $path
-     * @param int    $mode
+     * @param int $mode
      * @fails \Amp\Files\FilesystemException If the operation fails.
      */
     public function changePermissions(string $path, int $mode): void
@@ -333,7 +342,7 @@ final class Filesystem
     /**
      * Change ownership of a file or directory.
      *
-     * @param string   $path
+     * @param string $path
      * @param int|null $uid null to ignore
      * @param int|null $gid null to ignore
      * @fails \Amp\Files\FilesystemException If the operation fails.
@@ -348,7 +357,7 @@ final class Filesystem
      *
      * If the file does not exist it will be created automatically.
      *
-     * @param string   $path
+     * @param string $path
      * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
      * @param int|null $accessTime The access time. If not supplied, the modification time is used.
      * @fails \Amp\Files\FilesystemException If the operation fails.

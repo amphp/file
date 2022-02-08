@@ -19,7 +19,7 @@ interface FilesystemDriver
     /**
      * Get file status; also known as stat operation.
      *
-     * If the requested path does not exist the resulting Promise will resolve to NULL.
+     * If the requested path does not exist, it returns {@code null}.
      *
      * @param string $path The file system path to stat.
      *
@@ -34,7 +34,7 @@ interface FilesystemDriver
      *
      * @param string $path The file system path to stat.
      *
-     * @return array|null A promise resolving to an associative array upon successful resolution.
+     * @return array|null An associative array upon successful completion.
      */
     public function getLinkStatus(string $path): ?array;
 
@@ -101,6 +101,8 @@ interface FilesystemDriver
      *
      * @param string $path
      * @param int $mode
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function createDirectoryRecursively(string $path, int $mode = 0777): void;
 
@@ -108,6 +110,8 @@ interface FilesystemDriver
      * Delete a directory.
      *
      * @param string $path
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function deleteDirectory(string $path): void;
 
@@ -119,6 +123,8 @@ interface FilesystemDriver
      * @param string $path
      *
      * @return list<string>
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function listFiles(string $path): array;
 
@@ -127,6 +133,8 @@ interface FilesystemDriver
      *
      * @param string $path
      * @param int $mode
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function changePermissions(string $path, int $mode): void;
 
@@ -136,6 +144,8 @@ interface FilesystemDriver
      * @param string $path
      * @param int|null $uid
      * @param int|null $gid
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function changeOwner(string $path, ?int $uid, ?int $gid): void;
 
@@ -148,6 +158,8 @@ interface FilesystemDriver
      * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
      * @param int|null $accessTime The access time. If $atime is not supplied, value passed to the $time parameter is
      *     used.
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): void;
 
@@ -157,6 +169,8 @@ interface FilesystemDriver
      * @param string $path The file path from which to buffer contents.
      *
      * @return string A promise resolving to a string upon successful resolution.
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function read(string $path): string;
 
@@ -165,6 +179,8 @@ interface FilesystemDriver
      *
      * @param string $path The file path to which to $contents should be written.
      * @param string $contents The data to write to the specified $path.
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function write(string $path, string $contents): void;
 }
