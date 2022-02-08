@@ -114,7 +114,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
 
         \clearstatcache(true);
 
-        if (IS_WINDOWS && \is_file($link)) {
+        if (IS_WINDOWS && \file_exists($link)) {
             self::assertSame($link, $this->driver->resolveSymlink($link));
         } else {
             $this->expectException(FilesystemException::class);
