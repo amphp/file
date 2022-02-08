@@ -112,7 +112,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
     {
         $link = $linkResolver();
 
-        if (\file_exists($link) && \realpath(__FILE__) !== __FILE__) {
+        if (\file_exists($link) && \readlink(__FILE__) !== __FILE__) {
             $this->markTestSkipped('Build directory itself contains a symlink');
         }
 
