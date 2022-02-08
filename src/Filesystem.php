@@ -78,9 +78,10 @@ final class Filesystem
      * function's returned Promise WILL resolve as a failure.
      *
      * @param string $path File system path.
-     * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file.
      *
-     * @return int
+     * @return int Size in bytes.
+     *
+     * @throws FilesystemException If the path does not exist or is not a file.
      */
     public function getSize(string $path): int
     {
@@ -154,9 +155,10 @@ final class Filesystem
      * Retrieve the path's last modification time as a unix timestamp.
      *
      * @param string $path File system path.
-     * @fails \Amp\Files\FilesystemException If the path does not exist.
      *
      * @return int
+     *
+     * @throws FilesystemException If the path does not exist.
      */
     public function getModificationTime(string $path): int
     {
@@ -172,9 +174,10 @@ final class Filesystem
      * Retrieve the path's last access time as a unix timestamp.
      *
      * @param string $path File system path.
-     * @fails \Amp\Files\FilesystemException If the path does not exist.
      *
      * @return int
+     *
+     * @throws FilesystemException If the path does not exist.
      */
     public function getAccessTime(string $path): int
     {
@@ -190,9 +193,10 @@ final class Filesystem
      * Retrieve the path's creation time as a unix timestamp.
      *
      * @param string $path File system path.
-     * @fails \Amp\Files\FilesystemException If the path does not exist.
      *
      * @return int
+     *
+     * @throws FilesystemException If the path does not exist.
      */
     public function getCreationTime(string $path): int
     {
@@ -209,7 +213,8 @@ final class Filesystem
      *
      * @param string $original
      * @param string $link
-     * @fails \Amp\Files\FilesystemException If the operation fails.
+     *
+     * @throws FilesystemException If the operation fails.
      */
     public function createSymlink(string $original, string $link): void
     {
