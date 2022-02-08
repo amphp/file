@@ -112,12 +112,15 @@ abstract class FilesystemDriverTest extends FilesystemTest
     {
         $link = $linkResolver();
 
-        if (IS_WINDOWS && \file_exists($link) && \readlink(__FILE__) !== __FILE__) {
+        $this->expectException(FilesystemException::class);
+
+        $result = $this->driver->resolveSymlink($link);
+
+        if (IS_WINDOWS) {
+            self::assertNotSame($result, $link);
+
             $this->markTestSkipped('Build directory itself contains a symlink');
         }
-
-        $this->expectException(FilesystemException::class);
-        $this->driver->resolveSymlink($link);
     }
 
     public function testLinkStatus(): void
