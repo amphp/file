@@ -15,7 +15,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $fixtureDir = Fixture::path();
         $actual = $this->driver->listFiles($fixtureDir);
         $expected = IS_WINDOWS
-            ? ["dir", "dirlink", "fifo", "fifolink", "file", "filelink"]
+            ? ["dir", "dirlink", "file", "filelink"]
             : ["dir", "dirlink", "fifo", "fifolink", "file", "filelink", "linkloop"];
         $this->assertSame($expected, $actual);
     }
@@ -84,7 +84,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $link = "{$fixtureDir}/symlink.txt";
         \symlink($original, $link);
 
-        $this->assertSame($original, $this->driver->resolveSymlink($link));
+        $this->assertSame(\str_replace('/', \DIRECTORY_SEPARATOR, $original), $this->driver->resolveSymlink($link));
     }
 
     public function symlinkPathProvider(): array
@@ -107,10 +107,8 @@ abstract class FilesystemDriverTest extends FilesystemTest
      * @dataProvider symlinkPathProvider
      *
      * @param \Closure $linkResolver
-     *
-     * @return \Generator
      */
-    public function testResolveSymlinkError(\Closure $linkResolver)
+    public function testResolveSymlinkError(\Closure $linkResolver): void
     {
         $this->expectException(FilesystemException::class);
 
@@ -492,23 +490,31 @@ abstract class FilesystemDriverTest extends FilesystemTest
 
     public function testChangeOwner(): void
     {
+        if (IS_WINDOWS) {
+            $this->markTestSkipped('Not supported on Windows');
+        }
+
         $fixtureDir = Fixture::path();
 
         $path = "{$fixtureDir}/file";
         $this->driver->getStatus($path);
         $user = \fileowner($path);
-        $this->driver->changeOwner($path, $user, null);
+        $this->driver->changeOwner($path, $user);
         self::assertSame($user, \fileowner($path));
     }
 
     public function testChangeOwnerFailsOnNonexistentPath(): void
     {
+        if (IS_WINDOWS) {
+            $this->markTestSkipped('Not supported on Windows');
+        }
+
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
 
         $this->expectException(FilesystemException::class);
 
-        $this->driver->changeOwner($path, 0, null);
+        $this->driver->changeOwner($path, 0);
     }
 
     protected function setUp(): void
