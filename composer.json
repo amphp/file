@@ -44,7 +44,7 @@
         "amphp/phpunit-util": "^3",
         "phpunit/phpunit": "^9",
         "psalm/phar": "^4.20",
-        "amphp/php-cs-fixer-config": "dev-master"
+        "amphp/php-cs-fixer-config": "^2-dev"
     },
     "suggest": {
         "ext-eio": "^2 || ^3",
