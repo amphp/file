@@ -4,27 +4,30 @@ namespace Amp\File\Test;
 
 use Amp\File;
 use Amp\File\FilesystemException;
+use const Amp\Process\IS_WINDOWS;
 
 abstract class FilesystemDriverTest extends FilesystemTest
 {
     protected File\Filesystem $driver;
 
-    public function testListFiles()
+    public function testListFiles(): void
     {
         $fixtureDir = Fixture::path();
         $actual = $this->driver->listFiles($fixtureDir);
-        $expected = ["dir", "dirlink", "fifo", "fifolink", "file", "filelink", "linkloop"];
+        $expected = IS_WINDOWS
+            ? ["dir", "dirlink", "fifo", "fifolink", "file", "filelink"]
+            : ["dir", "dirlink", "fifo", "fifolink", "file", "filelink", "linkloop"];
         $this->assertSame($expected, $actual);
     }
 
-    public function testListFilesThrowsIfPathNotADirectory()
+    public function testListFilesThrowsIfPathNotADirectory(): void
     {
         $this->expectException(FilesystemException::class);
 
         $this->driver->listFiles(__FILE__);
     }
 
-    public function testListFilesThrowsIfPathDoesntExist()
+    public function testListFilesThrowsIfPathDoesntExist(): void
     {
         $this->expectException(FilesystemException::class);
 
@@ -32,7 +35,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->listFiles($path);
     }
 
-    public function testCreateSymlink()
+    public function testCreateSymlink(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -43,7 +46,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->deleteFile($link);
     }
 
-    public function testCreateSymlinkFailWhenLinkExists()
+    public function testCreateSymlinkFailWhenLinkExists(): void
     {
         $this->expectException(FilesystemException::class);
 
@@ -52,7 +55,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->createSymlink($path, $path);
     }
 
-    public function testCreateHardlink()
+    public function testCreateHardlink(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -64,7 +67,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->deleteFile($link);
     }
 
-    public function testCreateHardlinkFailWhenLinkExists()
+    public function testCreateHardlinkFailWhenLinkExists(): void
     {
         $this->expectException(FilesystemException::class);
 
@@ -73,7 +76,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->createHardlink($path, $path);
     }
 
-    public function testResolveSymlink()
+    public function testResolveSymlink(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -116,7 +119,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->resolveSymlink($link);
     }
 
-    public function testLinkStatus()
+    public function testLinkStatus(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -127,7 +130,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->deleteFile($link);
     }
 
-    public function testStatus()
+    public function testStatus(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
@@ -136,7 +139,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSameStatus(\stat($path), $stat);
     }
 
-    public function testDirectoryStatus()
+    public function testDirectoryStatus(): void
     {
         $fixtureDir = Fixture::path();
         $stat = $this->driver->getStatus("{$fixtureDir}/dir");
@@ -144,27 +147,27 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSameStatus(\stat("{$fixtureDir}/dir"), $stat);
     }
 
-    public function testNonexistentPathStatusResolvesToNull()
+    public function testNonexistentPathStatusResolvesToNull(): void
     {
         $fixtureDir = Fixture::path();
         $stat = $this->driver->getStatus("{$fixtureDir}/nonexistent");
         $this->assertNull($stat);
     }
 
-    public function testExists()
+    public function testExists(): void
     {
         $fixtureDir = Fixture::path();
         $this->assertFalse($this->driver->exists("{$fixtureDir}/nonexistent"));
         $this->assertTrue($this->driver->exists("{$fixtureDir}/file"));
     }
 
-    public function testRead()
+    public function testRead(): void
     {
         $fixtureDir = Fixture::path();
         $this->assertSame("small", $this->driver->read("{$fixtureDir}/file"));
     }
 
-    public function testSize()
+    public function testSize(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
@@ -173,7 +176,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame($size, $this->driver->getSize($path));
     }
 
-    public function testSizeFailsOnNonexistentPath()
+    public function testSizeFailsOnNonexistentPath(): void
     {
         $this->expectException(FilesystemException::class);
 
@@ -182,7 +185,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->getSize($path);
     }
 
-    public function testSizeFailsOnDirectoryPath()
+    public function testSizeFailsOnDirectoryPath(): void
     {
         $this->expectException(FilesystemException::class);
 
@@ -195,7 +198,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
     /**
      * @dataProvider dataForDirectoryCheck
      */
-    public function testIsDirectory(bool $expectedResult, string $name)
+    public function testIsDirectory(bool $expectedResult, string $name): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/{$name}";
@@ -212,14 +215,16 @@ abstract class FilesystemDriverTest extends FilesystemTest
             yield 'fifo' => [false, 'fifo'];
             yield 'fifolink' => [false, 'fifolink'];
         }
-        yield 'linkloop' => [false, 'linkloop'];
+        if (!IS_WINDOWS) {
+            yield 'linkloop' => [false, 'linkloop'];
+        }
         yield 'nonexistent' => [false, 'nonexistent'];
     }
 
     /**
      * @dataProvider dataForFileCheck
      */
-    public function testIsFile(bool $expectedResult, string $name)
+    public function testIsFile(bool $expectedResult, string $name): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/{$name}";
@@ -236,14 +241,16 @@ abstract class FilesystemDriverTest extends FilesystemTest
             yield 'fifo' => [false, 'fifo'];
             yield 'fifolink' => [false, 'fifolink'];
         }
-        yield 'linkloop' => [false, 'linkloop'];
+        if (!IS_WINDOWS) {
+            yield 'linkloop' => [false, 'linkloop'];
+        }
         yield 'nonexistent' => [false, 'nonexistent'];
     }
 
     /**
      * @dataProvider dataForSymlinkCheck
      */
-    public function testIsSymlink(bool $expectedResult, string $name)
+    public function testIsSymlink(bool $expectedResult, string $name): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/{$name}";
@@ -260,11 +267,13 @@ abstract class FilesystemDriverTest extends FilesystemTest
             yield 'fifo' => [false, 'fifo'];
             yield 'fifolink' => [true, 'fifolink'];
         }
-        yield 'linkloop' => [true, 'linkloop'];
+        if (!IS_WINDOWS) {
+            yield 'linkloop' => [true, 'linkloop'];
+        }
         yield 'nonexistent' => [false, 'nonexistent'];
     }
 
-    public function testMove()
+    public function testMove(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -280,7 +289,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame($contents1, $contents2);
     }
 
-    public function testMoveFailsOnNonexistentPath()
+    public function testMoveFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -290,7 +299,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->move($path, $path);
     }
 
-    public function testDeleteFile()
+    public function testDeleteFile(): void
     {
         $fixtureDir = Fixture::path();
         $toUnlink = "{$fixtureDir}/unlink";
@@ -300,7 +309,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertNull($this->driver->getStatus($toUnlink));
     }
 
-    public function testDeleteFileFailsOnNonexistentPath()
+    public function testDeleteFileFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -310,7 +319,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->deleteFile($path);
     }
 
-    public function testDeleteFileFailsOnDirectory()
+    public function testDeleteFileFailsOnDirectory(): void
     {
         $fixtureDir = Fixture::path();
         $dir = "{$fixtureDir}/newdir";
@@ -321,7 +330,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->deleteFile($dir);
     }
 
-    public function testCreateAndDeleteDirectory()
+    public function testCreateAndDeleteDirectory(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -343,7 +352,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
     }
 
-    public function testCreateDirectoryFailsOnNonexistentPath()
+    public function testCreateDirectoryFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent/nonexistent";
@@ -353,7 +362,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->createDirectory($path);
     }
 
-    public function testDeleteDirectoryFailsOnNonexistentPath()
+    public function testDeleteDirectoryFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -363,7 +372,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->deleteDirectory($path);
     }
 
-    public function testDeleteDirectoryFailsOnFile()
+    public function testDeleteDirectoryFailsOnFile(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
@@ -373,7 +382,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->deleteDirectory($path);
     }
 
-    public function testMtime()
+    public function testMtime(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
@@ -382,7 +391,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame($statMtime, $this->driver->getModificationTime($path));
     }
 
-    public function testMtimeFailsOnNonexistentPath()
+    public function testMtimeFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -392,7 +401,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->getModificationTime($path);
     }
 
-    public function testAtime()
+    public function testAtime(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
@@ -401,7 +410,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame($statAtime, $this->driver->getAccessTime($path));
     }
 
-    public function testAtimeFailsOnNonexistentPath()
+    public function testAtimeFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -411,7 +420,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->getAccessTime($path);
     }
 
-    public function testCtime()
+    public function testCtime(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/file";
@@ -420,7 +429,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame($statCtime, $this->driver->getCreationTime($path));
     }
 
-    public function testCtimeFailsOnNonexistentPath()
+    public function testCtimeFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -433,7 +442,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
     /**
      * @group slow
      */
-    public function testTouch()
+    public function testTouch(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -449,7 +458,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
     }
 
-    public function testTouchFailsOnNonexistentPath()
+    public function testTouchFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent/nonexistent";
@@ -459,7 +468,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->touch($path);
     }
 
-    public function testChangePermissions()
+    public function testChangePermissions(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -471,7 +480,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
     }
 
-    public function testChangePermissionsFailsOnNonexistentPath()
+    public function testChangePermissionsFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";
@@ -481,7 +490,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->driver->changePermissions($path, 0777);
     }
 
-    public function testChangeOwner()
+    public function testChangeOwner(): void
     {
         $fixtureDir = Fixture::path();
 
@@ -492,7 +501,7 @@ abstract class FilesystemDriverTest extends FilesystemTest
         self::assertSame($user, \fileowner($path));
     }
 
-    public function testChangeOwnerFailsOnNonexistentPath()
+    public function testChangeOwnerFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
         $path = "{$fixtureDir}/nonexistent";

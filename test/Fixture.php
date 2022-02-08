@@ -2,6 +2,8 @@
 
 namespace Amp\File\Test;
 
+use const Amp\Process\IS_WINDOWS;
+
 final class Fixture
 {
     private static string $fixtureId;
@@ -44,10 +46,12 @@ final class Fixture
                 "Failed creating temporary test fixture symlink to file"
             );
         }
-        if (!\symlink($fixtureDir . "/linkloop", $fixtureDir . "/linkloop")) {
-            throw new \RuntimeException(
-                "Failed creating temporary test fixture symlink loop"
-            );
+        if (!IS_WINDOWS) {
+            if (!\symlink($fixtureDir . "/linkloop", $fixtureDir . "/linkloop")) {
+                throw new \RuntimeException(
+                    "Failed creating temporary test fixture symlink loop"
+                );
+            }
         }
         if (\extension_loaded('posix')) {
             if (!\posix_mkfifo($fixtureDir . "/fifo", 0777)) {
