@@ -88,15 +88,15 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
-    public function resolveSymlink(string $path): string
+    public function resolveSymlink(string $target): string
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
-                throw new FilesystemException("Could not resolve symbolic link '{$path}': {$message}");
+            \set_error_handler(static function ($type, $message) use ($target) {
+                throw new FilesystemException("Could not resolve symbolic link '{$target}': {$message}");
             });
 
-            if (false === ($result = \readlink($path))) {
-                throw new FilesystemException("Could not resolve symbolic link '{$path}'");
+            if (false === ($result = \readlink($target))) {
+                throw new FilesystemException("Could not resolve symbolic link '{$target}'");
             }
 
             return $result;
@@ -158,6 +158,8 @@ final class BlockingFilesystemDriver implements FilesystemDriver
                 if (!\is_dir($path)) {
                     throw new FilesystemException("Could not create directory '{$path}': {$message}");
                 }
+
+                return true;
             });
 
             if (\is_dir($path)) {
@@ -239,11 +241,14 @@ final class BlockingFilesystemDriver implements FilesystemDriver
                 throw new FilesystemException("Failed to change owner for '{$path}': {$message}");
             });
 
-            if (($uid ?? -1) !== -1 && !\chown($path, $uid)) {
+            $uid ??= -1;
+            $gid ??= -1;
+
+            if ($uid !== -1 && !\chown($path, $uid)) {
                 throw new FilesystemException("Failed to change owner for '{$path}'");
             }
 
-            if (($gid ?? -1) !== -1 && !\chgrp($path, $gid)) {
+            if ($gid !== -1 && !\chgrp($path, $gid)) {
                 throw new FilesystemException("Failed to change owner for '{$path}'");
             }
         } finally {

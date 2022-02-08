@@ -38,8 +38,53 @@ final class EioFilesystemDriver implements FilesystemDriver
         $deferred = new DeferredFuture;
         $this->poll->listen();
 
-        $openArr = [$mode, $path, $deferred];
-        \eio_open($path, $flags, $chmod, \EIO_PRI_DEFAULT, [$this, "onOpenHandle"], $openArr);
+        \eio_open(
+            $path,
+            $flags,
+            $chmod,
+            \EIO_PRI_DEFAULT,
+            function (mixed $data, mixed $fileHandle, mixed $resource) use ($mode, $path, $deferred): void {
+                if ($fileHandle === -1) {
+                    $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
+                } elseif ($mode[0] === "a") {
+                    \eio_ftruncate(
+                        $fileHandle,
+                        0,
+                        \EIO_PRI_DEFAULT,
+                        function (mixed $data, mixed $result, mixed $resource) use (
+                            $deferred,
+                            $fileHandle,
+                            $path,
+                            $mode
+                        ) {
+                            if ($result === -1) {
+                                $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
+                            } else {
+                                $deferred->complete(new EioFile($this->poll, $fileHandle, $path, $mode, 0));
+                            }
+                        }
+                    );
+                } else {
+                    \eio_fstat(
+                        $fileHandle,
+                        \EIO_PRI_DEFAULT,
+                        function (mixed $data, mixed $result, mixed $resource) use (
+                            $fileHandle,
+                            $path,
+                            $mode,
+                            $deferred
+                        ) {
+                            if ($result === -1) {
+                                $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
+                            } else {
+                                $handle = new EioFile($this->poll, $fileHandle, $path, $mode, $result["size"]);
+                                $deferred->complete($handle);
+                            }
+                        }
+                    );
+                }
+            }
+        );
 
         try {
             return $deferred->getFuture()->await();
@@ -54,8 +99,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
-        $data = [$deferred, $path];
-        \eio_stat($path, $priority, [$this, "onStat"], $data);
+        \eio_stat($path, $priority, [$this, "onStat"], $deferred);
 
         try {
             return $deferred->getFuture()->await();
@@ -109,13 +153,14 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
-    public function resolveSymlink(string $path): string
+    public function resolveSymlink(string $target): string
     {
         $deferred = new DeferredFuture;
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
-        \eio_readlink($path, $priority, [$this, "onReadlink"], $deferred);
+        /** @psalm-suppress InvalidArgument */
+        \eio_readlink($target, $priority, [$this, "onReadlink"], $deferred);
 
         try {
             return $deferred->getFuture()->await();
@@ -145,9 +190,10 @@ final class EioFilesystemDriver implements FilesystemDriver
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
-        $data = [$deferred, $path];
-        $result = \eio_unlink($path, $priority, [$this, "onUnlink"], $data);
+        $result = \eio_unlink($path, $priority, [$this, "onUnlink"], $deferred);
+
         // For a non-existent file eio_unlink immediately returns true and the callback is never called.
+        /** @psalm-suppress TypeDoesNotContainType */
         if ($result === true) {
             $deferred->error(new FilesystemException('File does not exist.'));
         }
@@ -216,8 +262,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         $this->poll->listen();
 
         $priority = \EIO_PRI_DEFAULT;
-        $data = [$deferred, $path];
-        \eio_rmdir($path, $priority, [$this, "onRmdir"], $data);
+        \eio_rmdir($path, $priority, [$this, "onRmdir"], $deferred);
 
         try {
             $deferred->getFuture()->await();
@@ -233,6 +278,8 @@ final class EioFilesystemDriver implements FilesystemDriver
 
         $flags = \EIO_READDIR_STAT_ORDER | \EIO_READDIR_DIRS_FIRST;
         $priority = \EIO_PRI_DEFAULT;
+
+        /** @psalm-suppress InvalidArgument */
         \eio_readdir($path, $flags, $priority, [$this, "onScandir"], $deferred);
 
         try {
@@ -357,107 +404,64 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
-    private function onOpenHandle(array $openArr, $result, $req): void
+    private function onStat(DeferredFuture $deferred, mixed $result): void
     {
-        [$mode, $path, $deferred] = $openArr;
-
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
-        } elseif ($mode[0] === "a") {
-            \array_unshift($openArr, $result);
-            \eio_ftruncate($result, $offset = 0, \EIO_PRI_DEFAULT, [$this, "onOpenFtruncate"], $openArr);
-        } else {
-            \array_unshift($openArr, $result);
-            \eio_fstat($result, \EIO_PRI_DEFAULT, [$this, "onOpenFstat"], $openArr);
-        }
-    }
-
-    private function onOpenFtruncate(array $openArr, $result, $req): void
-    {
-        [$fh, $mode, $path, $deferred] = $openArr;
-
-        if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
-        } else {
-            $handle = new EioFile($this->poll, $fh, $path, $mode, $size = 0);
-            $deferred->complete($handle);
-        }
-    }
-
-    private function onOpenFstat(array $openArr, $result, $req): void
-    {
-        [$fh, $mode, $path, $deferred] = $openArr;
-        if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
-        } else {
-            $handle = new EioFile($this->poll, $fh, $path, $mode, $result["size"]);
-            $deferred->complete($handle);
-        }
-    }
-
-    private function onStat(array $data, $result, $req): void
-    {
-        [$deferred, $path] = $data;
-        if ($result === -1) {
-            $deferred->complete(null);
+            $deferred->complete();
         } else {
             $deferred->complete($result);
         }
     }
 
-    private function onLstat(DeferredFuture $deferred, $result, $req): void
+    private function onLstat(DeferredFuture $deferred, mixed $result): void
     {
         if ($result === -1) {
-            $deferred->complete(null);
+            $deferred->complete();
         } else {
             $deferred->complete($result);
         }
     }
 
-    private function onReadlink(DeferredFuture $deferred, $result, $req): void
+    private function onReadlink(DeferredFuture $deferred, mixed $result, mixed $resource): void
     {
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
             $deferred->complete($result);
         }
     }
 
-    private function onGenericResult(DeferredFuture $deferred, $result, $req): void
+    private function onGenericResult(DeferredFuture $deferred, mixed $result, mixed $resource): void
     {
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
-            $deferred->complete(null);
+            $deferred->complete();
         }
     }
 
-    private function onUnlink(array $data, $result, $req): void
+    private function onUnlink(DeferredFuture $deferred, mixed $result, mixed $resource): void
     {
-        [$deferred, $path] = $data;
-
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
-            $deferred->complete(null);
+            $deferred->complete();
         }
     }
 
-    private function onRmdir(array $data, $result, $req): void
+    private function onRmdir(DeferredFuture $deferred, mixed $result, mixed $resource): void
     {
-        [$deferred, $path] = $data;
-
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
-            $deferred->complete(null);
+            $deferred->complete();
         }
     }
 
-    private function onScandir(DeferredFuture $deferred, $result, $req): void
+    private function onScandir(DeferredFuture $deferred, mixed $result, mixed $resource): void
     {
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
             $result = $result["names"];
             \sort($result);
@@ -465,50 +469,46 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
-    private function onGetOpen(DeferredFuture $deferred, $result, $req): void
+    private function onGetOpen(DeferredFuture $deferred, mixed $result, mixed $resource): void
     {
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
-            $priority = \EIO_PRI_DEFAULT;
-            \eio_fstat($result, $priority, [$this, "onGetFstat"], [$result, $deferred]);
+            \eio_fstat($result, \EIO_PRI_DEFAULT, [$this, "onGetFstat"], [$result, $deferred]);
         }
     }
 
-    private function onGetFstat(array $fhAndPromisor, $result, $req): void
+    private function onGetFstat(array $fileHandleAndDeferred, mixed $result, mixed $resource): void
     {
-        [$fh, $deferred] = $fhAndPromisor;
+        [$fh, $deferred] = $fileHandleAndDeferred;
 
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
             return;
         }
 
-        $offset = 0;
-        $length = $result["size"];
-        $priority = \EIO_PRI_DEFAULT;
-        \eio_read($fh, $length, $offset, $priority, [$this, "onGetRead"], $fhAndPromisor);
+        \eio_read($fh, $result["size"], 0, \EIO_PRI_DEFAULT, [$this, "onGetRead"], $fileHandleAndDeferred);
     }
 
-    private function onGetRead(array $fhAndPromisor, $result, $req): void
+    private function onGetRead(array $fileHandleAndDeferred, mixed $result, mixed $resource): void
     {
-        [$fh, $deferred] = $fhAndPromisor;
+        [$fileHandle, $deferred] = $fileHandleAndDeferred;
 
-        \eio_close($fh);
+        \eio_close($fileHandle);
 
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
             $deferred->complete($result);
         }
     }
 
-    private function onPutOpen(array $data, $result, $req): void
+    private function onPutOpen(array $data, mixed $result, mixed $resource): void
     {
         [$contents, $deferred] = $data;
 
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
             $length = \strlen($contents);
             $offset = 0;
@@ -519,16 +519,16 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
-    private function onPutWrite(array $fhAndPromisor, $result, $req): void
+    private function onPutWrite(array $fileHandleAndDeferred, mixed $result, mixed $resource): void
     {
-        [$fh, $deferred] = $fhAndPromisor;
+        [$fileHandle, $deferred] = $fileHandleAndDeferred;
 
-        \eio_close($fh);
+        \eio_close($fileHandle);
 
         if ($result === -1) {
-            $deferred->error(new FilesystemException(\eio_get_last_error($req)));
+            $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
         } else {
-            $deferred->complete(null);
+            $deferred->complete();
         }
     }
 }

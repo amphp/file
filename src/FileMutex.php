@@ -29,18 +29,17 @@ final class FileMutex implements Mutex
         while (true) {
             try {
                 $file = openFile($this->fileName, 'x');
-                break;
+
+                // Return a lock object that can be used to release the lock on the mutex.
+                $lock = new Lock(fn () => $this->release());
+
+                $file->close();
+
+                return $lock;
             } catch (FilesystemException) {
                 delay(self::LATENCY_TIMEOUT);
             }
         }
-
-        // Return a lock object that can be used to release the lock on the mutex.
-        $lock = new Lock(fn () => $this->release());
-
-        $file->close();
-
-        return $lock;
     }
 
     /**

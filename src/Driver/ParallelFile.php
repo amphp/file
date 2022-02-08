@@ -192,7 +192,7 @@ final class ParallelFile implements File
         $this->close();
     }
 
-    public function seek(int $offset, int $whence = SEEK_SET): int
+    public function seek(int $position, int $whence = SEEK_SET): int
     {
         if ($this->id === null) {
             throw new ClosedException("The file has been closed");
@@ -208,7 +208,7 @@ final class ParallelFile implements File
             case self::SEEK_END:
                 try {
                     $this->position = $this->worker->execute(
-                        new Internal\FileTask('fseek', [$offset, $whence], $this->id)
+                        new Internal\FileTask('fseek', [$position, $whence], $this->id)
                     );
 
                     if ($this->position > $this->size) {

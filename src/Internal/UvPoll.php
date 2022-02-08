@@ -14,8 +14,11 @@ final class UvPoll
     public function __construct(private UvLoopDriver $driver)
     {
         // Create dummy watcher to keep loop running while polling.
-        $this->watcher = $this->driver->repeat(\PHP_INT_MAX / 2, static fn () => null);
 
+        /** @psalm-suppress InternalMethod */
+        $this->watcher = $this->driver->repeat(600, static fn () => null);
+
+        /** @psalm-suppress InternalMethod */
         $this->driver->disable($this->watcher);
     }
 
@@ -27,6 +30,7 @@ final class UvPoll
     public function listen(): void
     {
         if ($this->requests++ === 0) {
+            /** @psalm-suppress InternalMethod */
             $this->driver->enable($this->watcher);
         }
     }
@@ -34,6 +38,7 @@ final class UvPoll
     public function done(): void
     {
         if (--$this->requests === 0) {
+            /** @psalm-suppress InternalMethod */
             $this->driver->disable($this->watcher);
         }
 

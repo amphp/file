@@ -129,9 +129,9 @@ final class ParallelFilesystemDriver implements FilesystemDriver
         $this->runFileTask(new Internal\FileTask("createSymlink", [$target, $link]));
     }
 
-    public function resolveSymlink(string $path): string
+    public function resolveSymlink(string $target): string
     {
-        return $this->runFileTask(new Internal\FileTask("resolveSymlink", [$path]));
+        return $this->runFileTask(new Internal\FileTask("resolveSymlink", [$target]));
     }
 
     public function createDirectory(string $path, int $mode = 0777): void

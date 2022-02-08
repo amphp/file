@@ -35,14 +35,17 @@
         "php": ">=8",
         "amphp/amp": "^3",
         "amphp/byte-stream": "^2",
+        "amphp/cache": "^2",
         "amphp/parallel": "^2",
-        "amphp/sync": "^2"
+        "amphp/sync": "^2",
+        "revolt/event-loop": "^0.2.1"
     },
     "require-dev": {
         "ext-eio": "^2 || ^3",
         "ext-uv": "^0.3 || ^0.2",
         "amphp/phpunit-util": "^3",
         "phpunit/phpunit": "^9",
+        "psalm/phar": "^4.20",
         "amphp/php-cs-fixer-config": "dev-master"
     },
     "minimum-stability": "dev",

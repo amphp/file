@@ -10,19 +10,19 @@ jobs:
       matrix:
         include:
           - operating-system: 'ubuntu-latest'
-            php-version: '7.1'
-
-          - operating-system: 'ubuntu-latest'
-            php-version: '7.2'
-
-          - operating-system: 'ubuntu-latest'
-            php-version: '7.3'
-
-          - operating-system: 'ubuntu-latest'
-            php-version: '7.4'
-
-          - operating-system: 'ubuntu-latest'
             php-version: '8.0'
+
+          - operating-system: 'ubuntu-latest'
+            php-version: '8.1'
+
+          - operating-system: 'windows-latest'
+            php-version: '8.1'
+            job-description: 'on Windows'
+
+          - operating-system: 'macos-latest'
+            php-version: '8.1'
+            job-description: 'on macOS'
+
 
     name: PHP ${{ matrix.php-version }} ${{ matrix.job-description }}
 
@@ -78,7 +78,20 @@ jobs:
           PHP_CS_FIXER_IGNORE_ENV: 1
         run: vendor/bin/phpunit ${{ matrix.phpunit-flags }}
 
+      - name: Run static analysis
+        run: vendor/bin/psalm.phar
+
       - name: Run style fixer
         env:
           PHP_CS_FIXER_IGNORE_ENV: 1
         run: vendor/bin/php-cs-fixer --diff --dry-run -v fix
+        if: runner.os != 'Windows'
+
+      - name: Install composer-require-checker
+        run: php -r 'file_put_contents("composer-require-checker.phar", file_get_contents("https://github.com/maglnet/ComposerRequireChecker/releases/download/3.7.0/composer-require-checker.phar"));'
+        if: runner.os != 'Windows' && matrix.composer-require-checker-version != 'none'
+
+      - name: Run composer-require-checker
+        run: php composer-require-checker.phar check composer.json --config-file $PWD/composer-require-check.json
+        if: runner.os != 'Windows' && matrix.composer-require-checker-version != 'none'
+

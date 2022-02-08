@@ -18,7 +18,7 @@ final class UvFile implements File
     private Internal\UvPoll $poll;
 
     /** @var \UVLoop|resource */
-    private $loop;
+    private $eventLoopHandle;
 
     /** @var resource */
     private $fh;
@@ -63,7 +63,9 @@ final class UvFile implements File
         $this->path = $path;
         $this->mode = $mode;
         $this->size = $size;
-        $this->loop = $driver->getHandle();
+
+        /** @psalm-suppress PropertyTypeCoercion */
+        $this->eventLoopHandle = $driver->getHandle();
         $this->position = ($mode[0] === "a") ? $size : 0;
 
         $this->queue = new \SplQueue;
@@ -114,7 +116,7 @@ final class UvFile implements File
             };
         }
 
-        \uv_fs_read($this->loop, $this->fh, $this->position, $length, $onRead);
+        \uv_fs_read($this->eventLoopHandle, $this->fh, $this->position, $length, $onRead);
 
         $id = $cancellation?->subscribe(function (\Throwable $exception) use ($deferred): void {
             $this->isActive = false;
@@ -124,6 +126,7 @@ final class UvFile implements File
         try {
             return $deferred->getFuture()->await();
         } finally {
+            /** @psalm-suppress PossiblyNullArgument $id is non-null if $cancellation is non-null */
             $cancellation?->unsubscribe($id);
             $this->poll->done();
         }
@@ -189,22 +192,21 @@ final class UvFile implements File
         $future->await();
     }
 
-    public function seek(int $offset, int $whence = \SEEK_SET): int
+    public function seek(int $position, int $whence = \SEEK_SET): int
     {
         if ($this->isActive) {
             throw new PendingOperationError;
         }
 
-        $offset = (int) $offset;
         switch ($whence) {
             case self::SEEK_SET:
-                $this->position = $offset;
+                $this->position = $position;
                 break;
             case self::SEEK_CUR:
-                $this->position += $offset;
+                $this->position += $position;
                 break;
             case self::SEEK_END:
-                $this->position = $this->size + $offset;
+                $this->position = $this->size + $position;
                 break;
             default:
                 throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected");
@@ -243,7 +245,7 @@ final class UvFile implements File
         $deferred = new DeferredFuture;
         $this->poll->listen();
 
-        \uv_fs_close($this->loop, $this->fh, static function () use ($deferred): void {
+        \uv_fs_close($this->eventLoopHandle, $this->fh, static function () use ($deferred): void {
             // Ignore errors when closing file, as the handle will become invalid anyway.
             $deferred->complete(null);
         });
@@ -298,7 +300,7 @@ final class UvFile implements File
             }
         };
 
-        \uv_fs_write($this->loop, $this->fh, $data, $this->position, $onWrite);
+        \uv_fs_write($this->eventLoopHandle, $this->fh, $data, $this->position, $onWrite);
 
         return $deferred->getFuture();
     }
@@ -324,7 +326,7 @@ final class UvFile implements File
         };
 
         \uv_fs_ftruncate(
-            $this->loop,
+            $this->eventLoopHandle,
             $this->fh,
             $size,
             $onTruncate

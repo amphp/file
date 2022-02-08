@@ -35,6 +35,13 @@ final class EioFile implements File
 
     private ?Future $closing = null;
 
+    /**
+     * @param Internal\EioPoll $poll
+     * @param resource $fh
+     * @param string $path
+     * @param string $mode
+     * @param int $size
+     */
     public function __construct(Internal\EioPoll $poll, $fh, string $path, string $mode, int $size)
     {
         $this->poll = $poll;
@@ -99,6 +106,7 @@ final class EioFile implements File
         try {
             return $deferred->getFuture()->await();
         } finally {
+            /** @psalm-suppress PossiblyNullArgument $id is non-null if $cancellation is non-null */
             $cancellation?->unsubscribe($id);
             $this->poll->done();
         }
@@ -192,7 +200,7 @@ final class EioFile implements File
         $future->await();
     }
 
-    public function seek(int $offset, int $whence = \SEEK_SET): int
+    public function seek(int $position, int $whence = \SEEK_SET): int
     {
         if ($this->isActive) {
             throw new PendingOperationError;
@@ -200,13 +208,13 @@ final class EioFile implements File
 
         switch ($whence) {
             case self::SEEK_SET:
-                $this->position = $offset;
+                $this->position = $position;
                 break;
             case self::SEEK_CUR:
-                $this->position += $offset;
+                $this->position += $position;
                 break;
             case self::SEEK_END:
-                $this->position = $this->size + $offset;
+                $this->position = $this->size + $position;
                 break;
             default:
                 throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected");
