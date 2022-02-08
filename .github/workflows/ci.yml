@@ -41,6 +41,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libuv1-dev
+        if: runner.os == 'Linux'
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
