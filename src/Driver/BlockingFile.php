@@ -75,7 +75,7 @@ final class BlockingFile implements File
                 throw new StreamException("Failed writing to file '{$this->path}'");
             }
 
-            return new Success;
+            return new Success($length);
         } catch (StreamException $e) {
             return new Failure($e);
         } finally {

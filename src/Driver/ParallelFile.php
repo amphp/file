@@ -176,8 +176,8 @@ final class ParallelFile implements File
             $this->busy = true;
 
             try {
-                yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
-                $this->position += \strlen($data);
+                $wrote = yield $this->worker->enqueue(new Internal\FileTask('fwrite', [$data], $this->id));
+                $this->position += $wrote;
             } catch (TaskException $exception) {
                 throw new StreamException("Writing to the file failed", 0, $exception);
             } catch (WorkerException $exception) {
@@ -187,6 +187,7 @@ final class ParallelFile implements File
                     $this->busy = false;
                 }
             }
+            return $wrote;
         });
     }
 

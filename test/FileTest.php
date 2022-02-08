@@ -18,7 +18,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame(0, $handle->tell());
 
         $handle->write("foo");
-        yield $handle->write("bar");
+        $this->assertSame(3, yield $handle->write("bar"));
         yield $handle->seek(0);
         $contents = yield $handle->read();
         $this->assertSame(6, $handle->tell());
@@ -35,7 +35,7 @@ abstract class FileTest extends FilesystemTest
         $handle = yield $this->driver->openFile($path, "c+");
         $this->assertSame(0, $handle->tell());
 
-        yield $handle->write("");
+        $this->assertSame(0, yield $handle->write(""));
         $this->assertSame(0, $handle->tell());
 
         yield $handle->close();
@@ -49,7 +49,7 @@ abstract class FileTest extends FilesystemTest
         yield $handle->close();
 
         $this->expectException(ClosedException::class);
-        yield $handle->write("bar");
+        $this->assertSame(3, yield $handle->write("bar"));
     }
 
     public function testDoubleClose(): \Generator
@@ -70,7 +70,7 @@ abstract class FileTest extends FilesystemTest
         yield $handle->end("foo");
 
         $this->expectException(ClosedException::class);
-        yield $handle->write("bar");
+        $this->assertSame(3, yield $handle->write("bar"));
     }
 
     public function testWriteInAppendMode(): \Generator
@@ -79,9 +79,9 @@ abstract class FileTest extends FilesystemTest
         /** @var File\File $handle */
         $handle = yield $this->driver->openFile($path, "a+");
         $this->assertSame(0, $handle->tell());
-        yield $handle->write("bar");
-        yield $handle->write("foo");
-        yield $handle->write("baz");
+        $this->assertSame(3, yield $handle->write("bar"));
+        $this->assertSame(3, yield $handle->write("foo"));
+        $this->assertSame(3, yield $handle->write("baz"));
         $this->assertSame(9, $handle->tell());
         yield $handle->seek(0);
         $this->assertSame(0, $handle->tell());
@@ -213,14 +213,14 @@ abstract class FileTest extends FilesystemTest
         $handle = yield $this->driver->openFile($path, "c+");
 
         $handle->write("foo");
-        yield $handle->write("bar");
+        $this->assertSame(3, yield $handle->write("bar"));
         yield $handle->truncate(4);
         yield $handle->seek(0);
         $contents = yield $handle->read();
         $this->assertTrue($handle->eof());
         $this->assertSame("foob", $contents);
 
-        yield $handle->write("bar");
+        $this->assertSame(3, yield $handle->write("bar"));
         $this->assertSame(7, $handle->tell());
         yield $handle->seek(0);
         $contents = yield $handle->read();
@@ -238,7 +238,7 @@ abstract class FileTest extends FilesystemTest
         /** @var File\File $handle */
         $handle = yield $this->driver->openFile($path, "c+");
 
-        yield $handle->write("foo");
+        $this->assertSame(3, yield $handle->write("foo"));
         yield $handle->truncate(6);
         $this->assertSame(3, $handle->tell());
         yield $handle->seek(0);
@@ -246,7 +246,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertTrue($handle->eof());
         $this->assertSame("foo\0\0\0", $contents);
 
-        yield $handle->write("bar");
+        $this->assertSame(3, yield $handle->write("bar"));
         $this->assertSame(9, $handle->tell());
         yield $handle->seek(0);
         $contents = yield $handle->read();
