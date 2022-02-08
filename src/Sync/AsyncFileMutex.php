@@ -12,7 +12,7 @@ use function Amp\File\openFile;
 
 final class AsyncFileMutex implements Mutex
 {
-    private const LATENCY_TIMEOUT = 10;
+    private const LATENCY_TIMEOUT = 0.01;
 
     /** @var string The full path to the lock file. */
     private string $fileName;

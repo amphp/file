@@ -24,7 +24,8 @@ final class StatusCachingDriver implements Driver
     {
         $file = $this->driver->openFile($path, $mode);
 
-        return new StatusCachingFile($file, fn () => $this->statusCache->delete($path));
+        $statusCache = $this->statusCache;
+        return new StatusCachingFile($file, static fn () => $statusCache->delete($path));
     }
 
     public function getStatus(string $path): ?array

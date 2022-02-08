@@ -7,18 +7,18 @@ use Amp\File\File;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
 use Amp\Future;
-use Amp\Parallel\Worker\Pool;
 use Amp\Parallel\Worker\TaskFailureThrowable;
 use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerException;
+use Amp\Parallel\Worker\WorkerPool;
 use function Amp\async;
-use function Amp\Parallel\Worker\pool;
+use function Amp\Parallel\Worker\workerPool;
 
 final class ParallelDriver implements Driver
 {
     public const DEFAULT_WORKER_LIMIT = 8;
 
-    private Pool $pool;
+    private WorkerPool $pool;
 
     /** @var int Maximum number of workers to use for open files. */
     private int $workerLimit;
@@ -30,12 +30,12 @@ final class ParallelDriver implements Driver
     private Future $pendingWorker;
 
     /**
-     * @param Pool|null $pool
+     * @param WorkerPool|null $pool
      * @param int       $workerLimit Maximum number of workers to use from the pool for open files.
      */
-    public function __construct(Pool $pool = null, int $workerLimit = self::DEFAULT_WORKER_LIMIT)
+    public function __construct(WorkerPool $pool = null, int $workerLimit = self::DEFAULT_WORKER_LIMIT)
     {
-        $this->pool = $pool ?? pool();
+        $this->pool = $pool ?? workerPool();
         $this->workerLimit = $workerLimit;
         $this->workerStorage = new \SplObjectStorage;
         $this->pendingWorker = Future::complete();
@@ -190,7 +190,7 @@ final class ParallelDriver implements Driver
     private function runFileTask(Internal\FileTask $task): mixed
     {
         try {
-            return $this->pool->enqueue($task)->getFuture()->await();
+            return $this->pool->submit($task)->getResult()->await();
         } catch (TaskFailureThrowable $exception) {
             throw new FilesystemException("The file operation failed", $exception);
         } catch (WorkerException $exception) {

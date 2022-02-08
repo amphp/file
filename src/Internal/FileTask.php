@@ -7,8 +7,8 @@ use Amp\Cancellation;
 use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\BlockingFile;
 use Amp\File\FilesystemException;
-use Amp\Parallel\Sync\Channel;
 use Amp\Parallel\Worker\Task;
+use Amp\Sync\Channel;
 
 /**
  * @codeCoverageIgnore

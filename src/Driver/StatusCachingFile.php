@@ -4,8 +4,6 @@ namespace Amp\File\Driver;
 
 use Amp\Cancellation;
 use Amp\File\File;
-use Amp\Future;
-use function Amp\async;
 
 final class StatusCachingFile implements File
 {
@@ -31,26 +29,16 @@ final class StatusCachingFile implements File
         return $this->file->read($cancellation, $length);
     }
 
-    public function write(string $bytes): Future
+    public function write(string $bytes): void
     {
-        return async(function () use ($bytes): void {
-            try {
-                $this->file->write($bytes)->await();
-            } finally {
-                $this->invalidate();
-            }
-        });
+        $this->file->write($bytes);
+        $this->invalidate();
     }
 
-    public function end(string $data = ""): Future
+    public function end(): void
     {
-        return async(function () use ($data): void {
-            try {
-                $this->file->end($data)->await();
-            } finally {
-                $this->invalidate();
-            }
-        });
+        $this->file->end();
+        $this->invalidate();
     }
 
     public function close(): void
@@ -104,12 +92,12 @@ final class StatusCachingFile implements File
 
     public function isSeekable(): bool
     {
-        $this->file->isSeekable();
+        return $this->file->isSeekable();
     }
 
     public function isWritable(): bool
     {
-        $this->file->isWritable();
+        return $this->file->isWritable();
     }
 
     private function invalidate(): void

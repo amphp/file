@@ -43,12 +43,12 @@ final class FileWorker
 
     public function execute(Task $task, ?Cancellation $cancellation = null): mixed
     {
-        return $this->worker->enqueue($task, $cancellation)->getFuture()->await();
+        return $this->worker->submit($task, $cancellation)->getResult()->await();
     }
 
-    public function shutdown(): int
+    public function shutdown(): void
     {
-        return $this->worker->shutdown();
+        $this->worker->shutdown();
     }
 
     public function kill(): void
