@@ -15,7 +15,7 @@ class UvFilesystemDriverTest extends FilesystemDriverTest
      *
      * @param \Closure $linkResolver
      */
-    public function testResolveSymlinkError(\Closure $linkResolver)
+    public function testResolveSymlinkError(\Closure $linkResolver): void
     {
         if (\version_compare(\phpversion('uv'), '0.3.0', '<')) {
             $this->markTestSkipped('UvDriver Test Skipped: Causes Crash');
