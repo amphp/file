@@ -1,16 +1,13 @@
 <?php
 
-namespace Amp\File\Sync;
+namespace Amp\File;
 
-use Amp\File\FilesystemException;
 use Amp\Sync\Lock;
 use Amp\Sync\Mutex;
 use Amp\Sync\SyncException;
 use function Amp\delay;
-use function Amp\File\deleteFile;
-use function Amp\File\openFile;
 
-final class AsyncFileMutex implements Mutex
+final class FileMutex implements Mutex
 {
     private const LATENCY_TIMEOUT = 0.01;
 
@@ -25,9 +22,6 @@ final class AsyncFileMutex implements Mutex
         $this->fileName = $fileName;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function acquire(): Lock
     {
         // Try to create the lock file. If the file already exists, someone else
