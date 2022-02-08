@@ -4,9 +4,9 @@ namespace Amp\File;
 
 final class Filesystem
 {
-    private Driver $driver;
+    private FilesystemDriver $driver;
 
-    public function __construct(Driver $driver)
+    public function __construct(FilesystemDriver $driver)
     {
         $this->driver = $driver;
     }

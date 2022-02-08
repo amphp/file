@@ -3,12 +3,12 @@
 namespace Amp\File\Test\Driver;
 
 use Amp\File;
-use Amp\File\Driver\UvDriver;
-use Amp\File\Test\DriverTest;
+use Amp\File\Driver\UvFilesystemDriver;
+use Amp\File\Test\FilesystemDriverTest;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
 
-class UvDriverTest extends DriverTest
+class UvFilesystemDriverTest extends FilesystemDriverTest
 {
     /**
      * @dataProvider symlinkPathProvider
@@ -24,7 +24,7 @@ class UvDriverTest extends DriverTest
         parent::testResolveSymlinkError($linkResolver);
     }
 
-    protected function createDriver(): File\Driver
+    protected function createDriver(): File\FilesystemDriver
     {
         if (!\extension_loaded("uv")) {
             $this->markTestSkipped("ext-uv not loaded");
@@ -36,6 +36,6 @@ class UvDriverTest extends DriverTest
             $this->markTestSkipped("Loop driver must be using ext-uv");
         }
 
-        return new UvDriver($loop);
+        return new UvFilesystemDriver($loop);
     }
 }

@@ -7,7 +7,7 @@ use Amp\File;
 
 abstract class FileTest extends FilesystemTest
 {
-    protected File\Driver $driver;
+    protected File\FilesystemDriver $driver;
 
     public function testWrite(): void
     {
@@ -242,7 +242,7 @@ abstract class FileTest extends FilesystemTest
         $handle->close();
     }
 
-    abstract protected function createDriver(): File\Driver;
+    abstract protected function createDriver(): File\FilesystemDriver;
 
     protected function setUp(): void
     {

@@ -2,11 +2,11 @@
 
 namespace Amp\File\Driver;
 
-use Amp\File\Driver;
 use Amp\File\File;
+use Amp\File\FilesystemDriver;
 use Amp\File\FilesystemException;
 
-final class BlockingDriver implements Driver
+final class BlockingFilesystemDriver implements FilesystemDriver
 {
     public function openFile(string $path, string $mode): File
     {

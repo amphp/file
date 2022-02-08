@@ -3,14 +3,14 @@
 namespace Amp\File\Driver;
 
 use Amp\DeferredFuture;
-use Amp\File\Driver;
 use Amp\File\File;
+use Amp\File\FilesystemDriver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
 use Revolt\EventLoop\Driver as EventLoopDriver;
 use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
 
-final class UvDriver implements Driver
+final class UvFilesystemDriver implements FilesystemDriver
 {
     /**
      * @param EventLoopDriver $driver The currently active loop driver.

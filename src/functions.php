@@ -2,21 +2,21 @@
 
 namespace Amp\File;
 
-use Amp\File\Driver\BlockingDriver;
-use Amp\File\Driver\EioDriver;
-use Amp\File\Driver\ParallelDriver;
-use Amp\File\Driver\StatusCachingDriver;
-use Amp\File\Driver\UvDriver;
+use Amp\File\Driver\BlockingFilesystemDriver;
+use Amp\File\Driver\EioFilesystemDriver;
+use Amp\File\Driver\ParallelFilesystemDriver;
+use Amp\File\Driver\StatusCachingFilesystemDriver;
+use Amp\File\Driver\UvFilesystemDriver;
 use Revolt\EventLoop;
 
 /**
  * Retrieve the application-wide filesystem instance.
  *
- * @param Driver|null $driver Use the specified object as the application-wide filesystem instance.
+ * @param FilesystemDriver|null $driver Use the specified object as the application-wide filesystem instance.
  *
  * @return Filesystem
  */
-function filesystem(?Driver $driver = null): Filesystem
+function filesystem(?FilesystemDriver $driver = null): Filesystem
 {
     static $map;
     $map ??= new \WeakMap();
@@ -31,7 +31,7 @@ function filesystem(?Driver $driver = null): Filesystem
         $defaultDriver = createDefaultDriver();
 
         if (!\defined("AMP_WORKER")) { // Prevent caching in workers, cache in parent instead.
-            $defaultDriver = new StatusCachingDriver($defaultDriver);
+            $defaultDriver = new StatusCachingFilesystemDriver($defaultDriver);
         }
 
         $filesystem = new Filesystem($defaultDriver);
@@ -39,7 +39,7 @@ function filesystem(?Driver $driver = null): Filesystem
         $filesystem = new Filesystem($driver);
     }
 
-    if (\defined("AMP_WORKER") && $driver instanceof ParallelDriver) {
+    if (\defined("AMP_WORKER") && $driver instanceof ParallelFilesystemDriver) {
         throw new \Error("Cannot use the parallel driver within a worker");
     }
 
@@ -51,26 +51,26 @@ function filesystem(?Driver $driver = null): Filesystem
 /**
  * Create a new filesystem driver best-suited for the current environment.
  *
- * @return Driver
+ * @return FilesystemDriver
  */
-function createDefaultDriver(): Driver
+function createDefaultDriver(): FilesystemDriver
 {
     $driver = EventLoop::getDriver();
 
-    if (UvDriver::isSupported($driver)) {
+    if (UvFilesystemDriver::isSupported($driver)) {
         /** @var EventLoop\Driver\UvDriver $driver */
-        return new UvDriver($driver);
+        return new UvFilesystemDriver($driver);
     }
 
-    if (EioDriver::isSupported()) {
-        return new EioDriver($driver);
+    if (EioFilesystemDriver::isSupported()) {
+        return new EioFilesystemDriver($driver);
     }
 
     if (\defined("AMP_WORKER")) { // Prevent spawning infinite workers.
-        return new BlockingDriver;
+        return new BlockingFilesystemDriver;
     }
 
-    return new ParallelDriver;
+    return new ParallelFilesystemDriver;
 }
 
 /**

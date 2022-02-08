@@ -4,8 +4,8 @@ namespace Amp\File\Internal;
 
 use Amp\Cache\Cache;
 use Amp\Cancellation;
-use Amp\File\Driver\BlockingDriver;
 use Amp\File\Driver\BlockingFile;
+use Amp\File\Driver\BlockingFilesystemDriver;
 use Amp\File\FilesystemException;
 use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
@@ -153,7 +153,7 @@ final class FileTask implements Task
             case "touch":
             case "read":
             case "write":
-                return ([new BlockingDriver, $this->operation])(...$this->args);
+                return ([new BlockingFilesystemDriver, $this->operation])(...$this->args);
 
             default:
                 throw new \Error("Invalid operation - " . $this->operation);

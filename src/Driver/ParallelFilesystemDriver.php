@@ -2,8 +2,8 @@
 
 namespace Amp\File\Driver;
 
-use Amp\File\Driver;
 use Amp\File\File;
+use Amp\File\FilesystemDriver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
 use Amp\Future;
@@ -14,7 +14,7 @@ use Amp\Parallel\Worker\WorkerPool;
 use function Amp\async;
 use function Amp\Parallel\Worker\workerPool;
 
-final class ParallelDriver implements Driver
+final class ParallelFilesystemDriver implements FilesystemDriver
 {
     public const DEFAULT_WORKER_LIMIT = 8;
 
@@ -69,7 +69,7 @@ final class ParallelDriver implements Driver
         $this->pendingWorker->await(); // Wait for any currently pending request for a worker.
 
         if ($this->workerStorage->count() < $this->workerLimit) {
-            $this->pendingWorker = async(fn() => $this->pool->getWorker());
+            $this->pendingWorker = async(fn () => $this->pool->getWorker());
             $worker = $this->pendingWorker->await();
 
             if ($this->workerStorage->contains($worker)) {

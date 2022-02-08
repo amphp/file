@@ -3,13 +3,13 @@
 namespace Amp\File\Driver;
 
 use Amp\DeferredFuture;
-use Amp\File\Driver;
 use Amp\File\File;
+use Amp\File\FilesystemDriver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
 use Revolt\EventLoop\Driver as EventLoopDriver;
 
-final class EioDriver implements Driver
+final class EioFilesystemDriver implements FilesystemDriver
 {
     /**
      * @return bool Determines if this driver can be used based on the environment.

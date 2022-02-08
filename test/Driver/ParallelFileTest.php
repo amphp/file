@@ -3,7 +3,7 @@
 namespace Amp\File\Test\Driver;
 
 use Amp\File;
-use Amp\File\Driver\ParallelDriver;
+use Amp\File\Driver\ParallelFilesystemDriver;
 use Amp\File\Test\AsyncFileTest;
 use Amp\Parallel\Worker\DefaultWorkerPool;
 use Amp\Parallel\Worker\WorkerPool;
@@ -14,11 +14,11 @@ class ParallelFileTest extends AsyncFileTest
 
     private WorkerPool $pool;
 
-    protected function createDriver(int $workerLimit = self::DEFAULT_WORKER_LIMIT): File\Driver
+    protected function createDriver(int $workerLimit = self::DEFAULT_WORKER_LIMIT): File\FilesystemDriver
     {
         $this->pool = new DefaultWorkerPool();
 
-        return new ParallelDriver($this->pool, $workerLimit);
+        return new ParallelFilesystemDriver($this->pool, $workerLimit);
     }
 
     protected function tearDownAsync(): void
@@ -28,7 +28,7 @@ class ParallelFileTest extends AsyncFileTest
 
     public function getWorkerLimits(): iterable
     {
-        return \array_map(fn(int $count): array => [$count], \range(4, 16, 4));
+        return \array_map(fn (int $count): array => [$count], \range(4, 16, 4));
     }
 
     /**

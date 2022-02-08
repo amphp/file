@@ -2,19 +2,19 @@
 
 namespace Amp\File\Driver;
 
-use Amp\File\Driver;
 use Amp\File\File;
+use Amp\File\FilesystemDriver;
 use Amp\File\Internal\Cache;
 
-final class StatusCachingDriver implements Driver
+final class StatusCachingFilesystemDriver implements FilesystemDriver
 {
-    /** @var Driver */
-    private Driver $driver;
+    /** @var FilesystemDriver */
+    private FilesystemDriver $driver;
 
     /** @var Cache */
     private Cache $statusCache;
 
-    public function __construct(Driver $driver)
+    public function __construct(FilesystemDriver $driver)
     {
         $this->driver = $driver;
         $this->statusCache = new Cache(1000, 1024);

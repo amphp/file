@@ -4,9 +4,9 @@ namespace Amp\File\Test\Driver;
 
 use Amp\File;
 use Amp\File\Driver\BlockingFilesystemDriver;
-use Amp\File\Test\FileTest;
+use Amp\File\Test\FilesystemDriverTest;
 
-class StatusCachingFileTest extends FileTest
+class StatusCachingFilesystemDriverTest extends FilesystemDriverTest
 {
     protected function createDriver(): File\FilesystemDriver
     {

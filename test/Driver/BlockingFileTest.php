@@ -3,13 +3,13 @@
 namespace Amp\File\Test\Driver;
 
 use Amp\File;
-use Amp\File\Driver\BlockingDriver;
+use Amp\File\Driver\BlockingFilesystemDriver;
 use Amp\File\Test\FileTest;
 
 class BlockingFileTest extends FileTest
 {
-    protected function createDriver(): File\Driver
+    protected function createDriver(): File\FilesystemDriver
     {
-        return new BlockingDriver;
+        return new BlockingFilesystemDriver;
     }
 }

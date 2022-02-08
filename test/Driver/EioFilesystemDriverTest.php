@@ -4,10 +4,10 @@ namespace Amp\File\Test\Driver;
 
 use Amp\File;
 use Amp\File\Driver\EioFilesystemDriver;
-use Amp\File\Test\AsyncFileTest;
+use Amp\File\Test\FilesystemDriverTest;
 use Revolt\EventLoop;
 
-class EioFileTest extends AsyncFileTest
+class EioFilesystemDriverTest extends FilesystemDriverTest
 {
     protected function createDriver(): File\FilesystemDriver
     {

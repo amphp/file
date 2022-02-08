@@ -2,7 +2,7 @@
 
 namespace Amp\File;
 
-interface Driver
+interface FilesystemDriver
 {
     /**
      * Open a handle for the specified path.
@@ -28,7 +28,7 @@ interface Driver
     public function getStatus(string $path): ?array;
 
     /**
-     * Same as {@see Driver::getStatus()} except if the path is a link then the link's data is returned.
+     * Same as {@see FilesystemDriver::getStatus()} except if the path is a link then the link's data is returned.
      *
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *

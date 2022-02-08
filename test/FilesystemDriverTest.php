@@ -5,7 +5,7 @@ namespace Amp\File\Test;
 use Amp\File;
 use Amp\File\FilesystemException;
 
-abstract class DriverTest extends FilesystemTest
+abstract class FilesystemDriverTest extends FilesystemTest
 {
     protected File\Filesystem $driver;
 
@@ -509,7 +509,7 @@ abstract class DriverTest extends FilesystemTest
         $this->driver = new File\Filesystem($this->createDriver());
     }
 
-    abstract protected function createDriver(): File\Driver;
+    abstract protected function createDriver(): File\FilesystemDriver;
 
     private function assertSameStatus(array $expected, array $actual): void
     {
