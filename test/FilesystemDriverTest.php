@@ -110,11 +110,14 @@ abstract class FilesystemDriverTest extends FilesystemTest
      */
     public function testResolveSymlinkError(\Closure $linkResolver): void
     {
-        $this->expectException(FilesystemException::class);
-
         $link = $linkResolver();
 
-        $this->driver->resolveSymlink($link);
+        if (IS_WINDOWS && File\isFile($link)) {
+            self::assertSame($link, $this->driver->resolveSymlink($link));
+        } else {
+            $this->expectException(FilesystemException::class);
+            $this->driver->resolveSymlink($link);
+        }
     }
 
     public function testLinkStatus(): void
@@ -338,7 +341,13 @@ abstract class FilesystemDriverTest extends FilesystemTest
 
         $this->driver->createDirectory($dir);
         $stat = $this->driver->getStatus($dir);
-        $this->assertSame('0755', $this->getPermissionsFromStatus($stat));
+
+        if (IS_WINDOWS) {
+            $this->assertSame('0777', $this->getPermissionsFromStatus($stat));
+        } else {
+            $this->assertSame('0755', $this->getPermissionsFromStatus($stat));
+        }
+
         $this->driver->deleteDirectory($dir);
         $this->assertNull($this->driver->getStatus($dir));
 
@@ -475,7 +484,12 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertNotSame('0777', \substr(\decoct($stat['mode']), -4));
         $this->driver->changePermissions($path, 0777);
         $stat = $this->driver->getStatus($path);
-        $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
+
+        if (IS_WINDOWS) {
+            $this->assertSame('0666', \substr(\decoct($stat['mode']), -4));
+        } else {
+            $this->assertSame('0777', \substr(\decoct($stat['mode']), -4));
+        }
     }
 
     public function testChangePermissionsFailsOnNonexistentPath(): void
