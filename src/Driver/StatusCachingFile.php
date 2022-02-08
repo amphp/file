@@ -31,14 +31,20 @@ final class StatusCachingFile implements File
 
     public function write(string $bytes): void
     {
-        $this->file->write($bytes);
-        $this->invalidate();
+        try {
+            $this->file->write($bytes);
+        } finally {
+            $this->invalidate();
+        }
     }
 
     public function end(): void
     {
-        $this->file->end();
-        $this->invalidate();
+        try {
+            $this->file->end();
+        } finally {
+            $this->invalidate();
+        }
     }
 
     public function close(): void
