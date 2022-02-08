@@ -244,7 +244,7 @@ final class EioDriver implements Driver
 
     public function read(string $path): Promise
     {
-        $flags = $flags = \EIO_O_RDONLY;
+        $flags = \EIO_O_RDONLY;
         $mode = 0;
         $priority = \EIO_PRI_DEFAULT;
 
