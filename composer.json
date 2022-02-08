@@ -50,7 +50,7 @@
         "ext-eio": "^2 || ^3",
         "ext-uv": "^0.3 || ^0.2"
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "beta",
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
