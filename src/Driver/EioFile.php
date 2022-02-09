@@ -228,7 +228,7 @@ final class EioFile implements File
         return $this->position;
     }
 
-    public function atEnd(): bool
+    public function eof(): bool
     {
         return $this->queue->isEmpty() && $this->size <= $this->position;
     }

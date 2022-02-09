@@ -169,7 +169,7 @@ final class BlockingFile implements File
         return \ftell($this->handle);
     }
 
-    public function atEnd(): bool
+    public function eof(): bool
     {
         if ($this->handle === null) {
             throw new ClosedException("The file '{$this->path}' has been closed");

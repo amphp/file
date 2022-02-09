@@ -20,7 +20,7 @@ abstract class FileTest extends FilesystemTest
         $handle->seek(0);
         $contents = $handle->read();
         $this->assertSame(6, $handle->tell());
-        $this->assertTrue($handle->atEnd());
+        $this->assertTrue($handle->eof());
         $this->assertSame("foobar", $contents);
 
         $handle->close();
@@ -94,7 +94,7 @@ abstract class FileTest extends FilesystemTest
         $stat = $this->driver->getStatus(__FILE__);
         $chunkSize = (int) \floor(($stat["size"] / 5));
 
-        while (!$handle->atEnd()) {
+        while (!$handle->eof()) {
             $chunk = $handle->read(length: $chunkSize);
             $contents .= $chunk;
             $position += \strlen($chunk ?? '');
@@ -205,7 +205,7 @@ abstract class FileTest extends FilesystemTest
         $handle->truncate(4);
         $handle->seek(0);
         $contents = $handle->read();
-        $this->assertTrue($handle->atEnd());
+        $this->assertTrue($handle->eof());
         $this->assertSame("foob", $contents);
 
         $handle->write("bar");
@@ -230,7 +230,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame(3, $handle->tell());
         $handle->seek(0);
         $contents = $handle->read();
-        $this->assertTrue($handle->atEnd());
+        $this->assertTrue($handle->eof());
         $this->assertSame("foo\0\0\0", $contents);
 
         $handle->write("bar");

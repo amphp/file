@@ -52,7 +52,7 @@ interface File extends ReadableStream, WritableStream
      *
      * @return bool
      */
-    public function atEnd(): bool;
+    public function eof(): bool;
 
     /**
      * @return bool Seeking may become unavailable if the underlying source is closed or lost.

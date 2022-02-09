@@ -121,7 +121,7 @@ final class ParallelFile implements File
         }
     }
 
-    public function atEnd(): bool
+    public function eof(): bool
     {
         return $this->pendingWrites === 0 && $this->size <= $this->position;
     }

@@ -67,9 +67,9 @@ final class StatusCachingFile implements File
         return $this->file->tell();
     }
 
-    public function atEnd(): bool
+    public function eof(): bool
     {
-        return $this->file->atEnd();
+        return $this->file->eof();
     }
 
     public function getPath(): string
