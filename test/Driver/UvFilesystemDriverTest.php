@@ -13,7 +13,6 @@ class UvFilesystemDriverTest extends FilesystemDriverTest
     /**
      * @dataProvider symlinkPathProvider
      *
-     * @param \Closure $linkResolver
      */
     public function testResolveSymlinkError(\Closure $linkResolver): void
     {

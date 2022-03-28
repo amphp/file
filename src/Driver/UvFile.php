@@ -15,7 +15,7 @@ use function Amp\async;
 
 final class UvFile implements File
 {
-    private Internal\UvPoll $poll;
+    private readonly Internal\UvPoll $poll;
 
     /** @var \UVLoop|resource */
     private $eventLoopHandle;
@@ -42,13 +42,11 @@ final class UvFile implements File
     /** @var bool True if ext-uv version is < 0.3.0. */
     private bool $priorVersion;
 
+    private readonly DeferredFuture $onClose;
+
     /**
-     * @param UvLoopDriver $driver
      * @param Internal\UvPoll $poll Poll for keeping the loop active.
      * @param resource $fh File handle.
-     * @param string $path
-     * @param string $mode
-     * @param int $size
      */
     public function __construct(
         UvLoopDriver $driver,
@@ -69,8 +67,16 @@ final class UvFile implements File
         $this->position = ($mode[0] === "a") ? $size : 0;
 
         $this->queue = new \SplQueue;
+        $this->onClose = new DeferredFuture;
 
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
+    }
+
+    public function __destruct()
+    {
+        if (!$this->onClose->isComplete()) {
+            $this->onClose->complete();
+        }
     }
 
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
@@ -242,16 +248,17 @@ final class UvFile implements File
             return;
         }
 
-        $deferred = new DeferredFuture;
+        $deferred = $this->onClose;
+        $this->closing = $deferred->getFuture();
         $this->poll->listen();
 
         \uv_fs_close($this->eventLoopHandle, $this->fh, static function () use ($deferred): void {
             // Ignore errors when closing file, as the handle will become invalid anyway.
-            $deferred->complete(null);
+            $deferred->complete();
         });
 
         try {
-            $deferred->getFuture()->await();
+            $this->closing->await();
         } finally {
             $this->poll->done();
         }
@@ -260,6 +267,11 @@ final class UvFile implements File
     public function isClosed(): bool
     {
         return $this->closing !== null;
+    }
+
+    public function onClose(\Closure $onClose): void
+    {
+        $this->onClose->getFuture()->finally($onClose);
     }
 
     private function push(string $data): Future

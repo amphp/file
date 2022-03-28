@@ -5,6 +5,7 @@ namespace Amp\File\Driver;
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Cancellation;
+use Amp\DeferredFuture;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
@@ -16,7 +17,7 @@ use function Amp\async;
 
 final class ParallelFile implements File
 {
-    private Internal\FileWorker $worker;
+    private readonly Internal\FileWorker $worker;
 
     private ?int $id;
 
@@ -38,13 +39,8 @@ final class ParallelFile implements File
 
     private ?Future $closing = null;
 
-    /**
-     * @param Internal\FileWorker $worker
-     * @param int $id
-     * @param string $path
-     * @param int $size
-     * @param string $mode
-     */
+    private readonly DeferredFuture $onClose;
+
     public function __construct(Internal\FileWorker $worker, int $id, string $path, int $size, string $mode)
     {
         $this->worker = $worker;
@@ -53,6 +49,8 @@ final class ParallelFile implements File
         $this->size = $size;
         $this->mode = $mode;
         $this->position = $this->mode[0] === 'a' ? $this->size : 0;
+
+        $this->onClose = new DeferredFuture;
     }
 
     public function __destruct()
@@ -61,6 +59,10 @@ final class ParallelFile implements File
             $id = $this->id;
             $worker = $this->worker;
             EventLoop::queue(static fn () => $worker->execute(new Internal\FileTask('fclose', [], $id)));
+        }
+
+        if (!$this->onClose->isComplete()) {
+            $this->onClose->complete();
         }
     }
 
@@ -83,12 +85,21 @@ final class ParallelFile implements File
             $this->worker->execute(new Internal\FileTask('fclose', [], $id));
         });
 
-        $this->closing->await();
+        try {
+            $this->closing->await();
+        } finally {
+            $this->onClose->complete();
+        }
     }
 
     public function isClosed(): bool
     {
         return $this->closing !== null;
+    }
+
+    public function onClose(\Closure $onClose): void
+    {
+        $this->onClose->getFuture()->finally($onClose);
     }
 
     public function truncate(int $size): void

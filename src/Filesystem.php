@@ -14,11 +14,6 @@ final class Filesystem
     /**
      * Open a handle for the specified path.
      *
-     * @param string $path
-     * @param string $mode
-     *
-     * @return File
-     *
      * @throws FilesystemException
      */
     public function openFile(string $path, string $mode): File
@@ -32,8 +27,6 @@ final class Filesystem
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *
      * @param string $path File system path.
-     *
-     * @return array|null
      */
     public function getStatus(string $path): ?array
     {
@@ -46,8 +39,6 @@ final class Filesystem
      * If the requested path does not exist the resulting Promise will resolve to NULL.
      *
      * @param string $path File system path.
-     *
-     * @return array|null
      */
     public function getLinkStatus(string $path): ?array
     {
@@ -61,8 +52,6 @@ final class Filesystem
      * indicating the existence of the specified path.
      *
      * @param string $path File system path.
-     *
-     * @return bool
      */
     public function exists(string $path): bool
     {
@@ -101,8 +90,6 @@ final class Filesystem
      * Does the specified path exist and is it a directory?
      *
      * @param string $path File system path.
-     *
-     * @return bool
      */
     public function isDirectory(string $path): bool
     {
@@ -118,8 +105,6 @@ final class Filesystem
      * Does the specified path exist and is it a file?
      *
      * @param string $path File system path.
-     *
-     * @return bool
      */
     public function isFile(string $path): bool
     {
@@ -138,8 +123,6 @@ final class Filesystem
      * to FALSE and will not reject with an error.
      *
      * @param string $path File system path.
-     *
-     * @return bool
      */
     public function isSymlink(string $path): bool
     {
@@ -155,8 +138,6 @@ final class Filesystem
      * Retrieve the path's last modification time as a unix timestamp.
      *
      * @param string $path File system path.
-     *
-     * @return int
      *
      * @throws FilesystemException If the path does not exist.
      */
@@ -175,8 +156,6 @@ final class Filesystem
      *
      * @param string $path File system path.
      *
-     * @return int
-     *
      * @throws FilesystemException If the path does not exist.
      */
     public function getAccessTime(string $path): int
@@ -194,8 +173,6 @@ final class Filesystem
      *
      * @param string $path File system path.
      *
-     * @return int
-     *
      * @throws FilesystemException If the path does not exist.
      */
     public function getCreationTime(string $path): int
@@ -211,9 +188,6 @@ final class Filesystem
     /**
      * Create a symlink $link pointing to the file/directory located at $original.
      *
-     * @param string $original
-     * @param string $link
-     *
      * @throws FilesystemException If the operation fails.
      */
     public function createSymlink(string $original, string $link): void
@@ -223,10 +197,6 @@ final class Filesystem
 
     /**
      * Create a hard link $link pointing to the file/directory located at $target.
-     *
-     * @param string $target
-     * @param string $link
-     * @fails \Amp\Files\FilesystemException If the operation fails.
      */
     public function createHardlink(string $target, string $link): void
     {
@@ -235,11 +205,6 @@ final class Filesystem
 
     /**
      * Resolve the symlink at $path.
-     *
-     * @param string $path
-     * @fails \Amp\Files\FilesystemException If the operation fails.
-     *
-     * @return string
      *
      * @throws FilesystemException
      */
@@ -251,8 +216,6 @@ final class Filesystem
     /**
      * Move / rename a file or directory.
      *
-     * @param string $from
-     * @param string $to
      *
      * @throws FilesystemException If the operation fails.
      */
@@ -264,8 +227,6 @@ final class Filesystem
     /**
      * Delete a file.
      *
-     * @param string $path
-     *
      * @throws FilesystemException If the operation fails.
      */
     public function deleteFile(string $path): void
@@ -275,9 +236,6 @@ final class Filesystem
 
     /**
      * Create a directory.
-     *
-     * @param string $path
-     * @param int $mode
      *
      * @throws FilesystemException If the operation fails.
      */
@@ -289,9 +247,6 @@ final class Filesystem
     /**
      * Create a directory recursively.
      *
-     * @param string $path
-     * @param int $mode
-     *
      * @throws FilesystemException If the operation fails.
      */
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
@@ -301,8 +256,6 @@ final class Filesystem
 
     /**
      * Delete a directory.
-     *
-     * @param string $path
      *
      * @throws FilesystemException If the operation fails.
      */
@@ -316,8 +269,6 @@ final class Filesystem
      *
      * Dot entries are not included in the resulting array (i.e. "." and "..").
      *
-     * @param string $path
-     *
      * @return list<string>
      *
      * @throws FilesystemException If the operation fails.
@@ -329,10 +280,6 @@ final class Filesystem
 
     /**
      * Change permissions of a file or directory.
-     *
-     * @param string $path
-     * @param int $mode
-     * @fails \Amp\Files\FilesystemException If the operation fails.
      */
     public function changePermissions(string $path, int $mode): void
     {
@@ -342,10 +289,8 @@ final class Filesystem
     /**
      * Change ownership of a file or directory.
      *
-     * @param string $path
      * @param int|null $uid null to ignore
      * @param int|null $gid null to ignore
-     * @fails \Amp\Files\FilesystemException If the operation fails.
      */
     public function changeOwner(string $path, ?int $uid, ?int $gid = null): void
     {
@@ -357,10 +302,8 @@ final class Filesystem
      *
      * If the file does not exist it will be created automatically.
      *
-     * @param string $path
      * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
      * @param int|null $accessTime The access time. If not supplied, the modification time is used.
-     * @fails \Amp\Files\FilesystemException If the operation fails.
      */
     public function touch(string $path, ?int $modificationTime = null, ?int $accessTime = null): void
     {

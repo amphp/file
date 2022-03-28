@@ -10,9 +10,6 @@ jobs:
       matrix:
         include:
           - operating-system: 'ubuntu-latest'
-            php-version: '8.0'
-
-          - operating-system: 'ubuntu-latest'
             php-version: '8.1'
 
           - operating-system: 'windows-latest'
@@ -47,7 +44,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: eio-beta, uv-amphp/ext-uv@master, fiber-amphp/ext-fiber@master
+          extensions: eio-beta, uv-amphp/ext-uv@master
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -95,4 +92,3 @@ jobs:
       - name: Run composer-require-checker
         run: php composer-require-checker.phar check composer.json --config-file $PWD/composer-require-check.json
         if: runner.os != 'Windows' && matrix.composer-require-checker-version != 'none'
-

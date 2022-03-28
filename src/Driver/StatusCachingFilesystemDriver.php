@@ -8,10 +8,8 @@ use Amp\File\Internal\Cache;
 
 final class StatusCachingFilesystemDriver implements FilesystemDriver
 {
-    /** @var FilesystemDriver */
     private FilesystemDriver $driver;
 
-    /** @var Cache */
     private Cache $statusCache;
 
     public function __construct(FilesystemDriver $driver)

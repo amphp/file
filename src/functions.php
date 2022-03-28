@@ -14,7 +14,6 @@ use Revolt\EventLoop;
  *
  * @param FilesystemDriver|null $driver Use the specified object as the application-wide filesystem instance.
  *
- * @return Filesystem
  */
 function filesystem(?FilesystemDriver $driver = null): Filesystem
 {
@@ -50,8 +49,6 @@ function filesystem(?FilesystemDriver $driver = null): Filesystem
 
 /**
  * Create a new filesystem driver best-suited for the current environment.
- *
- * @return FilesystemDriver
  */
 function createDefaultDriver(): FilesystemDriver
 {
@@ -76,11 +73,6 @@ function createDefaultDriver(): FilesystemDriver
 /**
  * Open a handle for the specified path.
  *
- * @param string $path
- * @param string $mode
- *
- * @return File
- *
  * @throws FilesystemException
  */
 function openFile(string $path, string $mode): File
@@ -94,8 +86,6 @@ function openFile(string $path, string $mode): File
  * If the requested path does not exist the function will return NULL.
  *
  * @param string $path File system path.
- *
- * @return array|null
  */
 function getStatus(string $path): ?array
 {
@@ -108,8 +98,6 @@ function getStatus(string $path): ?array
  * If the requested path does not exist the function will return NULL.
  *
  * @param string $path File system path.
- *
- * @return array|null
  */
 function getLinkStatus(string $path): ?array
 {
@@ -123,8 +111,6 @@ function getLinkStatus(string $path): ?array
  * indicating the existence of the specified path.
  *
  * @param string $path File system path.
- *
- * @return bool
  */
 function exists(string $path): bool
 {
@@ -135,9 +121,6 @@ function exists(string $path): bool
  * Retrieve the size in bytes of the file at the specified path.
  *
  * @param string $path File system path.
- * @fails \Amp\Files\FilesystemException If the path does not exist or is not a file.
- *
- * @return int
  */
 function getSize(string $path): int
 {
@@ -148,8 +131,6 @@ function getSize(string $path): int
  * Does the specified path exist and is it a directory?
  *
  * @param string $path File system path.
- *
- * @return bool
  */
 function isDirectory(string $path): bool
 {
@@ -160,8 +141,6 @@ function isDirectory(string $path): bool
  * Does the specified path exist and is it a file?
  *
  * @param string $path File system path.
- *
- * @return bool
  */
 function isFile(string $path): bool
 {
@@ -172,8 +151,6 @@ function isFile(string $path): bool
  * Does the specified path exist and is it a symlink?
  *
  * @param string $path File system path.
- *
- * @return bool
  */
 function isSymlink(string $path): bool
 {
@@ -184,9 +161,6 @@ function isSymlink(string $path): bool
  * Retrieve the path's last modification time as a unix timestamp.
  *
  * @param string $path File system path.
- * @fails \Amp\Files\FilesystemException If the path does not exist.
- *
- * @return int
  */
 function getModificationTime(string $path): int
 {
@@ -197,9 +171,6 @@ function getModificationTime(string $path): int
  * Retrieve the path's last access time as a unix timestamp.
  *
  * @param string $path File system path.
- * @fails \Amp\Files\FilesystemException If the path does not exist.
- *
- * @return int
  */
 function getAccessTime(string $path): int
 {
@@ -210,7 +181,6 @@ function getAccessTime(string $path): int
  * Retrieve the path's creation time as a unix timestamp.
  *
  * @param string $path File system path.
- * @fails \Amp\Files\FilesystemException If the path does not exist.
  */
 function getCreationTime(string $path): int
 {
@@ -219,10 +189,6 @@ function getCreationTime(string $path): int
 
 /**
  * Create a symlink $link pointing to the file/directory located at $original.
- *
- * @param string $original
- * @param string $link
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function createSymlink(string $original, string $link): void
 {
@@ -231,10 +197,6 @@ function createSymlink(string $original, string $link): void
 
 /**
  * Create a hard link $link pointing to the file/directory located at $target.
- *
- * @param string $target
- * @param string $link
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function createHardlink(string $target, string $link): void
 {
@@ -243,11 +205,6 @@ function createHardlink(string $target, string $link): void
 
 /**
  * Resolve the symlink at $path.
- *
- * @param string $path
- * @fails \Amp\Files\FilesystemException If the operation fails.
- *
- * @return string
  */
 function resolveSymlink(string $path): string
 {
@@ -256,10 +213,6 @@ function resolveSymlink(string $path): string
 
 /**
  * Move / rename a file or directory.
- *
- * @param string $from
- * @param string $to
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function move(string $from, string $to): void
 {
@@ -268,9 +221,6 @@ function move(string $from, string $to): void
 
 /**
  * Delete a file.
- *
- * @param string $path
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function deleteFile(string $path): void
 {
@@ -279,10 +229,6 @@ function deleteFile(string $path): void
 
 /**
  * Create a directory.
- *
- * @param string $path
- * @param int    $mode
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function createDirectory(string $path, int $mode = 0777): void
 {
@@ -291,10 +237,6 @@ function createDirectory(string $path, int $mode = 0777): void
 
 /**
  * Create a directory recursively.
- *
- * @param string $path
- * @param int    $mode
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function createDirectoryRecursively(string $path, int $mode = 0777): void
 {
@@ -303,9 +245,6 @@ function createDirectoryRecursively(string $path, int $mode = 0777): void
 
 /**
  * Delete a directory.
- *
- * @param string $path
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function deleteDirectory(string $path): void
 {
@@ -317,9 +256,7 @@ function deleteDirectory(string $path): void
  *
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
- * @param string $path
- *
- * @returnlist<string>
+ * @return list<string>
  */
 function listFiles(string $path): array
 {
@@ -328,10 +265,6 @@ function listFiles(string $path): array
 
 /**
  * Change permissions of a file or directory.
- *
- * @param string $path
- * @param int    $mode
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function changePermissions(string $path, int $mode): void
 {
@@ -341,10 +274,8 @@ function changePermissions(string $path, int $mode): void
 /**
  * Change ownership of a file or directory.
  *
- * @param string   $path
  * @param int|null $uid null to ignore
  * @param int|null $gid null to ignore
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function changeOwner(string $path, ?int $uid, ?int $gid = null): void
 {
@@ -356,10 +287,8 @@ function changeOwner(string $path, ?int $uid, ?int $gid = null): void
  *
  * If the file does not exist it will be created automatically.
  *
- * @param string   $path
  * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
  * @param int|null $accessTime The access time. If not supplied, the modification time is used.
- * @fails \Amp\Files\FilesystemException If the operation fails.
  */
 function touch(string $path, ?int $modificationTime = null, ?int $accessTime = null): void
 {
@@ -370,8 +299,6 @@ function touch(string $path, ?int $modificationTime = null, ?int $accessTime = n
  * Buffer the specified file's contents.
  *
  * @param string $path The file path from which to buffer contents.
- *
- * @return string
  */
 function read(string $path): string
 {

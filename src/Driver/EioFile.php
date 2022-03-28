@@ -14,7 +14,7 @@ use function Amp\async;
 
 final class EioFile implements File
 {
-    private Internal\EioPoll $poll;
+    private readonly Internal\EioPoll $poll;
 
     /** @var resource eio file handle. */
     private $fh;
@@ -35,12 +35,10 @@ final class EioFile implements File
 
     private ?Future $closing = null;
 
+    private readonly DeferredFuture $onClose;
+
     /**
-     * @param Internal\EioPoll $poll
      * @param resource $fh
-     * @param string $path
-     * @param string $mode
-     * @param int $size
      */
     public function __construct(Internal\EioPoll $poll, $fh, string $path, string $mode, int $size)
     {
@@ -52,6 +50,14 @@ final class EioFile implements File
         $this->position = ($mode[0] === "a") ? $size : 0;
 
         $this->queue = new \SplQueue;
+        $this->onClose = new DeferredFuture;
+    }
+
+    public function __destruct()
+    {
+        if (!$this->onClose->isComplete()) {
+            $this->onClose->complete();
+        }
     }
 
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
@@ -63,7 +69,7 @@ final class EioFile implements File
         $this->isActive = true;
 
         $remaining = $this->size - $this->position;
-        $length = $length > $remaining ? $remaining : $length;
+        $length = \min($length, $remaining);
 
         $deferred = new DeferredFuture;
         $this->poll->listen();
@@ -152,14 +158,13 @@ final class EioFile implements File
             return;
         }
 
-        $deferred = new DeferredFuture;
-        $this->closing = $deferred->getFuture();
+        $this->closing = $this->onClose->getFuture();
         $this->poll->listen();
 
         \eio_close($this->fh, \EIO_PRI_DEFAULT, static function (DeferredFuture $deferred): void {
             // Ignore errors when closing file, as the handle will become invalid anyway.
-            $deferred->complete(null);
-        }, $deferred);
+            $deferred->complete();
+        }, $this->onClose);
 
         try {
             $this->closing->await();
@@ -171,6 +176,11 @@ final class EioFile implements File
     public function isClosed(): bool
     {
         return $this->closing !== null;
+    }
+
+    public function onClose(\Closure $onClose): void
+    {
+        $this->onClose->getFuture()->finally($onClose);
     }
 
     public function truncate(int $size): void

@@ -7,18 +7,17 @@ use Amp\File\File;
 
 final class StatusCachingFile implements File
 {
-    private File $file;
+    private readonly File $file;
 
-    /** @var callable */
-    private $invalidateCallback;
+    private readonly \Closure $invalidateCallback;
 
     /**
      * @param File $file Decorated instance.
-     * @param callable $invalidateCallback Invalidation callback.
+     * @param \Closure $invalidateCallback Invalidation callback.
      *
      * @internal
      */
-    public function __construct(File $file, callable $invalidateCallback)
+    public function __construct(File $file, \Closure $invalidateCallback)
     {
         $this->file = $file;
         $this->invalidateCallback = $invalidateCallback;
@@ -55,6 +54,11 @@ final class StatusCachingFile implements File
     public function isClosed(): bool
     {
         return $this->file->isClosed();
+    }
+
+    public function onClose(\Closure $onClose): void
+    {
+        $this->file->onClose($onClose);
     }
 
     public function seek(int $position, int $whence = self::SEEK_SET): int

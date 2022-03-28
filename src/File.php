@@ -17,10 +17,7 @@ interface File extends ReadableStream, WritableStream
     /**
      * Read $length bytes from the open file handle.
      *
-     * @param Cancellation|null $cancellation
-     * @param int $length
      *
-     * @return string|null
      */
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string;
 
@@ -33,8 +30,6 @@ interface File extends ReadableStream, WritableStream
      * SEEK_CUR - Set position to current location plus offset.
      * SEEK_END - Set position to end-of-file plus offset.
      *
-     * @param int $position
-     * @param int $whence
      *
      * @return int New offset position.
      */
@@ -43,14 +38,12 @@ interface File extends ReadableStream, WritableStream
     /**
      * Return the current internal offset position of the file handle.
      *
-     * @return int
      */
     public function tell(): int;
 
     /**
      * Test for being at the end of the stream (a.k.a. "end-of-file").
      *
-     * @return bool
      */
     public function eof(): bool;
 
@@ -62,14 +55,12 @@ interface File extends ReadableStream, WritableStream
     /**
      * Retrieve the path used when opening the file handle.
      *
-     * @return string
      */
     public function getPath(): string;
 
     /**
      * Retrieve the mode used when opening the file handle.
      *
-     * @return string
      */
     public function getMode(): string;
 

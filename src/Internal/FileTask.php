@@ -31,8 +31,6 @@ final class FileTask implements Task
     private ?int $id;
 
     /**
-     * @param string $operation
-     * @param array $args
      * @param int|null $id File ID.
      *
      * @throws \Error

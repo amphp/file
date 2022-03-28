@@ -5,6 +5,7 @@ namespace Amp\File\Driver;
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Cancellation;
+use Amp\DeferredFuture;
 use Amp\File\File;
 
 final class BlockingFile implements File
@@ -13,6 +14,8 @@ final class BlockingFile implements File
     private $handle;
     private string $path;
     private string $mode;
+
+    private readonly DeferredFuture $onClose;
 
     /**
      * @param resource $handle An open filesystem descriptor.
@@ -24,12 +27,18 @@ final class BlockingFile implements File
         $this->handle = $handle;
         $this->path = $path;
         $this->mode = $mode;
+
+        $this->onClose = new DeferredFuture;
     }
 
     public function __destruct()
     {
         if ($this->handle !== null) {
             @\fclose($this->handle);
+        }
+
+        if (!$this->onClose->isComplete()) {
+            $this->onClose->complete();
         }
     }
 
@@ -93,6 +102,10 @@ final class BlockingFile implements File
         $handle = $this->handle;
         $this->handle = null;
 
+        if (!$this->onClose->isComplete()) {
+            $this->onClose->complete();
+        }
+
         try {
             \set_error_handler(function ($type, $message) {
                 throw new StreamException("Failed closing file '{$this->path}': {$message}");
@@ -111,6 +124,11 @@ final class BlockingFile implements File
     public function isClosed(): bool
     {
         return $this->handle === null;
+    }
+
+    public function onClose(\Closure $onClose): void
+    {
+        $this->onClose->getFuture()->finally($onClose);
     }
 
     public function truncate(int $size): void

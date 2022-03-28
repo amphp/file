@@ -14,7 +14,6 @@ final class FileWorker
     private Worker $worker;
 
     /**
-     * @param Worker $worker
      * @param \Closure(Worker):void $push Closure to push the worker back into the queue.
      */
     public function __construct(Worker $worker, \Closure $push)

@@ -30,7 +30,6 @@ final class ParallelFilesystemDriver implements FilesystemDriver
     private Future $pendingWorker;
 
     /**
-     * @param WorkerPool|null $pool
      * @param int       $workerLimit Maximum number of workers to use from the pool for open files.
      */
     public function __construct(WorkerPool $pool = null, int $workerLimit = self::DEFAULT_WORKER_LIMIT)

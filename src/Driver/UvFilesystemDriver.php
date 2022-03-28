@@ -22,16 +22,15 @@ final class UvFilesystemDriver implements FilesystemDriver
         return $driver instanceof UvLoopDriver;
     }
 
-    private UvLoopDriver  $driver;
+    private readonly UvLoopDriver $driver;
 
     /** @var \UVLoop|resource Loop resource of type uv_loop or instance of \UVLoop. */
     private $eventLoopHandle;
 
-    /** @var Internal\UvPoll */
-    private Internal\UvPoll $poll;
+    private readonly Internal\UvPoll $poll;
 
     /** @var bool True if ext-uv version is < 0.3.0. */
-    private bool $priorVersion;
+    private readonly bool $priorVersion;
 
     public function __construct(UvLoopDriver $driver)
     {

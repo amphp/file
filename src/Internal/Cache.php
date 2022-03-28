@@ -28,7 +28,7 @@ final class Cache
             public array $cache = [];
             /** @var int[] */
             public array $cacheTimeouts = [];
-            /** @var bool */
+
             public bool $isSortNeeded = false;
 
             public function collectGarbage(): void

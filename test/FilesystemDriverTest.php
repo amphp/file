@@ -106,7 +106,6 @@ abstract class FilesystemDriverTest extends FilesystemTest
     /**
      * @dataProvider symlinkPathProvider
      *
-     * @param \Closure $linkResolver
      */
     public function testResolveSymlinkError(\Closure $linkResolver): void
     {
@@ -567,11 +566,6 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame($filter($expected), $filter($actual));
     }
 
-    /**
-     * @param array $stat
-     *
-     * @return string
-     */
     private function getPermissionsFromStatus(array $stat): string
     {
         return \substr(\decoct($stat["mode"]), 1);
