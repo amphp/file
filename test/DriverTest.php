@@ -344,6 +344,16 @@ abstract class DriverTest extends FilesystemTest
         $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
     }
 
+    public function testCreateDirectoryRecursivelySlashEnd(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+
+        $dir = "{$fixtureDir}/newdir/with/recursive/creation/321/";
+
+        $this->assertNull(yield $this->driver->createDirectoryRecursively($dir, 0764));
+        $this->assertTrue(yield $this->driver->exists($dir));
+    }
+
     public function testCreateDirectoryFailsOnNonexistentPath(): \Generator
     {
         $fixtureDir = Fixture::path();
