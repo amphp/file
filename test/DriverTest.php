@@ -344,6 +344,16 @@ abstract class DriverTest extends FilesystemTest
         $this->assertSame('0744', $this->getPermissionsFromStatus($stat));
     }
 
+    public function testCreateDirectorySlashEnd(): \Generator
+    {
+        $fixtureDir = Fixture::path();
+
+        $dir = "{$fixtureDir}/newdir-with-trailing-slash/";
+
+        $this->assertNull(yield $this->driver->createDirectory($dir, 0764));
+        $this->assertTrue(yield $this->driver->exists($dir));
+    }
+
     public function testCreateDirectoryRecursivelySlashEnd(): \Generator
     {
         $fixtureDir = Fixture::path();
