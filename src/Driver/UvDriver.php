@@ -205,6 +205,7 @@ final class UvDriver implements Driver
         $this->poll->listen($deferred->promise());
 
         $path = \str_replace("/", DIRECTORY_SEPARATOR, $path);
+        $path = \rtrim($path, DIRECTORY_SEPARATOR);
         $arrayPath = \explode(DIRECTORY_SEPARATOR, $path);
         $tmpPath = "";
 
