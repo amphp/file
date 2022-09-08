@@ -86,6 +86,17 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame("previousbarfoobaz", $handle->read());
     }
 
+    public function testReadInAppendMode(): void
+    {
+        $path = Fixture::path() . "/read-append";
+        $this->driver->write($path, 'previous');
+        $handle = $this->driver->openFile($path, "a+");
+        $this->assertSame(8, $handle->tell());
+        $this->assertNull($handle->read());
+        $this->assertSame(0, $handle->seek(0));
+        $this->assertSame('previous', $handle->read());
+    }
+
     public function testReadingToEnd(): void
     {
         $handle = $this->driver->openFile(__FILE__, "r");
