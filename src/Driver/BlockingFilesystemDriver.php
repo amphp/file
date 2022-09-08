@@ -295,11 +295,11 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     {
         try {
             \set_error_handler(static function ($type, $message) use ($path) {
-                throw new FilesystemException("Failed to read '{$path}': {$message}");
+                throw new FilesystemException("Failed to write to '{$path}': {$message}");
             });
 
-            if (false === ($result = \file_put_contents($path, $contents))) {
-                throw new FilesystemException("Failed to read '{$path}'");
+            if (false === \file_put_contents($path, $contents)) {
+                throw new FilesystemException("Failed to write to '{$path}'");
             }
         } finally {
             \restore_error_handler();
