@@ -28,6 +28,10 @@ final class BlockingFile implements File
         $this->path = $path;
         $this->mode = $mode;
 
+        if ($mode[0] === 'a') {
+            \fseek($this->handle, 0, \SEEK_END);
+        }
+
         $this->onClose = new DeferredFuture;
     }
 
