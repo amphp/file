@@ -366,6 +366,26 @@ abstract class FilesystemDriverTest extends FilesystemTest
         }
     }
 
+    public function testCreateDirectorySlashEnd(): void
+    {
+        $fixtureDir = Fixture::path();
+
+        $dir = "{$fixtureDir}/newdir-with-trailing-slash/";
+
+        $this->driver->createDirectory($dir, 0764);
+        $this->assertTrue($this->driver->exists($dir));
+    }
+
+    public function testCreateDirectoryRecursivelySlashEnd(): void
+    {
+        $fixtureDir = Fixture::path();
+
+        $dir = "{$fixtureDir}/newdir/with/recursive/creation/321/";
+
+        $this->driver->createDirectoryRecursively($dir, 0764);
+        $this->assertTrue($this->driver->exists($dir));
+    }
+
     public function testCreateDirectoryFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();

@@ -227,6 +227,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         $priority = \EIO_PRI_DEFAULT;
 
         $path = \str_replace("/", DIRECTORY_SEPARATOR, $path);
+        $path = \rtrim($path, DIRECTORY_SEPARATOR);
         $arrayPath = \explode(DIRECTORY_SEPARATOR, $path);
         $tmpPath = "";
 

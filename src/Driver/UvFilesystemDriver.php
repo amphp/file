@@ -241,6 +241,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         $this->poll->listen();
 
         $path = \str_replace("/", DIRECTORY_SEPARATOR, $path);
+        $path = \rtrim($path, DIRECTORY_SEPARATOR);
         $arrayPath = \explode(DIRECTORY_SEPARATOR, $path);
         $tmpPath = "";
 
