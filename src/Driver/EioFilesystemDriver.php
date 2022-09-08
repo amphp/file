@@ -46,24 +46,6 @@ final class EioFilesystemDriver implements FilesystemDriver
             function (mixed $data, mixed $fileHandle, mixed $resource) use ($mode, $path, $deferred): void {
                 if ($fileHandle === -1) {
                     $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
-                } elseif ($mode[0] === "a") {
-                    \eio_ftruncate(
-                        $fileHandle,
-                        0,
-                        \EIO_PRI_DEFAULT,
-                        function (mixed $data, mixed $result, mixed $resource) use (
-                            $deferred,
-                            $fileHandle,
-                            $path,
-                            $mode
-                        ) {
-                            if ($result === -1) {
-                                $deferred->error(new FilesystemException(\eio_get_last_error($resource)));
-                            } else {
-                                $deferred->complete(new EioFile($this->poll, $fileHandle, $path, $mode, 0));
-                            }
-                        }
-                    );
                 } else {
                     \eio_fstat(
                         $fileHandle,
