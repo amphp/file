@@ -15,6 +15,7 @@
     <testsuites>
         <testsuite name="Amp Filesystem">
             <directory>test</directory>
+            <directory suffix=".phpt">test</directory>
         </testsuite>
     </testsuites>
     <coverage>

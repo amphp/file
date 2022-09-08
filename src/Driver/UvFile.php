@@ -74,9 +74,7 @@ final class UvFile implements File
 
     public function __destruct()
     {
-        if (!$this->onClose->isComplete()) {
-            $this->onClose->complete();
-        }
+        async($this->close(...));
     }
 
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
