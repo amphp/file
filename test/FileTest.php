@@ -100,8 +100,11 @@ abstract class FileTest extends FilesystemTest
 
         while (!$handle->eof()) {
             $chunk = yield $handle->read($chunkSize);
-            $contents .= $chunk;
-            $position += \strlen($chunk);
+            if ($chunk !== null) {
+                $contents .= $chunk;
+                $position += \strlen($chunk);
+            }
+
             $this->assertSame($position, $handle->tell());
         }
 
