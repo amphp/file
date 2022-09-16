@@ -264,7 +264,7 @@ function listFiles(string $path): array
 }
 
 /**
- * Change permissions of a file or directory.
+ * Change the permissions of a file or directory.
  */
 function changePermissions(string $path, int $mode): void
 {
@@ -272,7 +272,7 @@ function changePermissions(string $path, int $mode): void
 }
 
 /**
- * Change ownership of a file or directory.
+ * Change the ownership of a file or directory.
  *
  * @param int|null $uid null to ignore
  * @param int|null $gid null to ignore
@@ -296,7 +296,7 @@ function touch(string $path, ?int $modificationTime = null, ?int $accessTime = n
 }
 
 /**
- * Buffer the specified file's contents.
+ * Read the specified file's contents.
  *
  * @param string $path The file path from which to buffer contents.
  */
