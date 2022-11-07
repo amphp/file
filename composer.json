@@ -38,7 +38,7 @@
         "amphp/cache": "^2",
         "amphp/parallel": "^2",
         "amphp/sync": "^2",
-        "revolt/event-loop": "^0.2.1"
+        "revolt/event-loop": "^1 || ^0.2.1"
     },
     "require-dev": {
         "amphp/phpunit-util": "^3",
