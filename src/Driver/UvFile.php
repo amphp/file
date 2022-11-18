@@ -6,14 +6,12 @@ use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
 use Amp\Cancellation;
 use Amp\DeferredFuture;
-use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
 use Amp\Future;
 use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
-use function Amp\async;
 
-final class UvFile implements File
+final class UvFile extends Internal\QueuedWritesFile
 {
     private readonly Internal\UvPoll $poll;
 
@@ -23,24 +21,10 @@ final class UvFile implements File
     /** @var resource */
     private $fh;
 
-    private string $path;
-
-    private string $mode;
-
-    private int $size;
-
-    private int $position;
-
-    private \SplQueue $queue;
-
-    private bool $isReading = false;
-
-    private bool $writable = true;
-
     private ?Future $closing = null;
 
     /** @var bool True if ext-uv version is < 0.3.0. */
-    private bool $priorVersion;
+    private readonly bool $priorVersion;
 
     private readonly DeferredFuture $onClose;
 
@@ -54,27 +38,18 @@ final class UvFile implements File
         $fh,
         string $path,
         string $mode,
-        int $size
+        int $size,
     ) {
+        parent::__construct($path, $mode, $size);
+
         $this->poll = $poll;
         $this->fh = $fh;
-        $this->path = $path;
-        $this->mode = $mode;
-        $this->size = $size;
 
         /** @psalm-suppress PropertyTypeCoercion */
         $this->eventLoopHandle = $driver->getHandle();
-        $this->position = ($mode[0] === "a") ? $size : 0;
-
-        $this->queue = new \SplQueue;
         $this->onClose = new DeferredFuture;
 
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
-    }
-
-    public function __destruct()
-    {
-        async($this->close(...));
     }
 
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
@@ -136,99 +111,6 @@ final class UvFile implements File
         }
     }
 
-    public function write(string $bytes): void
-    {
-        if ($this->isReading) {
-            throw new PendingOperationError;
-        }
-
-        if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
-        }
-
-        if ($this->queue->isEmpty()) {
-            $future = $this->push($bytes, $this->position);
-        } else {
-            $position = $this->position;
-            /** @var Future $future */
-            $future = $this->queue->top()->map(fn () => $this->push($bytes, $position)->await());
-        }
-
-        $this->queue->push($future);
-
-        $future->await();
-    }
-
-    public function end(): void
-    {
-        $this->writable = false;
-        $this->close();
-    }
-
-    public function truncate(int $size): void
-    {
-        if ($this->isReading) {
-            throw new PendingOperationError;
-        }
-
-        if (!$this->writable) {
-            throw new ClosedException("The file is no longer writable");
-        }
-
-        if ($this->queue->isEmpty()) {
-            $future = $this->trim($size);
-        } else {
-            $future = $this->queue->top()->map(fn () => $this->trim($size)->await());
-        }
-
-        $this->queue->push($future);
-
-        $future->await();
-    }
-
-    public function seek(int $position, int $whence = \SEEK_SET): int
-    {
-        if ($this->isReading) {
-            throw new PendingOperationError;
-        }
-
-        switch ($whence) {
-            case self::SEEK_SET:
-                $this->position = $position;
-                break;
-            case self::SEEK_CUR:
-                $this->position += $position;
-                break;
-            case self::SEEK_END:
-                $this->position = $this->size + $position;
-                break;
-            default:
-                throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected");
-        }
-
-        return $this->position;
-    }
-
-    public function tell(): int
-    {
-        return $this->position;
-    }
-
-    public function eof(): bool
-    {
-        return $this->queue->isEmpty() && $this->size <= $this->position;
-    }
-
-    public function getPath(): string
-    {
-        return $this->path;
-    }
-
-    public function getMode(): string
-    {
-        return $this->mode;
-    }
-
     public function close(): void
     {
         if ($this->closing) {
@@ -262,7 +144,7 @@ final class UvFile implements File
         $this->onClose->getFuture()->finally($onClose);
     }
 
-    private function push(string $data, int $position): Future
+    protected function push(string $data, int $position): Future
     {
         $length = \strlen($data);
 
@@ -305,7 +187,7 @@ final class UvFile implements File
         return $deferred->getFuture();
     }
 
-    private function trim(int $size): Future
+    protected function trim(int $size): Future
     {
         $deferred = new DeferredFuture;
         $this->poll->listen();
@@ -330,20 +212,5 @@ final class UvFile implements File
         );
 
         return $deferred->getFuture();
-    }
-
-    public function isReadable(): bool
-    {
-        return !$this->isClosed();
-    }
-
-    public function isSeekable(): bool
-    {
-        return !$this->isClosed();
-    }
-
-    public function isWritable(): bool
-    {
-        return $this->writable;
     }
 }
