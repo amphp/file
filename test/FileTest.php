@@ -4,6 +4,7 @@ namespace Amp\File\Test;
 
 use Amp\ByteStream\ClosedException;
 use Amp\File;
+use function Amp\async;
 
 abstract class FileTest extends FilesystemTest
 {
@@ -202,6 +203,22 @@ abstract class FileTest extends FilesystemTest
 
         $this->expectException(ClosedException::class);
         $handle->read();
+    }
+
+    public function testCloseWithPendingWrites(): void
+    {
+        $path = Fixture::path() . "/write";
+
+        $handle = $this->driver->openFile($path, "c+");
+
+        $data = "data";
+        $writeFuture = async($handle->write(...), $data);
+        $closeFuture = async($handle->close(...));
+
+        $writeFuture->await();
+        $closeFuture->await();
+
+        $this->assertSame($data, $this->driver->read($path));
     }
 
     /**

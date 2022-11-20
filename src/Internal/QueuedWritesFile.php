@@ -70,7 +70,16 @@ abstract class QueuedWritesFile implements File
     public function end(): void
     {
         $this->writable = false;
-        $this->close();
+
+        if ($this->queue->isEmpty()) {
+            $this->close();
+            return;
+        }
+
+        $future = $this->queue->top()->finally($this->close(...));
+        $this->queue->push($future);
+
+        $future->await();
     }
 
     /**
