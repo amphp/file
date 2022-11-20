@@ -48,6 +48,7 @@ final class ParallelFile implements File
         $this->path = $path;
         $this->size = $size;
         $this->mode = $mode;
+        $this->writable = $this->mode[0] !== 'r';
         $this->position = $this->mode[0] === 'a' ? $this->size : 0;
 
         $this->onClose = new DeferredFuture;

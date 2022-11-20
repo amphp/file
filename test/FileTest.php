@@ -193,6 +193,7 @@ abstract class FileTest extends FilesystemTest
     {
         $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame("r", $handle->getMode());
+        $this->assertFalse($handle->isWritable());
         $handle->close();
     }
 

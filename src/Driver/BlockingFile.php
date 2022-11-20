@@ -222,6 +222,6 @@ final class BlockingFile implements File
 
     public function isWritable(): bool
     {
-        return $this->handle !== null;
+        return $this->handle !== null && $this->mode[0] !== 'r';
     }
 }
