@@ -122,6 +122,7 @@ final class ParallelFile implements File
 
         try {
             $this->worker->execute(new Internal\FileTask('ftruncate', [$size], $this->id));
+            $this->size = $size;
         } catch (TaskFailureException $exception) {
             throw new StreamException("Reading from the file failed", 0, $exception);
         } catch (WorkerException $exception) {
@@ -187,6 +188,7 @@ final class ParallelFile implements File
         try {
             $this->worker->execute(new Internal\FileTask('fwrite', [$bytes], $this->id));
             $this->position += \strlen($bytes);
+            $this->size = \max($this->position, $this->size);
         } catch (TaskFailureException $exception) {
             throw new StreamException("Writing to the file failed", 0, $exception);
         } catch (WorkerException $exception) {
@@ -223,9 +225,7 @@ final class ParallelFile implements File
                         new Internal\FileTask('fseek', [$position, $whence], $this->id)
                     );
 
-                    if ($this->position > $this->size) {
-                        $this->size = $this->position;
-                    }
+                    $this->size = \max($this->position, $this->size);
 
                     return $this->position;
                 } catch (TaskFailureException $exception) {
