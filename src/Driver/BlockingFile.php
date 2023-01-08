@@ -3,13 +3,19 @@
 namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
+use Amp\ByteStream\ReadableStreamIteratorAggregate;
 use Amp\ByteStream\StreamException;
 use Amp\Cancellation;
 use Amp\DeferredFuture;
 use Amp\File\File;
 
-final class BlockingFile implements File
+/**
+ * @implements \IteratorAggregate<int, string>
+ */
+final class BlockingFile implements File, \IteratorAggregate
 {
+    use ReadableStreamIteratorAggregate;
+
     /** @var resource|null */
     private $handle;
     private string $path;

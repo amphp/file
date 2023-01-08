@@ -2,11 +2,17 @@
 
 namespace Amp\File\Driver;
 
+use Amp\ByteStream\ReadableStreamIteratorAggregate;
 use Amp\Cancellation;
 use Amp\File\File;
 
-final class StatusCachingFile implements File
+/**
+ * @implements \IteratorAggregate<int, string>
+ */
+final class StatusCachingFile implements File, \IteratorAggregate
 {
+    use ReadableStreamIteratorAggregate;
+
     private readonly File $file;
 
     private readonly \Closure $invalidateCallback;

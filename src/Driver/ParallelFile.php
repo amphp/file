@@ -3,6 +3,7 @@
 namespace Amp\File\Driver;
 
 use Amp\ByteStream\ClosedException;
+use Amp\ByteStream\ReadableStreamIteratorAggregate;
 use Amp\ByteStream\StreamException;
 use Amp\Cancellation;
 use Amp\DeferredFuture;
@@ -15,8 +16,13 @@ use Amp\Parallel\Worker\WorkerException;
 use Revolt\EventLoop;
 use function Amp\async;
 
-final class ParallelFile implements File
+/**
+ * @implements \IteratorAggregate<int, string>
+ */
+final class ParallelFile implements File, \IteratorAggregate
 {
+    use ReadableStreamIteratorAggregate;
+
     private readonly Internal\FileWorker $worker;
 
     private ?int $id;

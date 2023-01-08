@@ -3,14 +3,21 @@
 namespace Amp\File\Internal;
 
 use Amp\ByteStream\ClosedException;
+use Amp\ByteStream\ReadableStreamIteratorAggregate;
+use Amp\Cancellation;
 use Amp\File\File;
 use Amp\File\PendingOperationError;
 use Amp\Future;
 use function Amp\async;
 
-/** @internal */
-abstract class QueuedWritesFile implements File
+/**
+ * @internal
+ * @implements \IteratorAggregate<int, string>
+ */
+abstract class QueuedWritesFile implements File, \IteratorAggregate
 {
+    use ReadableStreamIteratorAggregate;
+
     /** @var \SplQueue<Future<null>> */
     protected readonly \SplQueue $queue;
 
@@ -38,6 +45,11 @@ abstract class QueuedWritesFile implements File
     {
         async($this->close(...));
     }
+
+    abstract public function read(
+        ?Cancellation $cancellation = null,
+        int $length = self::DEFAULT_READ_LENGTH,
+    ): ?string;
 
     /**
      * @return Future<null>
@@ -114,21 +126,12 @@ abstract class QueuedWritesFile implements File
             throw new PendingOperationError;
         }
 
-        switch ($whence) {
-            case self::SEEK_SET:
-                $this->position = $position;
-                break;
-            case self::SEEK_CUR:
-                $this->position += $position;
-                break;
-            case self::SEEK_END:
-                $this->position = $this->size + $position;
-                break;
-            default:
-                throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected");
-        }
-
-        return $this->position;
+        return match ($whence) {
+            self::SEEK_SET => $this->position = $position,
+            self::SEEK_CUR => $this->position += $position,
+            self::SEEK_END => $this->position = $this->size + $position,
+            default => throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"),
+        };
     }
 
     public function tell(): int
