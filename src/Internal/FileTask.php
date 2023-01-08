@@ -2,7 +2,10 @@
 
 namespace Amp\File\Internal;
 
+use Amp\ByteStream\ClosedException;
+use Amp\ByteStream\StreamException;
 use Amp\Cache\Cache;
+use Amp\Cache\CacheException;
 use Amp\Cancellation;
 use Amp\File\Driver\BlockingFile;
 use Amp\File\Driver\BlockingFilesystemDriver;
@@ -12,11 +15,13 @@ use Amp\Sync\Channel;
 
 /**
  * @codeCoverageIgnore
- *
  * @internal
+ * @implements Task<mixed, never, never, BlockingFile>
  */
 final class FileTask implements Task
 {
+    private static ?BlockingFilesystemDriver $driver = null;
+
     private const ENV_PREFIX = "amphp/file#";
 
     private static function makeId(int $id): string
@@ -24,74 +29,42 @@ final class FileTask implements Task
         return self::ENV_PREFIX . $id;
     }
 
-    private string $operation;
-
-    private array $args;
-
-    private ?int $id;
-
     /**
      * @param int|null $id File ID.
      *
      * @throws \Error
      */
-    public function __construct(string $operation, array $args = [], ?int $id = null)
-    {
+    public function __construct(
+        private readonly string $operation,
+        private readonly array $args = [],
+        private readonly ?int $id = null,
+    ) {
         if ($operation === '') {
             throw new \Error('Operation must be a non-empty string');
         }
-
-        $this->operation = $operation;
-        $this->args = $args;
-        $this->id = $id;
     }
 
     /**
      * @throws FilesystemException
-     * @throws \Amp\Cache\CacheException
-     * @throws \Amp\ByteStream\ClosedException
-     * @throws \Amp\ByteStream\StreamException
+     * @throws CacheException
+     * @throws ClosedException
+     * @throws StreamException
      */
     public function run(Channel $channel, Cache $cache, Cancellation $cancellation): mixed
     {
+        self::$driver ??= new BlockingFilesystemDriver();
+
         if ('f' === $this->operation[0]) {
             if ("fopen" === $this->operation) {
-                $path = $this->args[0];
-                $mode = \str_replace(['b', 't', 'e'], '', $this->args[1]);
+                $file = self::$driver->openFile(...$this->args);
 
-                switch ($mode) {
-                    case "r":
-                    case "r+":
-                    case "w":
-                    case "w+":
-                    case "a":
-                    case "a+":
-                    case "x":
-                    case "x+":
-                    case "c":
-                    case "c+":
-                        break;
+                $size = self::$driver->getStatus($file->getPath())["size"]
+                    ?? throw new FilesystemException("Could not determine file size");
 
-                    default:
-                        throw new \Error("Invalid file mode");
-                }
-
-                $handle = @\fopen($path, $mode . 'be');
-
-                if (!$handle) {
-                    $message = 'Could not open the file.';
-                    if ($error = \error_get_last()) {
-                        $message .= \sprintf(" Errno: %d; %s", $error["type"], $error["message"]);
-                    }
-                    throw new FilesystemException($message);
-                }
-
-                $file = new BlockingFile($handle, $path, $mode);
-                $id = (int) $handle;
-                $size = \fstat($handle)["size"];
+                $id = $file->getId();
                 $cache->set(self::makeId($id), $file);
 
-                return [$id, $size, $mode];
+                return [$id, $size, $file->getMode()];
             }
 
             if ($this->id === null) {
@@ -114,14 +87,18 @@ final class FileTask implements Task
 
             switch ($this->operation) {
                 case "fread":
-                    \array_shift($this->args);
                     return $file->read($cancellation, ...$this->args);
+
                 case "fwrite":
-                    return $file->write(...$this->args);
+                    $file->write(...$this->args);
+                    return null;
+
                 case "fseek":
                     return $file->seek(...$this->args);
+
                 case "ftruncate":
-                    return $file->truncate(...$this->args);
+                    $file->truncate(...$this->args);
+                    return null;
 
                 case "fclose":
                     $cache->delete($id);
@@ -151,7 +128,7 @@ final class FileTask implements Task
             case "touch":
             case "read":
             case "write":
-                return ([new BlockingFilesystemDriver, $this->operation])(...$this->args);
+                return self::$driver->{$this->operation}(...$this->args);
 
             default:
                 throw new \Error("Invalid operation - " . $this->operation);
