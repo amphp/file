@@ -4,7 +4,6 @@
 namespace Amp\File\Driver;
 
 use Amp\DeferredFuture;
-use Amp\File\File;
 use Amp\File\FilesystemDriver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
@@ -23,8 +22,6 @@ final class UvFilesystemDriver implements FilesystemDriver
         return $driver instanceof UvLoopDriver;
     }
 
-    private readonly UvLoopDriver $driver;
-
     /** @var \UVLoop|resource Loop resource of type uv_loop or instance of \UVLoop. */
     private $eventLoopHandle;
 
@@ -33,17 +30,15 @@ final class UvFilesystemDriver implements FilesystemDriver
     /** @var bool True if ext-uv version is < 0.3.0. */
     private readonly bool $priorVersion;
 
-    public function __construct(UvLoopDriver $driver)
+    public function __construct(private readonly UvLoopDriver $driver)
     {
-        $this->driver = $driver;
-
         /** @psalm-suppress PropertyTypeCoercion */
         $this->eventLoopHandle = $driver->getHandle();
         $this->poll = new Internal\UvPoll($driver);
         $this->priorVersion = \version_compare(\phpversion('uv'), '0.3.0', '<');
     }
 
-    public function openFile(string $path, string $mode): File
+    public function openFile(string $path, string $mode): UvFile
     {
         $flags = $this->parseMode($mode);
         $chmod = ($flags & \UV::O_CREAT) ? 0644 : 0;
@@ -252,7 +247,7 @@ final class UvFilesystemDriver implements FilesystemDriver
             &$tmpPath,
             $mode,
             $deferred
-        ) {
+        ): void {
             $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
 
             if (empty($arrayPath)) {
@@ -449,28 +444,17 @@ final class UvFilesystemDriver implements FilesystemDriver
     {
         $mode = \str_replace(['b', 't', 'e'], '', $mode);
 
-        switch ($mode) {
-            case "r":
-                return \UV::O_RDONLY;
-            case "r+":
-                return \UV::O_RDWR;
-            case "c":
-            case "w":
-                return \UV::O_WRONLY | \UV::O_CREAT;
-            case "c+":
-            case "w+":
-                return \UV::O_RDWR | \UV::O_CREAT;
-            case "a":
-                return \UV::O_WRONLY | \UV::O_CREAT | \UV::O_APPEND;
-            case "a+":
-                return \UV::O_RDWR | \UV::O_CREAT | \UV::O_APPEND;
-            case "x":
-                return \UV::O_WRONLY | \UV::O_CREAT | \UV::O_EXCL;
-            case "x+":
-                return \UV::O_RDWR | \UV::O_CREAT | \UV::O_EXCL;
-            default:
-                throw new \Error('Invalid file mode');
-        }
+        return match ($mode) {
+            "r" => \UV::O_RDONLY,
+            "r+" => \UV::O_RDWR,
+            "c", "w" => \UV::O_WRONLY | \UV::O_CREAT,
+            "c+", "w+" => \UV::O_RDWR | \UV::O_CREAT,
+            "a" => \UV::O_WRONLY | \UV::O_CREAT | \UV::O_APPEND,
+            "a+" => \UV::O_RDWR | \UV::O_CREAT | \UV::O_APPEND,
+            "x" => \UV::O_WRONLY | \UV::O_CREAT | \UV::O_EXCL,
+            "x+" => \UV::O_RDWR | \UV::O_CREAT | \UV::O_EXCL,
+            default => throw new \Error('Invalid file mode'),
+        };
     }
 
     private function onOpenHandle(mixed $fileHandle, string $mode, string $path, DeferredFuture $deferred): void

@@ -10,11 +10,11 @@ final class EioPoll
     /** @var resource */
     private static $stream;
 
-    private string $watcher;
+    private readonly string $watcher;
 
     private int $requests = 0;
 
-    public function __construct(private EventLoopDriver $driver)
+    public function __construct(private readonly EventLoopDriver $driver)
     {
         if (!self::$stream) {
             if (\function_exists('eio_init')) {

@@ -7,11 +7,11 @@ use Revolt\EventLoop\Driver\UvDriver as UvLoopDriver;
 /** @internal */
 final class UvPoll
 {
-    private string $watcher;
+    private readonly string $watcher;
 
     private int $requests = 0;
 
-    public function __construct(private UvLoopDriver $driver)
+    public function __construct(private readonly UvLoopDriver $driver)
     {
         // Create dummy watcher to keep loop running while polling.
 

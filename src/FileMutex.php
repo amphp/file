@@ -11,15 +11,11 @@ final class FileMutex implements Mutex
 {
     private const LATENCY_TIMEOUT = 0.01;
 
-    /** @var string The full path to the lock file. */
-    private string $fileName;
-
     /**
      * @param string $fileName Name of temporary file to use as a mutex.
      */
-    public function __construct(string $fileName)
+    public function __construct(private readonly string $fileName)
     {
-        $this->fileName = $fileName;
     }
 
     public function acquire(): Lock
@@ -31,7 +27,7 @@ final class FileMutex implements Mutex
                 $file = openFile($this->fileName, 'x');
 
                 // Return a lock object that can be used to release the lock on the mutex.
-                $lock = new Lock(fn () => $this->release());
+                $lock = new Lock($this->release(...));
 
                 $file->close();
 

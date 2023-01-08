@@ -2,7 +2,6 @@
 
 namespace Amp\File\Driver;
 
-use Amp\File\File;
 use Amp\File\FilesystemDriver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
@@ -40,7 +39,7 @@ final class ParallelFilesystemDriver implements FilesystemDriver
         $this->pendingWorker = Future::complete();
     }
 
-    public function openFile(string $path, string $mode): File
+    public function openFile(string $path, string $mode): ParallelFile
     {
         $worker = $this->selectWorker();
 

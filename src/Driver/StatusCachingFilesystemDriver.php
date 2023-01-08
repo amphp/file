@@ -2,7 +2,6 @@
 
 namespace Amp\File\Driver;
 
-use Amp\File\File;
 use Amp\File\FilesystemDriver;
 use Amp\File\Internal\Cache;
 
@@ -18,7 +17,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         $this->statusCache = new Cache(1000, 1024);
     }
 
-    public function openFile(string $path, string $mode): File
+    public function openFile(string $path, string $mode): StatusCachingFile
     {
         $file = $this->driver->openFile($path, $mode);
 

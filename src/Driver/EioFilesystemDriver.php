@@ -3,7 +3,6 @@
 namespace Amp\File\Driver;
 
 use Amp\DeferredFuture;
-use Amp\File\File;
 use Amp\File\FilesystemDriver;
 use Amp\File\FilesystemException;
 use Amp\File\Internal;
@@ -26,7 +25,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         $this->poll = new Internal\EioPoll($driver);
     }
 
-    public function openFile(string $path, string $mode): File
+    public function openFile(string $path, string $mode): EioFile
     {
         $flags = \EIO_O_NONBLOCK | $this->parseMode($mode);
         if (\defined('\EIO_O_FSYNC')) {

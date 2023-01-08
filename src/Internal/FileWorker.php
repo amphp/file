@@ -9,17 +9,13 @@ use Amp\Parallel\Worker\Worker;
 /** @internal */
 final class FileWorker
 {
-    private \Closure $push;
-
-    private Worker $worker;
-
     /**
      * @param \Closure(Worker):void $push Closure to push the worker back into the queue.
      */
-    public function __construct(Worker $worker, \Closure $push)
-    {
-        $this->worker = $worker;
-        $this->push = $push;
+    public function __construct(
+        private readonly Worker $worker,
+        private readonly \Closure $push
+    ) {
     }
 
     /**

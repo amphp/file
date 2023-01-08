@@ -18,8 +18,8 @@ final class BlockingFile implements File, \IteratorAggregate
 
     /** @var resource|null */
     private $handle;
-    private string $path;
-    private string $mode;
+
+    private int $id;
 
     private readonly DeferredFuture $onClose;
 
@@ -28,11 +28,13 @@ final class BlockingFile implements File, \IteratorAggregate
      * @param string $path File path.
      * @param string $mode File open mode.
      */
-    public function __construct($handle, string $path, string $mode)
-    {
+    public function __construct(
+        $handle,
+        private readonly string $path,
+        private readonly string $mode,
+    ) {
         $this->handle = $handle;
-        $this->path = $path;
-        $this->mode = $mode;
+        $this->id = (int) $handle;
 
         if ($mode[0] === 'a') {
             \fseek($this->handle, 0, \SEEK_END);
@@ -44,7 +46,7 @@ final class BlockingFile implements File, \IteratorAggregate
     public function __destruct()
     {
         if ($this->handle !== null) {
-            @\fclose($this->handle);
+            \fclose($this->handle);
         }
 
         if (!$this->onClose->isComplete()) {
@@ -59,7 +61,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
 
         try {
-            \set_error_handler(function ($type, $message) {
+            \set_error_handler(function (int $type, string $message): never {
                 throw new StreamException("Failed reading from file '{$this->path}': {$message}");
             });
 
@@ -81,7 +83,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
 
         try {
-            \set_error_handler(function ($type, $message) {
+            \set_error_handler(function (int $type, string $message): never {
                 throw new StreamException("Failed writing to file '{$this->path}': {$message}");
             });
 
@@ -117,7 +119,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
 
         try {
-            \set_error_handler(function ($type, $message) {
+            \set_error_handler(function (int $type, string $message): never {
                 throw new StreamException("Failed closing file '{$this->path}': {$message}");
             });
 
@@ -148,7 +150,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
 
         try {
-            \set_error_handler(function ($type, $message) {
+            \set_error_handler(function (int $type, string $message): never {
                 throw new StreamException("Could not truncate file '{$this->path}': {$message}");
             });
 
@@ -171,7 +173,7 @@ final class BlockingFile implements File, \IteratorAggregate
             case self::SEEK_CUR:
             case self::SEEK_END:
                 try {
-                    \set_error_handler(function ($type, $message) {
+                    \set_error_handler(function (int $type, string $message): never {
                         throw new StreamException("Could not seek in file '{$this->path}': {$message}");
                     });
 
@@ -229,5 +231,10 @@ final class BlockingFile implements File, \IteratorAggregate
     public function isWritable(): bool
     {
         return $this->handle !== null && $this->mode[0] !== 'r';
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
     }
 }

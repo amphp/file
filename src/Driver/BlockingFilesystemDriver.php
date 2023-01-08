@@ -2,13 +2,19 @@
 
 namespace Amp\File\Driver;
 
-use Amp\File\File;
 use Amp\File\FilesystemDriver;
 use Amp\File\FilesystemException;
 
 final class BlockingFilesystemDriver implements FilesystemDriver
 {
-    public function openFile(string $path, string $mode): File
+    private readonly \Closure $errorHandler;
+
+    public function __construct()
+    {
+        $this->errorHandler = static fn () => true;
+    }
+
+    public function openFile(string $path, string $mode): BlockingFile
     {
         $mode = \str_replace(['b', 't', 'e'], '', $mode);
 
@@ -30,7 +36,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
 
         try {
-            \set_error_handler(static function ($type, $message) use ($path, $mode) {
+            \set_error_handler(static function (int $type, string $message) use ($path, $mode): never {
                 throw new FilesystemException("Failed to open '{$path}' in mode '{$mode}': {$message}");
             });
 
@@ -47,21 +53,31 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function getStatus(string $path): ?array
     {
         \clearstatcache(true, $path);
+        \set_error_handler($this->errorHandler);
 
-        return @\stat($path) ?: null;
+        try {
+            return \stat($path) ?: null;
+        } finally {
+            \restore_error_handler();
+        }
     }
 
     public function getLinkStatus(string $path): ?array
     {
         \clearstatcache(true, $path);
+        \set_error_handler($this->errorHandler);
 
-        return @\lstat($path) ?: null;
+        try {
+            return \lstat($path) ?: null;
+        } finally {
+            \restore_error_handler();
+        }
     }
 
     public function createSymlink(string $target, string $link): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($target, $link) {
+            \set_error_handler(static function (int $type, string $message) use ($target, $link): never {
                 throw new FilesystemException("Could not create symbolic link '{$link}' to '{$target}': {$message}");
             });
 
@@ -76,7 +92,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function createHardlink(string $target, string $link): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($target, $link) {
+            \set_error_handler(static function (int $type, string $message) use ($target, $link): never {
                 throw new FilesystemException("Could not create hard link '{$link}' to '{$target}': {$message}");
             });
 
@@ -91,7 +107,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function resolveSymlink(string $target): string
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($target) {
+            \set_error_handler(static function (int $type, string $message) use ($target): never {
                 throw new FilesystemException("Could not resolve symbolic link '{$target}': {$message}");
             });
 
@@ -108,7 +124,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function move(string $from, string $to): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($from, $to) {
+            \set_error_handler(static function (int $type, string $message) use ($from, $to): never {
                 throw new FilesystemException("Could not move file from '{$from}' to '{$to}': {$message}");
             });
 
@@ -123,7 +139,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function deleteFile(string $path): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Could not delete file '{$path}': {$message}");
             });
 
@@ -138,7 +154,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function createDirectory(string $path, int $mode = 0777): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Could not create directory '{$path}': {$message}");
             });
 
@@ -154,7 +170,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): bool {
                 if (!\is_dir($path)) {
                     throw new FilesystemException("Could not create directory '{$path}': {$message}");
                 }
@@ -182,7 +198,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function deleteDirectory(string $path): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Could not remove directory '{$path}': {$message}");
             });
 
@@ -197,7 +213,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function listFiles(string $path): array
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Failed to list files in '{$path}': {$message}");
             });
 
@@ -208,7 +224,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
             if ($arr = \scandir($path)) {
                 \clearstatcache(true, $path);
 
-                return \array_values(\array_filter($arr, static function ($el) {
+                return \array_values(\array_filter($arr, static function ($el): bool {
                     return $el !== "." && $el !== "..";
                 }));
             }
@@ -222,7 +238,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function changePermissions(string $path, int $mode): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Failed to change permissions for '{$path}': {$message}");
             });
 
@@ -237,7 +253,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Failed to change owner for '{$path}': {$message}");
             });
 
@@ -259,7 +275,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Failed to touch '{$path}': {$message}");
             });
 
@@ -277,7 +293,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function read(string $path): string
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Failed to read '{$path}': {$message}");
             });
 
@@ -294,7 +310,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
     public function write(string $path, string $contents): void
     {
         try {
-            \set_error_handler(static function ($type, $message) use ($path) {
+            \set_error_handler(static function (int $type, string $message) use ($path): never {
                 throw new FilesystemException("Failed to write to '{$path}': {$message}");
             });
 

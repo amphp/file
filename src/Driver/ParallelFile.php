@@ -23,17 +23,11 @@ final class ParallelFile implements File, \IteratorAggregate
 {
     use ReadableStreamIteratorAggregate;
 
-    private readonly Internal\FileWorker $worker;
-
     private ?int $id;
-
-    private string $path;
 
     private int $position;
 
     private int $size;
-
-    private string $mode;
 
     /** @var bool True if an operation is pending. */
     private bool $busy = false;
@@ -41,19 +35,21 @@ final class ParallelFile implements File, \IteratorAggregate
     /** @var int Number of pending write operations. */
     private int $pendingWrites = 0;
 
-    private bool $writable = true;
+    private bool $writable;
 
     private ?Future $closing = null;
 
     private readonly DeferredFuture $onClose;
 
-    public function __construct(Internal\FileWorker $worker, int $id, string $path, int $size, string $mode)
-    {
-        $this->worker = $worker;
+    public function __construct(
+        private readonly Internal\FileWorker $worker,
+        int $id,
+        private readonly string $path,
+        int $size,
+        private readonly string $mode,
+    ) {
         $this->id = $id;
-        $this->path = $path;
         $this->size = $size;
-        $this->mode = $mode;
         $this->writable = $this->mode[0] !== 'r';
         $this->position = $this->mode[0] === 'a' ? $this->size : 0;
 
@@ -158,7 +154,7 @@ final class ParallelFile implements File, \IteratorAggregate
         $this->busy = true;
 
         try {
-            $data = $this->worker->execute(new Internal\FileTask('fread', [null, $length], $this->id), $cancellation);
+            $data = $this->worker->execute(new Internal\FileTask('fread', [$length], $this->id), $cancellation);
 
             if ($data !== null) {
                 $this->position += \strlen($data);

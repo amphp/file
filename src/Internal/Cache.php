@@ -7,21 +7,19 @@ use Revolt\EventLoop;
 /** @internal */
 final class Cache
 {
-    private object $sharedState;
+    private readonly object $sharedState;
 
-    private string $ttlWatcherId;
-
-    private ?int $maxSize;
+    private readonly string $ttlWatcherId;
 
     /**
      * @param int      $gcInterval The frequency in milliseconds at which expired cache entries should be garbage
      *     collected.
      * @param int|null $maxSize The maximum size of cache array (number of elements).
      */
-    public function __construct(int $gcInterval = 1000, ?int $maxSize = null)
+    public function __construct(int $gcInterval = 1000, private readonly ?int $maxSize = null)
     {
         // By using a shared state object we're able to use `__destruct()` for "normal" garbage collection of both this
-        // instance and the loop's watcher. Otherwise this object could only be GC'd when the TTL watcher was cancelled
+        // instance and the loop's watcher. Otherwise, this object could only be GC'd when the TTL watcher was cancelled
         // at the loop layer.
         $this->sharedState = $sharedState = new class {
             /** @var array[] */
@@ -53,8 +51,7 @@ final class Cache
             }
         };
 
-        $this->ttlWatcherId = EventLoop::repeat($gcInterval, \Closure::fromCallable([$sharedState, "collectGarbage"]));
-        $this->maxSize = $maxSize;
+        $this->ttlWatcherId = EventLoop::repeat($gcInterval, $sharedState->collectGarbage(...));
 
         EventLoop::unreference($this->ttlWatcherId);
     }
