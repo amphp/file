@@ -386,6 +386,13 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertTrue($this->driver->exists($dir));
     }
 
+    public function testCreateDirectoryRecursivelyExists(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $this->driver->createDirectoryRecursively(__DIR__, 0764);
+    }
+
     public function testCreateDirectoryFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();
