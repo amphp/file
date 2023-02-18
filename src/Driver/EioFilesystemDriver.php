@@ -233,6 +233,13 @@ final class EioFilesystemDriver implements FilesystemDriver
 
         try {
             $deferred->getFuture()->await();
+        } catch (FilesystemException $exception) {
+            $result = $this->getStatus($path);
+            if ($result !== null && ($result['mode'] & 0040000)) {
+                return;
+            }
+
+            throw $exception;
         } finally {
             $this->poll->done();
         }
