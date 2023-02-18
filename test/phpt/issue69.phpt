@@ -18,7 +18,7 @@ filesystem(new UvFilesystemDriver(EventLoop::getDriver()));
 
 $pid = getmypid();
 
-$openFilesBefore = (int) `lsof -a -p $pid | wc -l`;
+$openFilesBefore = (int) `lsof -a -p $pid 2>/dev/null | wc -l`;
 
 for ($i = 0; $i < 100; $i++) {
     Amp\File\openFile(sys_get_temp_dir() . '/amphp-test.txt', 'a');
@@ -26,7 +26,7 @@ for ($i = 0; $i < 100; $i++) {
 
 Revolt\EventLoop::run();
 
-$openFilesAfter = (int) `lsof -a -p $pid | wc -l`;
+$openFilesAfter = (int) `lsof -a -p $pid 2>/dev/null | wc -l`;
 
 var_dump($openFilesBefore === $openFilesAfter);
 
