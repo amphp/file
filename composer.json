@@ -67,11 +67,6 @@
             "amphp/sync": "source"
         }
     },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "2.x-dev"
-        }
-    },
     "scripts": {
         "check": [
             "@code-style",
