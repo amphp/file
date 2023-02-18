@@ -38,7 +38,7 @@ final class FileWorker
 
     public function execute(Task $task, ?Cancellation $cancellation = null): mixed
     {
-        return $this->worker->submit($task, $cancellation)->getResult()->await();
+        return $this->worker->submit($task, $cancellation)->await();
     }
 
     public function shutdown(): void

@@ -5,7 +5,7 @@ namespace Amp\File\Test\Driver;
 use Amp\File;
 use Amp\File\Driver\ParallelFilesystemDriver;
 use Amp\File\Test\FilesystemDriverTest;
-use Amp\Parallel\Worker\DefaultWorkerPool;
+use Amp\Parallel\Worker\ContextWorkerPool;
 use Amp\Parallel\Worker\WorkerPool;
 
 class ParallelFilesystemDriverTest extends FilesystemDriverTest
@@ -14,7 +14,7 @@ class ParallelFilesystemDriverTest extends FilesystemDriverTest
 
     protected function createDriver(): File\FilesystemDriver
     {
-        $this->pool = new DefaultWorkerPool();
+        $this->pool = new ContextWorkerPool();
 
         return new ParallelFilesystemDriver($this->pool);
     }

@@ -67,7 +67,7 @@ final class ParallelFilesystemDriver implements FilesystemDriver
         $this->pendingWorker->await(); // Wait for any currently pending request for a worker.
 
         if ($this->workerStorage->count() < $this->workerLimit) {
-            $this->pendingWorker = async(fn () => $this->pool->getWorker());
+            $this->pendingWorker = async($this->pool->getWorker(...));
             $worker = $this->pendingWorker->await();
 
             if ($this->workerStorage->contains($worker)) {
@@ -188,7 +188,7 @@ final class ParallelFilesystemDriver implements FilesystemDriver
     private function runFileTask(Internal\FileTask $task): mixed
     {
         try {
-            return $this->pool->submit($task)->getResult()->await();
+            return $this->pool->submit($task)->await();
         } catch (TaskFailureThrowable $exception) {
             throw new FilesystemException("The file operation failed", $exception);
         } catch (WorkerException $exception) {

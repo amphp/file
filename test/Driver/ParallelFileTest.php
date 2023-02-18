@@ -5,7 +5,7 @@ namespace Amp\File\Test\Driver;
 use Amp\File;
 use Amp\File\Driver\ParallelFilesystemDriver;
 use Amp\File\Test\AsyncFileTest;
-use Amp\Parallel\Worker\DefaultWorkerPool;
+use Amp\Parallel\Worker\ContextWorkerPool;
 use Amp\Parallel\Worker\WorkerPool;
 
 class ParallelFileTest extends AsyncFileTest
@@ -16,7 +16,7 @@ class ParallelFileTest extends AsyncFileTest
 
     protected function createDriver(int $workerLimit = self::DEFAULT_WORKER_LIMIT): File\FilesystemDriver
     {
-        $this->pool = new DefaultWorkerPool();
+        $this->pool = new ContextWorkerPool();
 
         return new ParallelFilesystemDriver($this->pool, $workerLimit);
     }

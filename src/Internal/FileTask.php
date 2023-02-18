@@ -4,8 +4,8 @@ namespace Amp\File\Internal;
 
 use Amp\ByteStream\ClosedException;
 use Amp\ByteStream\StreamException;
-use Amp\Cache\Cache;
 use Amp\Cache\CacheException;
+use Amp\Cache\LocalCache;
 use Amp\Cancellation;
 use Amp\File\Driver\BlockingFile;
 use Amp\File\Driver\BlockingFilesystemDriver;
@@ -16,18 +16,13 @@ use Amp\Sync\Channel;
 /**
  * @codeCoverageIgnore
  * @internal
- * @implements Task<mixed, never, never, BlockingFile>
+ * @implements Task<mixed, never, never>
  */
 final class FileTask implements Task
 {
+    private static ?LocalCache $cache = null;
+
     private static ?BlockingFilesystemDriver $driver = null;
-
-    private const ENV_PREFIX = "amphp/file#";
-
-    private static function makeId(int $id): string
-    {
-        return self::ENV_PREFIX . $id;
-    }
 
     /**
      * @param int|null $id File ID.
@@ -50,19 +45,20 @@ final class FileTask implements Task
      * @throws ClosedException
      * @throws StreamException
      */
-    public function run(Channel $channel, Cache $cache, Cancellation $cancellation): mixed
+    public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        self::$driver ??= new BlockingFilesystemDriver();
+        $cache = self::$cache ??= new LocalCache();
+        $driver = self::$driver ??= new BlockingFilesystemDriver();
 
         if ('f' === $this->operation[0]) {
             if ("fopen" === $this->operation) {
-                $file = self::$driver->openFile(...$this->args);
+                $file = $driver->openFile(...$this->args);
 
-                $size = self::$driver->getStatus($file->getPath())["size"]
+                $size = $driver->getStatus($file->getPath())["size"]
                     ?? throw new FilesystemException("Could not determine file size");
 
                 $id = $file->getId();
-                $cache->set(self::makeId($id), $file);
+                $cache->set((string) $id, $file);
 
                 return [$id, $size, $file->getMode()];
             }
@@ -71,7 +67,7 @@ final class FileTask implements Task
                 throw new FilesystemException("No file ID provided");
             }
 
-            $id = self::makeId($this->id);
+            $id = (string) $this->id;
 
             $file = $cache->get($id);
             if ($file === null) {
@@ -128,7 +124,7 @@ final class FileTask implements Task
             case "touch":
             case "read":
             case "write":
-                return self::$driver->{$this->operation}(...$this->args);
+                return $driver->{$this->operation}(...$this->args);
 
             default:
                 throw new \Error("Invalid operation - " . $this->operation);

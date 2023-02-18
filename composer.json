@@ -44,14 +44,12 @@
         "amphp/phpunit-util": "^3",
         "phpunit/phpunit": "^9",
         "psalm/phar": "^5.4",
-        "amphp/php-cs-fixer-config": "^2-dev"
+        "amphp/php-cs-fixer-config": "^2"
     },
     "suggest": {
         "ext-eio": "^2 || ^3",
         "ext-uv": "^0.3 || ^0.2"
     },
-    "minimum-stability": "beta",
-    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Amp\\File\\": "src"
