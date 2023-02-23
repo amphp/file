@@ -159,7 +159,7 @@ final class BlockingFile implements File, \IteratorAggregate
                 throw new StreamException("Could not truncate file '{$this->path}'");
             }
         } finally {
-            restore_error_handler();
+            \restore_error_handler();
         }
     }
 
