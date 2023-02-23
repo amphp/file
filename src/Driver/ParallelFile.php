@@ -10,6 +10,7 @@ use Amp\DeferredFuture;
 use Amp\File\File;
 use Amp\File\Internal;
 use Amp\File\PendingOperationError;
+use Amp\File\Whence;
 use Amp\Future;
 use Amp\Parallel\Worker\TaskFailureException;
 use Amp\Parallel\Worker\WorkerException;
@@ -208,7 +209,7 @@ final class ParallelFile implements File, \IteratorAggregate
         $this->close();
     }
 
-    public function seek(int $position, int $whence = SEEK_SET): int
+    public function seek(int $position, Whence $whence = Whence::Start): int
     {
         if ($this->id === null) {
             throw new ClosedException("The file has been closed");
@@ -219,9 +220,9 @@ final class ParallelFile implements File, \IteratorAggregate
         }
 
         switch ($whence) {
-            case self::SEEK_SET:
-            case self::SEEK_CUR:
-            case self::SEEK_END:
+            case Whence::Start:
+            case Whence::Current:
+            case Whence::End:
                 try {
                     $this->position = $this->worker->execute(
                         new Internal\FileTask('fseek', [$position, $whence], $this->id)
@@ -237,7 +238,7 @@ final class ParallelFile implements File, \IteratorAggregate
                 }
 
             default:
-                throw new \Error('Invalid whence value. Use SEEK_SET, SEEK_CUR, or SEEK_END.');
+                throw new \Error('Invalid whence value. Use Start, Current, or End.');
         }
     }
 

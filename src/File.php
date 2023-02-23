@@ -8,10 +8,6 @@ use Amp\Cancellation;
 
 interface File extends ReadableStream, WritableStream
 {
-    public const SEEK_SET = \SEEK_SET;
-    public const SEEK_CUR = \SEEK_CUR;
-    public const SEEK_END = \SEEK_END;
-
     public const DEFAULT_READ_LENGTH = 8192;
 
     /**
@@ -22,15 +18,9 @@ interface File extends ReadableStream, WritableStream
     /**
      * Set the internal pointer position.
      *
-     * $whence values:
-     *
-     * SEEK_SET - Set position equal to offset bytes.
-     * SEEK_CUR - Set position to current location plus offset.
-     * SEEK_END - Set position to end-of-file plus offset.
-     *
      * @return int New offset position.
      */
-    public function seek(int $position, int $whence = self::SEEK_SET): int;
+    public function seek(int $position, Whence $whence = Whence::Start): int;
 
     /**
      * Return the current internal offset position of the file handle.

@@ -5,6 +5,7 @@ namespace Amp\File\Driver;
 use Amp\ByteStream\ReadableStreamIteratorAggregate;
 use Amp\Cancellation;
 use Amp\File\File;
+use Amp\File\Whence;
 
 /**
  * @implements \IteratorAggregate<int, string>
@@ -67,7 +68,7 @@ final class StatusCachingFile implements File, \IteratorAggregate
         $this->file->onClose($onClose);
     }
 
-    public function seek(int $position, int $whence = self::SEEK_SET): int
+    public function seek(int $position, Whence $whence = Whence::Start): int
     {
         return $this->file->seek($position, $whence);
     }

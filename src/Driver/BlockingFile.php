@@ -8,6 +8,7 @@ use Amp\ByteStream\StreamException;
 use Amp\Cancellation;
 use Amp\DeferredFuture;
 use Amp\File\File;
+use Amp\File\Whence;
 
 /**
  * @implements \IteratorAggregate<int, string>
@@ -158,35 +159,35 @@ final class BlockingFile implements File, \IteratorAggregate
                 throw new StreamException("Could not truncate file '{$this->path}'");
             }
         } finally {
-            \restore_error_handler();
+            restore_error_handler();
         }
     }
 
-    public function seek(int $position, int $whence = self::SEEK_SET): int
+    public function seek(int $position, Whence $whence = Whence::Start): int
     {
         if ($this->handle === null) {
             throw new ClosedException("The file '{$this->path}' has been closed");
         }
 
-        switch ($whence) {
-            case self::SEEK_SET:
-            case self::SEEK_CUR:
-            case self::SEEK_END:
-                try {
-                    \set_error_handler(function (int $type, string $message): never {
-                        throw new StreamException("Could not seek in file '{$this->path}': {$message}");
-                    });
+        $mode = match ($whence) {
+            Whence::Start => SEEK_SET,
+            Whence::Current => SEEK_CUR,
+            Whence::End => SEEK_END,
+            default => throw new \Error("Invalid whence parameter; Start, Current or End expected")
+        };
 
-                    if (\fseek($this->handle, $position, $whence) === -1) {
-                        throw new StreamException("Could not seek in file '{$this->path}'");
-                    }
+        try {
+            \set_error_handler(function (int $type, string $message): never {
+                throw new StreamException("Could not seek in file '{$this->path}': {$message}");
+            });
 
-                    return $this->tell();
-                } finally {
-                    \restore_error_handler();
-                }
-            default:
-                throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected");
+            if (\fseek($this->handle, $position, $mode) === -1) {
+                throw new StreamException("Could not seek in file '{$this->path}'");
+            }
+
+            return $this->tell();
+        } finally {
+            \restore_error_handler();
         }
     }
 

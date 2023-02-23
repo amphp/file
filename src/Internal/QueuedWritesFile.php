@@ -7,6 +7,7 @@ use Amp\ByteStream\ReadableStreamIteratorAggregate;
 use Amp\Cancellation;
 use Amp\File\File;
 use Amp\File\PendingOperationError;
+use Amp\File\Whence;
 use Amp\Future;
 use function Amp\async;
 
@@ -120,17 +121,17 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
         $future->await();
     }
 
-    public function seek(int $position, int $whence = \SEEK_SET): int
+    public function seek(int $position, Whence $whence = Whence::Start): int
     {
         if ($this->isReading) {
             throw new PendingOperationError;
         }
 
         return match ($whence) {
-            self::SEEK_SET => $this->position = $position,
-            self::SEEK_CUR => $this->position += $position,
-            self::SEEK_END => $this->position = $this->size + $position,
-            default => throw new \Error("Invalid whence parameter; SEEK_SET, SEEK_CUR or SEEK_END expected"),
+            Whence::Start => $this->position = $position,
+            Whence::Current => $this->position += $position,
+            Whence::End => $this->position = $this->size + $position,
+            default => throw new \Error("Invalid whence parameter; Start, Current or End expected"),
         };
     }
 

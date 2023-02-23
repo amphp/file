@@ -167,7 +167,7 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame(0, $handle->tell());
         $handle->seek(10);
         $this->assertSame(10, $handle->tell());
-        $handle->seek(-10, \SEEK_CUR);
+        $handle->seek(-10, File\Whence::Current);
         $this->assertSame(0, $handle->tell());
         $handle->close();
     }
@@ -177,7 +177,7 @@ abstract class FileTest extends FilesystemTest
         $size = \filesize(__FILE__);
         $handle = $this->driver->openFile(__FILE__, "r");
         $this->assertSame(0, $handle->tell());
-        $handle->seek(-10, \SEEK_END);
+        $handle->seek(-10, File\Whence::End);
         $this->assertSame($size - 10, $handle->tell());
         $handle->close();
     }
