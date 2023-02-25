@@ -21,7 +21,7 @@ class ParallelFileTest extends AsyncFileTest
         return new ParallelFilesystemDriver($this->pool, $workerLimit);
     }
 
-    protected function tearDownAsync(): void
+    protected function tearDown(): void
     {
         $this->pool->shutdown();
     }
@@ -43,12 +43,10 @@ class ParallelFileTest extends AsyncFileTest
             $files[] = $driver->openFile(__FILE__, 'r');
         }
 
-        try {
-            $this->assertSame($maxCount, $this->pool->getWorkerCount());
-        } finally {
-            foreach ($files as $file) {
-                $file->close();
-            }
+        foreach ($files as $file) {
+            $file->close();
         }
+
+        $this->assertSame($maxCount, $this->pool->getWorkerCount());
     }
 }

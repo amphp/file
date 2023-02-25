@@ -19,7 +19,7 @@ class ParallelFilesystemDriverTest extends FilesystemDriverTest
         return new ParallelFilesystemDriver($this->pool);
     }
 
-    protected function tearDownAsync(): void
+    protected function tearDown(): void
     {
         $this->pool->shutdown();
     }
