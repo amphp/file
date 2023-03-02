@@ -25,7 +25,7 @@ final class ParallelFilesystemDriver implements FilesystemDriver
     /** @var \SplObjectStorage Worker storage. */
     private \SplObjectStorage $workerStorage;
 
-    /** @var Future Pending worker request promise. */
+    /** @var Future Pending worker request */
     private Future $pendingWorker;
 
     /**

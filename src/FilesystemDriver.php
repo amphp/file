@@ -23,7 +23,7 @@ interface FilesystemDriver
     /**
      * Same as {@see FilesystemDriver::getStatus()} except if the path is a link then the link's data is returned.
      *
-     * If the requested path does not exist the resulting Promise will resolve to NULL.
+     * If the requested path does not exist, this method will return NULL.
      *
      * @param string $path The file system path to stat.
      *
@@ -130,7 +130,7 @@ interface FilesystemDriver
      *
      * @param string $path The file path from which to buffer contents.
      *
-     * @return string A promise resolving to a string upon successful resolution.
+     * @return string The file contents.
      *
      * @throws FilesystemException If the operation fails.
      */

@@ -24,7 +24,7 @@ final class Filesystem
     /**
      * Execute a file stat operation.
      *
-     * If the requested path does not exist the resulting Promise will resolve to NULL.
+     * If the requested path does not exist, it will return NULL.
      *
      * @param string $path File system path.
      */
@@ -36,7 +36,7 @@ final class Filesystem
     /**
      * Same as {@see Filesystem::getStatus()} except if the path is a link then the link's data is returned.
      *
-     * If the requested path does not exist the resulting Promise will resolve to NULL.
+     * If the requested path does not exist, it will return NULL.
      *
      * @param string $path File system path.
      */
@@ -63,8 +63,7 @@ final class Filesystem
     /**
      * Retrieve the size in bytes of the file at the specified path.
      *
-     * If the path does not exist or is not a regular file this
-     * function's returned Promise WILL resolve as a failure.
+     * If the path does not exist or is not a regular file, this method will throw.
      *
      * @param string $path File system path.
      *
@@ -119,8 +118,7 @@ final class Filesystem
     /**
      * Does the specified path exist and is it a symlink?
      *
-     * If the path does not exist the returned Promise will resolve
-     * to FALSE and will not reject with an error.
+     * If the path does not exist, this method will return FALSE.
      *
      * @param string $path File system path.
      */

@@ -16,13 +16,13 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile(__FILE__, "r");
 
-        $promise1 = async(fn () => $handle->read(length: 20));
-        $promise2 = async(fn () => $handle->read(length: 20));
+        $future1 = async(fn () => $handle->read(length: 20));
+        $future2 = async(fn () => $handle->read(length: 20));
 
         $expected = \substr(File\read(__FILE__), 0, 20);
-        $this->assertSame($expected, $promise1->await());
+        $this->assertSame($expected, $future1->await());
 
-        $promise2->await();
+        $future2->await();
     }
 
     public function testSeekWhileReading()
@@ -31,13 +31,13 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile(__FILE__, "r");
 
-        $promise1 = async(fn () => $handle->read(length: 10));
-        $promise2 = async(fn () => $handle->read(length: 0));
+        $future1 = async(fn () => $handle->read(length: 10));
+        $future2 = async(fn () => $handle->read(length: 0));
 
         $expected = \substr(File\read(__FILE__), 0, 10);
-        $this->assertSame($expected, $promise1->await());
+        $this->assertSame($expected, $future1->await());
 
-        $promise2->await();
+        $future2->await();
     }
 
     public function testReadWhileWriting()
@@ -50,12 +50,12 @@ abstract class AsyncFileTest extends FileTest
 
         $data = "test";
 
-        $promise1 = async(fn () => $handle->write($data));
-        $promise2 = async(fn () => $handle->read(length: 10));
+        $future1 = async(fn () => $handle->write($data));
+        $future2 = async(fn () => $handle->read(length: 10));
 
-        $this->assertNull($promise1->await());
+        $this->assertNull($future1->await());
 
-        $promise2->await();
+        $future2->await();
     }
 
     public function testWriteWhileReading()
@@ -66,12 +66,12 @@ abstract class AsyncFileTest extends FileTest
 
         $handle = $this->driver->openFile($path, "c+");
 
-        $promise1 = async(fn () => $handle->read(length: 10));
-        $promise2 = async(fn () => $handle->write("test"));
+        $future1 = async(fn () => $handle->read(length: 10));
+        $future2 = async(fn () => $handle->write("test"));
 
-        $this->assertNull($promise1->await());
+        $this->assertNull($future1->await());
 
-        $promise2->await();
+        $future2->await();
     }
 
     public function testCancelReadThenReadAgain()
