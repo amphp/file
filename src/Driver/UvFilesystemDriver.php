@@ -418,7 +418,7 @@ final class UvFilesystemDriver implements FilesystemDriver
 
     public function write(string $path, string $contents): void
     {
-        $flags = \UV::O_WRONLY | \UV::O_CREAT;
+        $flags = \UV::O_WRONLY | \UV::O_CREAT | \UV::O_TRUNC;
         $mode = \UV::S_IRWXU | \UV::S_IRUSR;
 
         $this->poll->listen();
@@ -454,8 +454,10 @@ final class UvFilesystemDriver implements FilesystemDriver
         return match ($mode) {
             "r" => \UV::O_RDONLY,
             "r+" => \UV::O_RDWR,
-            "c", "w" => \UV::O_WRONLY | \UV::O_CREAT,
-            "c+", "w+" => \UV::O_RDWR | \UV::O_CREAT,
+            "c" => \UV::O_WRONLY | \UV::O_CREAT,
+            "w" => \UV::O_WRONLY | \UV::O_CREAT | \UV::O_TRUNC,
+            "c+" => \UV::O_RDWR | \UV::O_CREAT,
+            "w+" => \UV::O_RDWR | \UV::O_CREAT | \UV::O_TRUNC,
             "a" => \UV::O_WRONLY | \UV::O_CREAT | \UV::O_APPEND,
             "a+" => \UV::O_RDWR | \UV::O_CREAT | \UV::O_APPEND,
             "x" => \UV::O_WRONLY | \UV::O_CREAT | \UV::O_EXCL,

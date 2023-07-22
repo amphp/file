@@ -4,6 +4,8 @@ namespace Amp\File\Test;
 
 use Amp\ByteStream\ClosedException;
 use Amp\File;
+use Amp\File\Whence;
+
 use function Amp\async;
 
 abstract class FileTest extends FilesystemTest
@@ -23,6 +25,35 @@ abstract class FileTest extends FilesystemTest
         $this->assertSame(6, $handle->tell());
         $this->assertTrue($handle->eof());
         $this->assertSame("foobar", $contents);
+
+        $handle->close();
+
+        $handle = $this->driver->openFile($path, "c+");
+        $handle->seek(0, Whence::End);
+        $this->assertSame(6, $handle->tell());
+
+        $handle->close();
+    }
+
+    public function testWriteTruncate(): void
+    {
+        $path = Fixture::path() . "/write";
+        $handle = $this->driver->openFile($path, "c+");
+        $this->assertSame(0, $handle->tell());
+
+        $handle->write("foo");
+        $handle->write("bar");
+        $handle->seek(0);
+        $contents = $handle->read();
+        $this->assertSame(6, $handle->tell());
+        $this->assertTrue($handle->eof());
+        $this->assertSame("foobar", $contents);
+
+        $handle->close();
+
+        $handle = $this->driver->openFile($path, "w+");
+        $handle->seek(0, Whence::End);
+        $this->assertSame(0, $handle->tell());
 
         $handle->close();
     }
