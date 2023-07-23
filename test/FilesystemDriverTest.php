@@ -506,6 +506,27 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
     }
 
+    /**
+     * @group slow
+     */
+    public function testWrite(): void
+    {
+        $fixtureDir = Fixture::path();
+
+        $contents1 = "write test longer";
+        $contents2 = "write test";
+        $path = "{$fixtureDir}/write.txt";
+
+        $this->driver->write($path, $contents1);
+        $this->assertSame($contents1, $this->driver->read($path));
+
+        $this->driver->write($path, $contents2);
+        $this->assertSame($contents2, $this->driver->read($path));
+
+        $this->driver->write($path, $contents1);
+        $this->assertSame($contents1, $this->driver->read($path));
+    }
+
     public function testTouchFailsOnNonexistentPath(): void
     {
         $fixtureDir = Fixture::path();

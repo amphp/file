@@ -346,7 +346,7 @@ final class EioFilesystemDriver implements FilesystemDriver
 
     public function write(string $path, string $contents): void
     {
-        $flags = \EIO_O_RDWR | \EIO_O_CREAT;
+        $flags = \EIO_O_RDWR | \EIO_O_CREAT | \EIO_O_TRUNC;
         $mode = \EIO_S_IRUSR | \EIO_S_IWUSR | \EIO_S_IXUSR;
         $priority = \EIO_PRI_DEFAULT;
 
