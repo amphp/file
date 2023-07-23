@@ -363,6 +363,10 @@ final class UvFilesystemDriver implements FilesystemDriver
         $modificationTime = $modificationTime ?? \time();
         $accessTime = $accessTime ?? $modificationTime;
 
+        if (!$this->getStatus($path)) {
+            $this->openFile($path, 'c')->close();
+        }
+
         $deferred = new DeferredFuture;
         $this->poll->listen();
 

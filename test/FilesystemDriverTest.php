@@ -504,6 +504,9 @@ abstract class FilesystemDriverTest extends FilesystemTest
 
         $this->assertTrue($newStat["atime"] > $oldStat["atime"]);
         $this->assertTrue($newStat["mtime"] > $oldStat["mtime"]);
+
+        $this->driver->touch($touch);
+        self::assertFileExists($touch);
     }
 
     /**
