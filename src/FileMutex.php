@@ -4,7 +4,6 @@ namespace Amp\File;
 
 use Amp\Sync\Lock;
 use Amp\Sync\Mutex;
-use Amp\Sync\SyncException;
 use function Amp\delay;
 
 final class FileMutex implements Mutex
@@ -20,39 +19,16 @@ final class FileMutex implements Mutex
 
     public function acquire(): Lock
     {
-        // Try to create the lock file. If the file already exists, someone else
-        // has the lock, so set an asynchronous timer and try again.
+        $f = \fopen($this->fileName, 'c');
         while (true) {
-            try {
-                $file = openFile($this->fileName, 'x');
-
+            if (\flock($f, LOCK_EX|LOCK_NB)) {
                 // Return a lock object that can be used to release the lock on the mutex.
-                $lock = new Lock($this->release(...));
-
-                $file->close();
+                $lock = new Lock(fn () => \flock($f, LOCK_UN));
 
                 return $lock;
-            } catch (FilesystemException) {
-                delay(self::LATENCY_TIMEOUT);
             }
-        }
-    }
 
-    /**
-     * Releases the lock on the mutex.
-     *
-     * @throws SyncException
-     */
-    private function release(): void
-    {
-        try {
-            deleteFile($this->fileName);
-        } catch (\Throwable $exception) {
-            throw new SyncException(
-                'Failed to unlock the mutex file: ' . $this->fileName,
-                0,
-                $exception
-            );
+            delay(self::LATENCY_TIMEOUT);
         }
     }
 }
