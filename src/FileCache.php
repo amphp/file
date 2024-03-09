@@ -29,7 +29,8 @@ final class FileCache implements StringCache
         private readonly KeyedMutex $mutex,
         ?Filesystem $filesystem = null,
     ) {
-        $this->filesystem = $filesystem ?? filesystem();
+        $filesystem ??= filesystem();
+        $this->filesystem = $filesystem;
         $this->directory = $directory = \rtrim($directory, "/\\");
 
         $gcWatcher = static function () use ($directory, $mutex, $filesystem): void {
