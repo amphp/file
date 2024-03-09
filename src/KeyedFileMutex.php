@@ -36,7 +36,7 @@ final class KeyedFileMutex implements KeyedMutex
                 $file = $this->filesystem->openFile($filename, 'x');
 
                 // Return a lock object that can be used to release the lock on the mutex.
-                $lock = new Lock(fn() => $this->release($filename));
+                $lock = new Lock(fn () => $this->release($filename));
 
                 $file->close();
 
