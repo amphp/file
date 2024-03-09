@@ -22,12 +22,12 @@ final class FileCache implements StringCache
 
     private readonly string $directory;
 
-    private ?string $gcWatcher = null;
+    private ?string $gcWatcher;
 
     public function __construct(
         string $directory,
         private readonly KeyedMutex $mutex,
-        ?Filesystem $filesystem = null
+        ?Filesystem $filesystem = null,
     ) {
         $filesystem ??= filesystem();
         $this->filesystem = $filesystem;
@@ -87,7 +87,6 @@ final class FileCache implements StringCache
         }
     }
 
-    /** @inheritdoc */
     public function get(string $key): ?string
     {
         $filename = $this->getFilename($key);
@@ -120,7 +119,6 @@ final class FileCache implements StringCache
         }
     }
 
-    /** @inheritdoc */
     public function set(string $key, string $value, int $ttl = null): void
     {
         if ($ttl < 0) {
@@ -146,7 +144,6 @@ final class FileCache implements StringCache
         }
     }
 
-    /** @inheritdoc */
     public function delete(string $key): ?bool
     {
         $filename = $this->getFilename($key);
@@ -160,6 +157,7 @@ final class FileCache implements StringCache
         } finally {
             $lock->release();
         }
+
         return true;
     }
 
