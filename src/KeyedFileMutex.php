@@ -5,6 +5,7 @@ namespace Amp\File;
 use Amp\Sync\KeyedMutex;
 use Amp\Sync\Lock;
 use Amp\Sync\SyncException;
+use ValueError;
 use function Amp\delay;
 
 final class KeyedFileMutex implements KeyedMutex
@@ -13,21 +14,24 @@ final class KeyedFileMutex implements KeyedMutex
 
     private readonly Filesystem $filesystem;
 
-    /**
-     * @param string $pattern Name of temporary file to use as a mutex, including an %s to splice the key in
-     */
-    public function __construct(private readonly string $pattern, ?Filesystem $filesystem = null)
-    {
-        if (!\preg_match("((%%(*SKIP))*%s)", $this->pattern)) {
-            throw new \Error("Invalid pattern for a mutex, needs to contain an unescaped %s");
-        }
+    private readonly string $directory;
 
+    /**
+     * @param string $directory Directory in which to store key files.
+     */
+    public function __construct(string $directory, ?Filesystem $filesystem = null)
+    {
         $this->filesystem = $filesystem ?? filesystem();
+        $this->directory = \rtrim($directory, "/\\");
+
+        if (!$this->filesystem->isDirectory($this->directory)) {
+            throw new ValueError(\sprintf('Directory "%s" does not exist', $this->directory));
+        }
     }
 
     public function acquire(string $key): Lock
     {
-        $filename = \sprintf($this->pattern, \hash('sha256', $key));
+        $filename = $this->getFilename($key);
 
         // Try to create the lock file. If the file already exists, someone else
         // has the lock, so set an asynchronous timer and try again.
@@ -62,5 +66,10 @@ final class KeyedFileMutex implements KeyedMutex
                 previous: $exception,
             );
         }
+    }
+
+    private function getFilename(string $key): string
+    {
+        return $this->directory . '/' . \hash('sha256', $key) . '.lock';
     }
 }

@@ -8,8 +8,20 @@ use Amp\Sync\KeyedMutex;
 
 final class KeyedFileMutexTest extends AbstractKeyedMutexTest
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Fixture::init();
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        Fixture::clear();
+    }
+
     public function createMutex(): KeyedMutex
     {
-        return new KeyedFileMutex(\sys_get_temp_dir() . '/testmutex-' . \bin2hex(\random_bytes(5)) . '-%s.lock');
+        return new KeyedFileMutex(Fixture::path());
     }
 }
