@@ -59,11 +59,13 @@
     "autoload-dev": {
         "psr-4": {
             "Amp\\File\\Test\\": "test",
+            "Amp\\Cache\\Test\\": "vendor/amphp/cache/test",
             "Amp\\Sync\\": "vendor/amphp/sync/test"
         }
     },
     "config": {
         "preferred-install": {
+            "amphp/cache": "source",
             "amphp/sync": "source"
         }
     },
