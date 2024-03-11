@@ -1,0 +1,75 @@
+<?php declare(strict_types=1);
+
+namespace Amp\File;
+
+use Amp\Sync\KeyedMutex;
+use Amp\Sync\Lock;
+use Amp\Sync\SyncException;
+use ValueError;
+use function Amp\delay;
+
+final class KeyedFileMutex implements KeyedMutex
+{
+    private const LATENCY_TIMEOUT = 0.01;
+
+    private readonly Filesystem $filesystem;
+
+    private readonly string $directory;
+
+    /**
+     * @param string $directory Directory in which to store key files.
+     */
+    public function __construct(string $directory, ?Filesystem $filesystem = null)
+    {
+        $this->filesystem = $filesystem ?? filesystem();
+        $this->directory = \rtrim($directory, "/\\");
+
+        if (!$this->filesystem->isDirectory($this->directory)) {
+            throw new ValueError(\sprintf('Directory "%s" does not exist', $this->directory));
+        }
+    }
+
+    public function acquire(string $key): Lock
+    {
+        $filename = $this->getFilename($key);
+
+        // Try to create the lock file. If the file already exists, someone else
+        // has the lock, so set an asynchronous timer and try again.
+        while (true) {
+            try {
+                $file = $this->filesystem->openFile($filename, 'x');
+
+                // Return a lock object that can be used to release the lock on the mutex.
+                $lock = new Lock(fn () => $this->release($filename));
+
+                $file->close();
+
+                return $lock;
+            } catch (FilesystemException) {
+                delay(self::LATENCY_TIMEOUT);
+            }
+        }
+    }
+
+    /**
+     * Releases the lock on the mutex.
+     *
+     * @throws SyncException
+     */
+    private function release(string $filename): void
+    {
+        try {
+            $this->filesystem->deleteFile($filename);
+        } catch (\Throwable $exception) {
+            throw new SyncException(
+                'Failed to unlock the mutex file: ' . $filename,
+                previous: $exception,
+            );
+        }
+    }
+
+    private function getFilename(string $key): string
+    {
+        return $this->directory . '/' . \hash('sha256', $key) . '.lock';
+    }
+}
