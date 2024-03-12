@@ -11,6 +11,7 @@ use function Amp\delay;
 final class KeyedFileMutex implements KeyedMutex
 {
     private const LATENCY_TIMEOUT = 0.01;
+    private const DELAY_LIMIT = 1;
 
     private readonly Filesystem $filesystem;
 
@@ -35,7 +36,7 @@ final class KeyedFileMutex implements KeyedMutex
 
         // Try to create the lock file. If the file already exists, someone else
         // has the lock, so set an asynchronous timer and try again.
-        while (true) {
+        for ($attempt = 0; true; ++$attempt) {
             try {
                 $file = $this->filesystem->openFile($filename, 'x');
 
@@ -46,7 +47,7 @@ final class KeyedFileMutex implements KeyedMutex
 
                 return $lock;
             } catch (FilesystemException) {
-                delay(self::LATENCY_TIMEOUT);
+                delay(min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)));
             }
         }
     }
