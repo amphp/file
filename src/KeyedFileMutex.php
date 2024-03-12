@@ -47,7 +47,7 @@ final class KeyedFileMutex implements KeyedMutex
 
                 return $lock;
             } catch (FilesystemException) {
-                delay(min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)));
+                delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)));
             }
         }
     }
