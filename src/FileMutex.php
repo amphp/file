@@ -2,6 +2,7 @@
 
 namespace Amp\File;
 
+use Amp\Cancellation;
 use Amp\Sync\Lock;
 use Amp\Sync\Mutex;
 use Amp\Sync\SyncException;
@@ -14,16 +15,23 @@ final class FileMutex implements Mutex
 
     private readonly Filesystem $filesystem;
 
+    private readonly string $directory;
+
     /**
      * @param string $fileName Name of temporary file to use as a mutex.
      */
     public function __construct(private readonly string $fileName, ?Filesystem $filesystem = null)
     {
         $this->filesystem = $filesystem ?? filesystem();
+        $this->directory = \dirname($this->fileName);
     }
 
-    public function acquire(): Lock
+    public function acquire(?Cancellation $cancellation = null): Lock
     {
+        if (!$this->filesystem->isDirectory($this->directory)) {
+            throw new SyncException(\sprintf('Directory of "%s" does not exist or is not a directory', $this->fileName));
+        }
+
         // Try to create the lock file. If the file already exists, someone else
         // has the lock, so set an asynchronous timer and try again.
         for ($attempt = 0; true; ++$attempt) {
@@ -37,7 +45,7 @@ final class FileMutex implements Mutex
 
                 return $lock;
             } catch (FilesystemException) {
-                delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)));
+                delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)), cancellation: $cancellation);
             }
         }
     }

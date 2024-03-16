@@ -2,10 +2,10 @@
 
 namespace Amp\File;
 
+use Amp\Cancellation;
 use Amp\Sync\KeyedMutex;
 use Amp\Sync\Lock;
 use Amp\Sync\SyncException;
-use ValueError;
 use function Amp\delay;
 
 final class KeyedFileMutex implements KeyedMutex
@@ -24,14 +24,14 @@ final class KeyedFileMutex implements KeyedMutex
     {
         $this->filesystem = $filesystem ?? filesystem();
         $this->directory = \rtrim($directory, "/\\");
-
-        if (!$this->filesystem->isDirectory($this->directory)) {
-            throw new ValueError(\sprintf('Directory "%s" does not exist', $this->directory));
-        }
     }
 
-    public function acquire(string $key): Lock
+    public function acquire(string $key, ?Cancellation $cancellation = null): Lock
     {
+        if (!$this->filesystem->isDirectory($this->directory)) {
+            throw new SyncException(\sprintf('Directory "%s" does not exist or is not a directory', $this->directory));
+        }
+
         $filename = $this->getFilename($key);
 
         // Try to create the lock file. If the file already exists, someone else
@@ -47,7 +47,7 @@ final class KeyedFileMutex implements KeyedMutex
 
                 return $lock;
             } catch (FilesystemException) {
-                delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)));
+                delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)), cancellation: $cancellation);
             }
         }
     }
