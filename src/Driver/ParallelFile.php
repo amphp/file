@@ -64,6 +64,7 @@ final class ParallelFile implements File, \IteratorAggregate
     {
         if ($this->id !== null && $this->worker->isRunning()) {
             $id = $this->id;
+            $this->id = null;
             $worker = $this->worker;
             EventLoop::queue(static fn () => $worker->execute(new Internal\FileTask('fclose', [], $id)));
         }
@@ -88,14 +89,19 @@ final class ParallelFile implements File, \IteratorAggregate
 
         $this->closing = async(function (): void {
             $id = $this->id;
-            $this->id = null;
-            $this->worker->execute(new Internal\FileTask('fclose', [], $id));
+            // Guard against explicit close calls happening inside garbage collection
+            if ($id !== null) {
+                $this->id = null;
+                $this->worker->execute(new Internal\FileTask('fclose', [], $id));
+            }
         });
 
         try {
             $this->closing->await();
         } finally {
-            $this->onClose->complete();
+            if (!$this->onClose->isComplete()) {
+                $this->onClose->complete();
+            }
             $this->lockType = null;
         }
     }
