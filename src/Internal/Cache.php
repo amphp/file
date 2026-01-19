@@ -20,7 +20,7 @@ final class Cache
      *     collected.
      * @param int|null $maxSize The maximum size of cache array (number of elements).
      */
-    public function __construct(int $gcInterval = 1000, int $maxSize = null)
+    public function __construct(int $gcInterval = 1000, ?int $maxSize = null)
     {
         // By using a shared state object we're able to use `__destruct()` for "normal" garbage collection of both this
         // instance and the loop's watcher. Otherwise this object could only be GC'd when the TTL watcher was cancelled
@@ -89,7 +89,7 @@ final class Cache
         return $this->sharedState->cache[$key];
     }
 
-    public function set(string $key, $value, int $ttl = null): void
+    public function set(string $key, $value, ?int $ttl = null): void
     {
         if ($ttl === null) {
             unset($this->sharedState->cacheTimeouts[$key]);

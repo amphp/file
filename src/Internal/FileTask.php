@@ -36,7 +36,7 @@ final class FileTask implements Task
      *
      * @throws \Error
      */
-    public function __construct(string $operation, array $args = [], int $id = null)
+    public function __construct(string $operation, array $args = [], ?int $id = null)
     {
         if ($operation === '') {
             throw new \Error('Operation must be a non-empty string');
