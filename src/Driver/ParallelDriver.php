@@ -21,7 +21,7 @@ final class ParallelDriver implements Driver
     /**
      * @param Pool|null $pool
      */
-    public function __construct(Pool $pool = null)
+    public function __construct(?Pool $pool = null)
     {
         $this->pool = $pool ?: Worker\pool();
     }
