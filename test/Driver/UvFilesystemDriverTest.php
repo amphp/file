@@ -60,7 +60,7 @@ class UvFilesystemDriverTest extends FilesystemDriverTest
             }
 
             $parent = \dirname($dir);
-            if ($parent !== $baseDir && \str_starts_with($parent, $baseDir) && $driver->getStatus($parent)) {
+            if ($driver->getStatus($parent)) {
                 $driver->deleteDirectory($parent);
             }
         }
