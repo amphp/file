@@ -16,24 +16,17 @@
     </projectFiles>
 
     <issueHandlers>
-        <StringIncrement>
-            <errorLevel type="suppress">
-                <directory name="examples"/>
-                <directory name="src"/>
-            </errorLevel>
-        </StringIncrement>
-
-        <RedundantConditionGivenDocblockType>
-            <errorLevel type="suppress">
-                <directory name="src"/>
-            </errorLevel>
-        </RedundantConditionGivenDocblockType>
-
         <DocblockTypeContradiction>
             <errorLevel type="suppress">
                 <directory name="src"/>
             </errorLevel>
         </DocblockTypeContradiction>
+
+        <ForbiddenCode>
+            <errorLevel type="suppress">
+                <directory name="examples"/>
+            </errorLevel>
+        </ForbiddenCode>
 
         <MissingClosureParamType>
             <errorLevel type="suppress">
@@ -49,11 +42,45 @@
             </errorLevel>
         </MissingClosureReturnType>
 
+        <PossiblyUnusedMethod>
+            <errorLevel type="suppress">
+                <directory name="src"/>
+            </errorLevel>
+        </PossiblyUnusedMethod>
+
+        <RedundantConditionGivenDocblockType>
+            <errorLevel type="suppress">
+                <directory name="src"/>
+            </errorLevel>
+        </RedundantConditionGivenDocblockType>
+
         <RiskyTruthyFalsyComparison>
             <errorLevel type="suppress">
                 <directory name="examples"/>
                 <directory name="src"/>
             </errorLevel>
         </RiskyTruthyFalsyComparison>
+
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <file name="src/Driver/UvFile.php"/>
+                <file name="src/Driver/UvFilesystemDriver.php"/>
+            </errorLevel>
+        </UndefinedClass>
+
+        <UnusedClass>
+            <errorLevel type="suppress">
+                <directory name="src"/>
+            </errorLevel>
+        </UnusedClass>
+
+        <UnusedFunctionCall>
+            <errorLevel type="suppress">
+                <file name="src/Driver/EioFile.php"/>
+                <file name="src/Driver/EioFilesystemDriver.php"/>
+                <file name="src/Driver/UvFile.php"/>
+                <file name="src/Driver/UvFilesystemDriver.php"/>
+            </errorLevel>
+        </UnusedFunctionCall>
     </issueHandlers>
 </psalm>

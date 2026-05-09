@@ -67,7 +67,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         $deferred = new DeferredFuture;
         $this->poll->listen();
 
-        $callback = static function ($stat) use ($deferred, $path): void {
+        $callback = static function ($stat) use ($deferred): void {
             if (\is_int($stat)) {
                 $deferred->complete(null);
                 return;

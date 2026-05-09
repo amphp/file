@@ -206,7 +206,12 @@ final class BlockingFile implements File, \IteratorAggregate
             throw new ClosedException("The file '{$this->path}' has been closed");
         }
 
-        return \ftell($this->handle);
+        $position = \ftell($this->handle);
+        if ($position === false) {
+            throw new StreamException("Could not determine file position");
+        }
+
+        return $position;
     }
 
     #[\Override]

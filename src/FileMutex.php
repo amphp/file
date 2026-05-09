@@ -26,6 +26,9 @@ final class FileMutex implements Mutex
         $this->directory = \dirname($this->fileName);
     }
 
+    /**
+     * @psalm-suppress PossiblyUnusedReturnValue
+     */
     #[\Override]
     public function acquire(?Cancellation $cancellation = null): Lock
     {
@@ -46,6 +49,7 @@ final class FileMutex implements Mutex
 
                 return $lock;
             } catch (FilesystemException) {
+                /** @psalm-suppress InvalidOperand */
                 delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)), cancellation: $cancellation);
             }
         }

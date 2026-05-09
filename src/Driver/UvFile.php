@@ -182,7 +182,7 @@ final class UvFile extends Internal\QueuedWritesFile
         $deferred = new DeferredFuture;
         $this->poll->listen();
 
-        $onTruncate = function ($fh) use ($deferred, $size): void {
+        $onTruncate = function () use ($deferred, $size): void {
             if ($this->queue->isEmpty()) {
                 $deferred->error(new ClosedException('No pending write, the file may have been closed'));
             }

@@ -48,6 +48,7 @@ final class KeyedFileMutex implements KeyedMutex
 
                 return $lock;
             } catch (FilesystemException) {
+                /** @psalm-suppress InvalidOperand */
                 delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)), cancellation: $cancellation);
             }
         }

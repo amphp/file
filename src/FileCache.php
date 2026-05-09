@@ -57,6 +57,7 @@ final class FileCache implements StringCache
                             continue;
                         }
 
+                        /** @psalm-suppress PossiblyInvalidArrayAccess */
                         $ttl = \unpack('Nttl', $ttl)['ttl'];
                         if ($ttl < \time()) {
                             $filesystem->deleteFile($directory . '/' . $file);
@@ -101,6 +102,7 @@ final class FileCache implements StringCache
                 return null;
             }
 
+            /** @psalm-suppress PossiblyInvalidArrayAccess */
             $ttl = \unpack('Nttl', \substr($cacheContent, 0, 4))['ttl'];
             if ($ttl < \time()) {
                 $this->filesystem->deleteFile($this->directory . '/' . $filename);
