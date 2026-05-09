@@ -87,6 +87,7 @@ final class FileCache implements StringCache
         }
     }
 
+    #[\Override]
     public function get(string $key): ?string
     {
         $filename = $this->getFilename($key);
@@ -119,6 +120,7 @@ final class FileCache implements StringCache
         }
     }
 
+    #[\Override]
     public function set(string $key, string $value, ?int $ttl = null): void
     {
         if ($ttl < 0) {
@@ -144,6 +146,7 @@ final class FileCache implements StringCache
         }
     }
 
+    #[\Override]
     public function delete(string $key): ?bool
     {
         $filename = $this->getFilename($key);

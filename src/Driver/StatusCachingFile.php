@@ -30,11 +30,13 @@ final class StatusCachingFile implements File, \IteratorAggregate
         $this->invalidateCallback = $invalidateCallback;
     }
 
+    #[\Override]
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         return $this->file->read($cancellation, $length);
     }
 
+    #[\Override]
     public function write(string $bytes): void
     {
         try {
@@ -44,6 +46,7 @@ final class StatusCachingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function end(): void
     {
         try {
@@ -53,46 +56,55 @@ final class StatusCachingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function close(): void
     {
         $this->file->close();
     }
 
+    #[\Override]
     public function isClosed(): bool
     {
         return $this->file->isClosed();
     }
 
+    #[\Override]
     public function onClose(\Closure $onClose): void
     {
         $this->file->onClose($onClose);
     }
 
+    #[\Override]
     public function seek(int $position, Whence $whence = Whence::Start): int
     {
         return $this->file->seek($position, $whence);
     }
 
+    #[\Override]
     public function tell(): int
     {
         return $this->file->tell();
     }
 
+    #[\Override]
     public function eof(): bool
     {
         return $this->file->eof();
     }
 
+    #[\Override]
     public function getPath(): string
     {
         return $this->file->getPath();
     }
 
+    #[\Override]
     public function getMode(): string
     {
         return $this->file->getMode();
     }
 
+    #[\Override]
     public function truncate(int $size): void
     {
         try {
@@ -102,16 +114,19 @@ final class StatusCachingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function isReadable(): bool
     {
         return $this->file->isReadable();
     }
 
+    #[\Override]
     public function isSeekable(): bool
     {
         return $this->file->isSeekable();
     }
 
+    #[\Override]
     public function isWritable(): bool
     {
         return $this->file->isWritable();

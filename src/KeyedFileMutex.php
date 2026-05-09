@@ -26,6 +26,7 @@ final class KeyedFileMutex implements KeyedMutex
         $this->directory = \rtrim($directory, "/\\");
     }
 
+    #[\Override]
     public function acquire(string $key, ?Cancellation $cancellation = null): Lock
     {
         if (!$this->filesystem->isDirectory($this->directory)) {

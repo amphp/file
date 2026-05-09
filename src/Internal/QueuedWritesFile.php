@@ -47,6 +47,7 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
         async($this->close(...));
     }
 
+    #[\Override]
     abstract public function read(
         ?Cancellation $cancellation = null,
         int $length = self::DEFAULT_READ_LENGTH,
@@ -57,6 +58,7 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
      */
     abstract protected function push(string $data, int $position): Future;
 
+    #[\Override]
     public function write(string $bytes): void
     {
         if ($this->isReading) {
@@ -80,6 +82,7 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
         $future->await();
     }
 
+    #[\Override]
     public function end(): void
     {
         $this->writable = false;
@@ -100,6 +103,7 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
      */
     abstract protected function trim(int $size): Future;
 
+    #[\Override]
     public function truncate(int $size): void
     {
         if ($this->isReading) {
@@ -121,6 +125,7 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
         $future->await();
     }
 
+    #[\Override]
     public function seek(int $position, Whence $whence = Whence::Start): int
     {
         if ($this->isReading) {
@@ -135,36 +140,43 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
         };
     }
 
+    #[\Override]
     public function tell(): int
     {
         return $this->position;
     }
 
+    #[\Override]
     public function eof(): bool
     {
         return $this->queue->isEmpty() && $this->size <= $this->position;
     }
 
+    #[\Override]
     public function isReadable(): bool
     {
         return !$this->isClosed();
     }
 
+    #[\Override]
     public function isSeekable(): bool
     {
         return !$this->isClosed();
     }
 
+    #[\Override]
     public function isWritable(): bool
     {
         return $this->writable;
     }
 
+    #[\Override]
     public function getPath(): string
     {
         return $this->path;
     }
 
+    #[\Override]
     public function getMode(): string
     {
         return $this->mode;

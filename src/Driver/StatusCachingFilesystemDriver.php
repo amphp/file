@@ -17,6 +17,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         $this->statusCache = new Cache(1000, 1024);
     }
 
+    #[\Override]
     public function openFile(string $path, string $mode): StatusCachingFile
     {
         $file = $this->driver->openFile($path, $mode);
@@ -25,6 +26,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         return new StatusCachingFile($file, static fn () => $statusCache->delete($path));
     }
 
+    #[\Override]
     public function getStatus(string $path): ?array
     {
         if ($cachedStat = $this->statusCache->get($path)) {
@@ -39,11 +41,13 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         return $stat;
     }
 
+    #[\Override]
     public function getLinkStatus(string $path): ?array
     {
         return $this->driver->getLinkStatus($path);
     }
 
+    #[\Override]
     public function createSymlink(string $target, string $link): void
     {
         try {
@@ -54,6 +58,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createHardlink(string $target, string $link): void
     {
         try {
@@ -64,11 +69,13 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function resolveSymlink(string $target): string
     {
         return $this->driver->resolveSymlink($target);
     }
 
+    #[\Override]
     public function move(string $from, string $to): void
     {
         try {
@@ -79,6 +86,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function deleteFile(string $path): void
     {
         try {
@@ -88,6 +96,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createDirectory(string $path, int $mode = 0777): void
     {
         try {
@@ -97,6 +106,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
         try {
@@ -106,6 +116,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function deleteDirectory(string $path): void
     {
         try {
@@ -115,11 +126,13 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function listFiles(string $path): array
     {
         return $this->driver->listFiles($path);
     }
 
+    #[\Override]
     public function changePermissions(string $path, int $mode): void
     {
         try {
@@ -129,6 +142,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
         try {
@@ -138,6 +152,7 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
     {
         try {
@@ -147,11 +162,13 @@ final class StatusCachingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function read(string $path): string
     {
         return $this->driver->read($path);
     }
 
+    #[\Override]
     public function write(string $path, string $contents): void
     {
         try {

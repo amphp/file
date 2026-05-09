@@ -25,6 +25,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         $this->poll = new Internal\EioPoll($driver);
     }
 
+    #[\Override]
     public function openFile(string $path, string $mode): EioFile
     {
         $flags = \EIO_O_NONBLOCK | $this->parseMode($mode);
@@ -74,6 +75,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function getStatus(string $path): ?array
     {
         $deferred = new DeferredFuture;
@@ -89,6 +91,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function getLinkStatus(string $path): ?array
     {
         $deferred = new DeferredFuture;
@@ -104,6 +107,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createSymlink(string $target, string $link): void
     {
         $deferred = new DeferredFuture;
@@ -119,6 +123,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createHardlink(string $target, string $link): void
     {
         $deferred = new DeferredFuture;
@@ -134,6 +139,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function resolveSymlink(string $target): string
     {
         $deferred = new DeferredFuture;
@@ -150,6 +156,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function move(string $from, string $to): void
     {
         $deferred = new DeferredFuture;
@@ -165,6 +172,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function deleteFile(string $path): void
     {
         $deferred = new DeferredFuture;
@@ -186,6 +194,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createDirectory(string $path, int $mode = 0777): void
     {
         $deferred = new DeferredFuture;
@@ -200,6 +209,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
         $deferred = new DeferredFuture;
@@ -245,6 +255,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function deleteDirectory(string $path): void
     {
         $deferred = new DeferredFuture;
@@ -260,6 +271,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function listFiles(string $path): array
     {
         $deferred = new DeferredFuture;
@@ -278,6 +290,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function changePermissions(string $path, int $mode): void
     {
         $deferred = new DeferredFuture;
@@ -293,6 +306,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
         $deferred = new DeferredFuture;
@@ -308,6 +322,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
     {
         $modificationTime = $modificationTime ?? \time();
@@ -330,6 +345,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function read(string $path): string
     {
         $flags = \EIO_O_RDONLY;
@@ -348,6 +364,7 @@ final class EioFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function write(string $path, string $contents): void
     {
         $flags = \EIO_O_RDWR | \EIO_O_CREAT | \EIO_O_TRUNC;

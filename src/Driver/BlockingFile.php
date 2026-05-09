@@ -55,6 +55,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->handle === null) {
@@ -77,6 +78,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function write(string $bytes): void
     {
         if ($this->handle === null) {
@@ -97,6 +99,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function end(): void
     {
         try {
@@ -106,6 +109,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function close(): void
     {
         if ($this->handle === null) {
@@ -134,16 +138,19 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function isClosed(): bool
     {
         return $this->handle === null;
     }
 
+    #[\Override]
     public function onClose(\Closure $onClose): void
     {
         $this->onClose->getFuture()->finally($onClose);
     }
 
+    #[\Override]
     public function truncate(int $size): void
     {
         if ($this->handle === null) {
@@ -163,6 +170,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function seek(int $position, Whence $whence = Whence::Start): int
     {
         if ($this->handle === null) {
@@ -191,6 +199,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function tell(): int
     {
         if ($this->handle === null) {
@@ -200,6 +209,7 @@ final class BlockingFile implements File, \IteratorAggregate
         return \ftell($this->handle);
     }
 
+    #[\Override]
     public function eof(): bool
     {
         if ($this->handle === null) {
@@ -209,26 +219,31 @@ final class BlockingFile implements File, \IteratorAggregate
         return \feof($this->handle);
     }
 
+    #[\Override]
     public function getPath(): string
     {
         return $this->path;
     }
 
+    #[\Override]
     public function getMode(): string
     {
         return $this->mode;
     }
 
+    #[\Override]
     public function isReadable(): bool
     {
         return $this->handle !== null;
     }
 
+    #[\Override]
     public function isSeekable(): bool
     {
         return $this->handle !== null;
     }
 
+    #[\Override]
     public function isWritable(): bool
     {
         return $this->handle !== null && $this->mode[0] !== 'r';

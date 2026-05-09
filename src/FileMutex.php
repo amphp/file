@@ -26,6 +26,7 @@ final class FileMutex implements Mutex
         $this->directory = \dirname($this->fileName);
     }
 
+    #[\Override]
     public function acquire(?Cancellation $cancellation = null): Lock
     {
         if (!$this->filesystem->isDirectory($this->directory)) {

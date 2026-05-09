@@ -14,6 +14,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         $this->errorHandler = static fn () => true;
     }
 
+    #[\Override]
     public function openFile(string $path, string $mode): BlockingFile
     {
         $mode = \str_replace(['b', 't', 'e'], '', $mode);
@@ -50,6 +51,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function getStatus(string $path): ?array
     {
         \clearstatcache(true, $path);
@@ -62,6 +64,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function getLinkStatus(string $path): ?array
     {
         \clearstatcache(true, $path);
@@ -74,6 +77,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createSymlink(string $target, string $link): void
     {
         try {
@@ -89,6 +93,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createHardlink(string $target, string $link): void
     {
         try {
@@ -104,6 +109,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function resolveSymlink(string $target): string
     {
         try {
@@ -121,6 +127,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function move(string $from, string $to): void
     {
         try {
@@ -136,6 +143,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function deleteFile(string $path): void
     {
         try {
@@ -151,6 +159,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createDirectory(string $path, int $mode = 0777): void
     {
         try {
@@ -167,6 +176,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
         try {
@@ -195,6 +205,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function deleteDirectory(string $path): void
     {
         try {
@@ -210,6 +221,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function listFiles(string $path): array
     {
         try {
@@ -235,6 +247,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function changePermissions(string $path, int $mode): void
     {
         try {
@@ -250,6 +263,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
         try {
@@ -272,6 +286,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
     {
         try {
@@ -290,6 +305,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function read(string $path): string
     {
         try {
@@ -307,6 +323,7 @@ final class BlockingFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function write(string $path, string $contents): void
     {
         try {
