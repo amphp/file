@@ -14,6 +14,7 @@ interface File extends ReadableStream, WritableStream
     /**
      * Read $length bytes from the open file handle.
      */
+    #[\Override]
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string;
 
     /**

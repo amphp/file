@@ -45,6 +45,7 @@ final class FileTask implements Task
      * @throws ClosedException
      * @throws StreamException
      */
+    #[\Override]
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
         $cache = self::$cache ??= new LocalCache();

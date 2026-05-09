@@ -89,6 +89,7 @@ final class BlockingFile implements File, \IteratorAggregate
         $this->lockType = null;
     }
 
+    #[\Override]
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         $handle = $this->getFileHandle();
@@ -109,6 +110,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function write(string $bytes): void
     {
         $handle = $this->getFileHandle();
@@ -127,6 +129,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function end(): void
     {
         try {
@@ -136,6 +139,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function close(): void
     {
         if ($this->handle === null) {
@@ -165,16 +169,19 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function isClosed(): bool
     {
         return $this->handle === null;
     }
 
+    #[\Override]
     public function onClose(\Closure $onClose): void
     {
         $this->onClose->getFuture()->finally($onClose);
     }
 
+    #[\Override]
     public function truncate(int $size): void
     {
         $handle = $this->getFileHandle();
@@ -192,6 +199,7 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function seek(int $position, Whence $whence = Whence::Start): int
     {
         $handle = $this->getFileHandle();
@@ -218,36 +226,52 @@ final class BlockingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function tell(): int
     {
-        return \ftell($this->getFileHandle());
+        if ($this->handle === null) {
+            throw new ClosedException("The file '{$this->path}' has been closed");
+        }
+
+        $position = \ftell($this->handle);
+        if ($position === false) {
+            throw new StreamException("Could not determine file position");
+        }
+
+        return $position;
     }
 
+    #[\Override]
     public function eof(): bool
     {
         return \feof($this->getFileHandle());
     }
 
+    #[\Override]
     public function getPath(): string
     {
         return $this->path;
     }
 
+    #[\Override]
     public function getMode(): string
     {
         return $this->mode;
     }
 
+    #[\Override]
     public function isReadable(): bool
     {
         return $this->handle !== null;
     }
 
+    #[\Override]
     public function isSeekable(): bool
     {
         return $this->handle !== null;
     }
 
+    #[\Override]
     public function isWritable(): bool
     {
         return $this->handle !== null && $this->mode[0] !== 'r';

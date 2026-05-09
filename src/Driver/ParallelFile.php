@@ -74,6 +74,7 @@ final class ParallelFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function close(): void
     {
         if (!$this->worker->isRunning()) {
@@ -106,16 +107,19 @@ final class ParallelFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function isClosed(): bool
     {
         return $this->closing !== null;
     }
 
+    #[\Override]
     public function onClose(\Closure $onClose): void
     {
         $this->onClose->getFuture()->finally($onClose);
     }
 
+    #[\Override]
     public function truncate(int $size): void
     {
         if ($this->id === null) {
@@ -147,6 +151,7 @@ final class ParallelFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function eof(): bool
     {
         return $this->pendingWrites === 0 && $this->size <= $this->position;
@@ -198,6 +203,7 @@ final class ParallelFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->id === null) {
@@ -227,6 +233,7 @@ final class ParallelFile implements File, \IteratorAggregate
         return $data;
     }
 
+    #[\Override]
     public function write(string $bytes): void
     {
         if ($this->id === null) {
@@ -259,12 +266,14 @@ final class ParallelFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function end(): void
     {
         $this->writable = false;
         $this->close();
     }
 
+    #[\Override]
     public function seek(int $position, Whence $whence = Whence::Start): int
     {
         if ($this->id === null) {
@@ -298,31 +307,37 @@ final class ParallelFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function tell(): int
     {
         return $this->position;
     }
 
+    #[\Override]
     public function getPath(): string
     {
         return $this->path;
     }
 
+    #[\Override]
     public function getMode(): string
     {
         return $this->mode;
     }
 
+    #[\Override]
     public function isReadable(): bool
     {
         return $this->id !== null;
     }
 
+    #[\Override]
     public function isSeekable(): bool
     {
         return $this->id !== null;
     }
 
+    #[\Override]
     public function isWritable(): bool
     {
         return $this->id !== null && $this->writable;

@@ -25,6 +25,7 @@ final class KeyedFileMutex implements KeyedMutex
     /**
      * @throws SyncException
      */
+    #[\Override]
     public function acquire(string $key, ?Cancellation $cancellation = null): Lock
     {
         $mutex = new FileMutex($this->getFilename($key), $this->filesystem);

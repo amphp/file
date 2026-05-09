@@ -34,6 +34,7 @@ final class ParallelFilesystemDriver implements FilesystemDriver
         $this->workerStorage = new \WeakMap();
     }
 
+    #[\Override]
     public function openFile(string $path, string $mode): ParallelFile
     {
         $worker = $this->selectWorker();
@@ -94,71 +95,85 @@ final class ParallelFilesystemDriver implements FilesystemDriver
         return $worker;
     }
 
+    #[\Override]
     public function deleteFile(string $path): void
     {
         $this->runFileTask(new Internal\FileTask("deleteFile", [$path]));
     }
 
+    #[\Override]
     public function getStatus(string $path): ?array
     {
         return $this->runFileTask(new Internal\FileTask("getStatus", [$path]));
     }
 
+    #[\Override]
     public function move(string $from, string $to): void
     {
         $this->runFileTask(new Internal\FileTask("move", [$from, $to]));
     }
 
+    #[\Override]
     public function createHardlink(string $target, string $link): void
     {
         $this->runFileTask(new Internal\FileTask("createHardlink", [$target, $link]));
     }
 
+    #[\Override]
     public function createSymlink(string $target, string $link): void
     {
         $this->runFileTask(new Internal\FileTask("createSymlink", [$target, $link]));
     }
 
+    #[\Override]
     public function resolveSymlink(string $target): string
     {
         return $this->runFileTask(new Internal\FileTask("resolveSymlink", [$target]));
     }
 
+    #[\Override]
     public function createDirectory(string $path, int $mode = 0777): void
     {
         $this->runFileTask(new Internal\FileTask("createDirectory", [$path, $mode]));
     }
 
+    #[\Override]
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
         $this->runFileTask(new Internal\FileTask("createDirectoryRecursively", [$path, $mode]));
     }
 
+    #[\Override]
     public function listFiles(string $path): array
     {
         return $this->runFileTask(new Internal\FileTask("listFiles", [$path]));
     }
 
+    #[\Override]
     public function deleteDirectory(string $path): void
     {
         $this->runFileTask(new Internal\FileTask("deleteDirectory", [$path]));
     }
 
+    #[\Override]
     public function changePermissions(string $path, int $mode): void
     {
         $this->runFileTask(new Internal\FileTask("changePermissions", [$path, $mode]));
     }
 
+    #[\Override]
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
         $this->runFileTask(new Internal\FileTask("changeOwner", [$path, $uid, $gid]));
     }
 
+    #[\Override]
     public function getLinkStatus(string $path): ?array
     {
         return $this->runFileTask(new Internal\FileTask("getLinkStatus", [$path]));
     }
 
+    #[\Override]
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
     {
         $this->runFileTask(
@@ -169,11 +184,13 @@ final class ParallelFilesystemDriver implements FilesystemDriver
         );
     }
 
+    #[\Override]
     public function read(string $path): string
     {
         return $this->runFileTask(new Internal\FileTask("read", [$path]));
     }
 
+    #[\Override]
     public function write(string $path, string $contents): void
     {
         $this->runFileTask(new Internal\FileTask("write", [$path, $contents]));

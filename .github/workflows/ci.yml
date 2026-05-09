@@ -13,37 +13,36 @@ jobs:
             php-version: '8.1'
             extensions: uv
             style-fix: none
-            static-analysis: none
+            psalm: skip
+            composer-require-checker-version: none
 
           - operating-system: 'ubuntu-latest'
             php-version: '8.2'
             extensions: uv
-            style-fix: none
-            static-analysis: none
 
           - operating-system: 'ubuntu-latest'
             php-version: '8.3'
             extensions: uv
-            style-fix: none
-            static-analysis: none
 
           - operating-system: 'ubuntu-latest'
             php-version: '8.4'
             extensions: uv
-            style-fix: none
-            static-analysis: none
+
+          - operating-system: 'ubuntu-latest'
+            php-version: '8.5'
+            extensions: uv
 
           - operating-system: 'windows-latest'
-            php-version: '8.3'
+            php-version: '8.5'
             job-description: 'on Windows'
-            static-analysis: none
+            psalm: skip
 
           - operating-system: 'macos-latest'
-            php-version: '8.3'
+            php-version: '8.5'
             extensions: uv
             job-description: 'on macOS'
             style-fix: none
-            static-analysis: none
+            psalm: skip
 
 
     name: PHP ${{ matrix.php-version }} ${{ matrix.job-description }}
@@ -71,6 +70,17 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: ${{ matrix.extensions }}
 
+      - name: Install ext-eio
+        run: |
+          git clone https://github.com/rosmanov/pecl-eio
+          cd pecl-eio
+          phpize
+          ./configure
+          make
+          sudo make install
+          echo "extension=eio.so" | sudo tee $(php-config --ini-dir)/zz-eio.ini
+        if: runner.os == 'Linux'
+
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-dir)" >> $GITHUB_OUTPUT
@@ -84,6 +94,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
+      - name: Remove psalm/phar
+        run: composer remove --no-update --dev psalm/phar
+        if: matrix.psalm == 'skip'
+
       - name: Install dependencies
         run: |
           composer update --optimize-autoloader --no-interaction --no-progress ${{ matrix.composer-flags }}
@@ -96,7 +110,7 @@ jobs:
 
       - name: Run static analysis
         run: vendor/bin/psalm.phar
-        if: matrix.static-analysis != 'none'
+        if: matrix.psalm != 'skip'
 
       - name: Run style fixer
         env:

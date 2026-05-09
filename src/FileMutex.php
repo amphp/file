@@ -34,7 +34,9 @@ final class FileMutex implements Mutex
 
     /**
      * @throws SyncException
+     * @psalm-suppress PossiblyUnusedReturnValue
      */
+    #[\Override]
     public function acquire(?Cancellation $cancellation = null): Lock
     {
         if (!$this->filesystem->isDirectory($this->directory)) {
@@ -60,7 +62,7 @@ final class FileMutex implements Mutex
                     }
 
                     // Windows fails to open the file if a lock is held.
-                    delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)), cancellation: $cancellation);
+                    /** @psalm-suppress InvalidOperand */delay(\min(self::DELAY_LIMIT, self::LATENCY_TIMEOUT * (2 ** $attempt)), cancellation: $cancellation);
                 }
             }
         } catch (FilesystemException|StreamException $exception) {

@@ -37,6 +37,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         $this->poll = new Internal\UvPoll($driver);
     }
 
+    #[\Override]
     public function openFile(string $path, string $mode): UvFile
     {
         $flags = $this->parseMode($mode);
@@ -60,12 +61,13 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function getStatus(string $path): ?array
     {
         $deferred = new DeferredFuture;
         $this->poll->listen();
 
-        $callback = static function ($stat) use ($deferred, $path): void {
+        $callback = static function ($stat) use ($deferred): void {
             if (\is_int($stat)) {
                 $deferred->complete(null);
                 return;
@@ -91,6 +93,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function getLinkStatus(string $path): ?array
     {
         $deferred = new DeferredFuture;
@@ -107,6 +110,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createSymlink(string $target, string $link): void
     {
         try {
@@ -122,6 +126,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createHardlink(string $target, string $link): void
     {
         $deferred = new DeferredFuture;
@@ -136,6 +141,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function resolveSymlink(string $target): string
     {
         $deferred = new DeferredFuture;
@@ -157,6 +163,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function move(string $from, string $to): void
     {
         $deferred = new DeferredFuture;
@@ -171,6 +178,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function deleteFile(string $path): void
     {
         $deferred = new DeferredFuture;
@@ -185,6 +193,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createDirectory(string $path, int $mode = 0777): void
     {
         $deferred = new DeferredFuture;
@@ -199,6 +208,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function createDirectoryRecursively(string $path, int $mode = 0777): void
     {
         $deferred = new DeferredFuture;
@@ -246,6 +256,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function deleteDirectory(string $path): void
     {
         $deferred = new DeferredFuture;
@@ -260,6 +271,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function listFiles(string $path): array
     {
         $deferred = new DeferredFuture;
@@ -283,6 +295,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function changePermissions(string $path, int $mode): void
     {
         $deferred = new DeferredFuture;
@@ -298,6 +311,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function changeOwner(string $path, ?int $uid, ?int $gid): void
     {
         // @TODO Return a failure in windows environments
@@ -314,6 +328,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function touch(string $path, ?int $modificationTime, ?int $accessTime): void
     {
         $modificationTime = $modificationTime ?? \time();
@@ -336,6 +351,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function read(string $path): string
     {
         $this->poll->listen();
@@ -376,6 +392,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         }
     }
 
+    #[\Override]
     public function write(string $path, string $contents): void
     {
         $flags = \UV::O_WRONLY | \UV::O_CREAT | \UV::O_TRUNC;

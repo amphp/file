@@ -44,6 +44,7 @@ final class EioFile extends Internal\QueuedWritesFile
         return $this->fd;
     }
 
+    #[\Override]
     public function read(?Cancellation $cancellation = null, int $length = self::DEFAULT_READ_LENGTH): ?string
     {
         if ($this->isReading || !$this->queue->isEmpty()) {
@@ -102,6 +103,7 @@ final class EioFile extends Internal\QueuedWritesFile
         }
     }
 
+    #[\Override]
     public function close(): void
     {
         if ($this->closing) {
@@ -129,16 +131,19 @@ final class EioFile extends Internal\QueuedWritesFile
         }
     }
 
+    #[\Override]
     public function isClosed(): bool
     {
         return $this->closing !== null;
     }
 
+    #[\Override]
     public function onClose(\Closure $onClose): void
     {
         $this->onClose->getFuture()->finally($onClose);
     }
 
+    #[\Override]
     protected function push(string $data, int $position): Future
     {
         $length = \strlen($data);
@@ -190,6 +195,7 @@ final class EioFile extends Internal\QueuedWritesFile
         return $deferred->getFuture();
     }
 
+    #[\Override]
     protected function trim(int $size): Future
     {
         $deferred = new DeferredFuture;
