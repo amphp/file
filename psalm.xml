@@ -22,12 +22,6 @@
             </errorLevel>
         </DocblockTypeContradiction>
 
-        <ForbiddenCode>
-            <errorLevel type="suppress">
-                <directory name="examples"/>
-            </errorLevel>
-        </ForbiddenCode>
-
         <MissingClosureParamType>
             <errorLevel type="suppress">
                 <directory name="examples"/>
