@@ -42,7 +42,7 @@ jobs:
             extensions: uv
             job-description: 'on macOS'
             style-fix: none
-            static-analysis: none
+            psalm: skip
 
 
     name: PHP ${{ matrix.php-version }} ${{ matrix.job-description }}
