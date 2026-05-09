@@ -70,6 +70,17 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: ${{ matrix.extensions }}
 
+      - name: Install ext-eio
+        run: |
+          git clone https://github.com/rosmanov/pecl-eio
+          cd pecl-eio
+          phpize
+          ./configure
+          make
+          sudo make install
+          echo "extension=eio.so" | sudo tee $(php-config --ini-dir)/zz-eio.ini
+        if: runner.os == 'Linux'
+
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-dir)" >> $GITHUB_OUTPUT
