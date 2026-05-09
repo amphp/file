@@ -135,12 +135,14 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
      */
     abstract protected function getFileHandle();
 
+    #[\Override]
     public function lock(LockType $type, ?Cancellation $cancellation = null): void
     {
         lock($this->path, $this->getFileHandle(), $type, $cancellation);
         $this->lockType = $type;
     }
 
+    #[\Override]
     public function tryLock(LockType $type): bool
     {
         $locked = tryLock($this->path, $this->getFileHandle(), $type);
@@ -151,12 +153,14 @@ abstract class QueuedWritesFile implements File, \IteratorAggregate
         return $locked;
     }
 
+    #[\Override]
     public function unlock(): void
     {
         unlock($this->path, $this->getFileHandle());
         $this->lockType = null;
     }
 
+    #[\Override]
     public function getLockType(): ?LockType
     {
         return $this->lockType;

@@ -57,21 +57,25 @@ final class StatusCachingFile implements File, \IteratorAggregate
         }
     }
 
+    #[\Override]
     public function lock(LockType $type, ?Cancellation $cancellation = null): void
     {
         $this->file->lock($type, $cancellation);
     }
 
+    #[\Override]
     public function tryLock(LockType $type): bool
     {
         return $this->file->tryLock($type);
     }
 
+    #[\Override]
     public function unlock(): void
     {
         $this->file->unlock();
     }
 
+    #[\Override]
     public function getLockType(): ?LockType
     {
         return $this->file->getLockType();

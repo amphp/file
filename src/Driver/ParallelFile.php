@@ -157,12 +157,14 @@ final class ParallelFile implements File, \IteratorAggregate
         return $this->pendingWrites === 0 && $this->size <= $this->position;
     }
 
+    #[\Override]
     public function lock(LockType $type, ?Cancellation $cancellation = null): void
     {
         $this->flock('lock', $type, $cancellation);
         $this->lockType = $type;
     }
 
+    #[\Override]
     public function tryLock(LockType $type): bool
     {
         $locked = $this->flock('try-lock', $type);
@@ -173,12 +175,14 @@ final class ParallelFile implements File, \IteratorAggregate
         return $locked;
     }
 
+    #[\Override]
     public function unlock(): void
     {
         $this->flock('unlock');
         $this->lockType = null;
     }
 
+    #[\Override]
     public function getLockType(): ?LockType
     {
         return $this->lockType;

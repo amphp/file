@@ -30,11 +30,16 @@ final class EioFile extends Internal\QueuedWritesFile
 
         $this->poll = $poll;
         $this->fh = $fh;
-        $this->fd = \fopen('php://fd/' . $this->fh, 'r');
+        $fd = \fopen('php://fd/' . $this->fh, 'r');
+        if ($fd === false) {
+            throw new StreamException("Failed to open file descriptor " . $this->fh);
+        }
+        $this->fd = $fd;
 
         $this->onClose = new DeferredFuture;
     }
 
+    #[\Override]
     protected function getFileHandle()
     {
         if (!\is_resource($this->fd)) {

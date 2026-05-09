@@ -46,6 +46,7 @@ final class UvFile extends Internal\QueuedWritesFile
         $this->onClose = new DeferredFuture;
     }
 
+    #[\Override]
     protected function getFileHandle()
     {
         if ($this->closing) {

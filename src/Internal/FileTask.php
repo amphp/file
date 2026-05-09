@@ -120,6 +120,7 @@ final class FileTask implements Task
                             throw new \Error("Invalid lock action - " . $action);
                     }
 
+                    /** @psalm-suppress UnevaluatedCode */
                     return false; // CS fixer fails without this return.
 
                 default:

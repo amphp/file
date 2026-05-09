@@ -62,17 +62,20 @@ final class BlockingFile implements File, \IteratorAggregate
     /**
      * Returns the currently active lock mode, or null if the file is not locked.
      */
+    #[\Override]
     public function getLockType(): ?LockType
     {
         return $this->lockType;
     }
 
+    #[\Override]
     public function lock(LockType $type, ?Cancellation $cancellation = null): void
     {
         Internal\lock($this->path, $this->getFileHandle(), $type, $cancellation);
         $this->lockType = $type;
     }
 
+    #[\Override]
     public function tryLock(LockType $type): bool
     {
         $locked = Internal\tryLock($this->path, $this->getFileHandle(), $type);
@@ -83,6 +86,7 @@ final class BlockingFile implements File, \IteratorAggregate
         return $locked;
     }
 
+    #[\Override]
     public function unlock(): void
     {
         Internal\unlock($this->path, $this->getFileHandle());

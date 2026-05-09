@@ -21,7 +21,10 @@ function lock(string $path, $handle, LockType $type, ?Cancellation $cancellation
             return;
         }
 
-        // Exponential back-off with a maximum delay of 1 second.
+        /**
+         * Exponential back-off with a maximum delay of 1 second.
+         * @psalm-suppress InvalidOperand
+         */
         delay(\min(1, 0.01 * (2 ** $attempt)), cancellation: $cancellation);
     }
 }
