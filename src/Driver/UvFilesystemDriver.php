@@ -474,7 +474,7 @@ final class UvFilesystemDriver implements FilesystemDriver
         $deferred = new DeferredFuture;
 
         \uv_fs_open($this->eventLoopHandle, $path, $flags, $mode, static function ($fh) use ($deferred) {
-            $deferred->complete($fh);
+            $deferred->complete(\is_resource($fh) ? $fh : null);
         });
 
         return $deferred->getFuture()->await();
