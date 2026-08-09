@@ -226,7 +226,8 @@ final class UvFilesystemDriver implements FilesystemDriver
             $mode,
             $deferred
         ): void {
-            $tmpPath .= DIRECTORY_SEPARATOR . \array_shift($arrayPath);
+            $part = \array_shift($arrayPath);
+            $tmpPath .= ($tmpPath !== '' || $part === '' ? DIRECTORY_SEPARATOR : '') . $part;
 
             if (empty($arrayPath)) {
                 \uv_fs_mkdir(

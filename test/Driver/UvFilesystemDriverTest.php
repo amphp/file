@@ -37,4 +37,32 @@ class UvFilesystemDriverTest extends FilesystemDriverTest
 
         return new UvFilesystemDriver($loop);
     }
+
+    public function testCreateDirectoryRecursivelyWithAbsolutePath(): void
+    {
+        $driver = $this->createDriver();
+
+        $baseDir = \sys_get_temp_dir();
+
+        $dir = $baseDir . DIRECTORY_SEPARATOR . 'amp-test-' . \uniqid('', true) . DIRECTORY_SEPARATOR . 'nested';
+
+        try {
+            $driver->createDirectoryRecursively($dir);
+            $status = $driver->getStatus($dir);
+            $this->assertNotNull($status, 'Directory should exist');
+
+            $isDir = ($status['mode'] & \UV::S_IFDIR) !== 0;
+            $this->assertTrue($isDir, 'Path must be a directory');
+
+        } finally {
+            if ($driver->getStatus($dir)) {
+                $driver->deleteDirectory($dir);
+            }
+
+            $parent = \dirname($dir);
+            if ($driver->getStatus($parent)) {
+                $driver->deleteDirectory($parent);
+            }
+        }
+    }
 }
