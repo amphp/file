@@ -58,6 +58,8 @@ function createDefaultDriver(): FilesystemDriver
  * Open a handle for the specified path.
  *
  * @throws FilesystemException
+ *
+ * @psalm-taint-sink file $path
  */
 function openFile(string $path, string $mode): File
 {
@@ -173,6 +175,9 @@ function getCreationTime(string $path): int
 
 /**
  * Create a symlink $link pointing to the file/directory located at $original.
+ *
+ * @psalm-taint-sink file $original
+ * @psalm-taint-sink file $link
  */
 function createSymlink(string $original, string $link): void
 {
@@ -181,6 +186,9 @@ function createSymlink(string $original, string $link): void
 
 /**
  * Create a hard link $link pointing to the file/directory located at $target.
+ *
+ * @psalm-taint-sink file $target
+ * @psalm-taint-sink file $link
  */
 function createHardlink(string $target, string $link): void
 {
@@ -197,6 +205,9 @@ function resolveSymlink(string $path): string
 
 /**
  * Move / rename a file or directory.
+ *
+ * @psalm-taint-sink file $from
+ * @psalm-taint-sink file $to
  */
 function move(string $from, string $to): void
 {
@@ -205,6 +216,8 @@ function move(string $from, string $to): void
 
 /**
  * Delete a file.
+ *
+ * @psalm-taint-sink file $path
  */
 function deleteFile(string $path): void
 {
@@ -213,6 +226,8 @@ function deleteFile(string $path): void
 
 /**
  * Create a directory.
+ *
+ * @psalm-taint-sink file $path
  */
 function createDirectory(string $path, int $mode = 0777): void
 {
@@ -221,6 +236,8 @@ function createDirectory(string $path, int $mode = 0777): void
 
 /**
  * Create a directory recursively.
+ *
+ * @psalm-taint-sink file $path
  */
 function createDirectoryRecursively(string $path, int $mode = 0777): void
 {
@@ -229,6 +246,8 @@ function createDirectoryRecursively(string $path, int $mode = 0777): void
 
 /**
  * Delete a directory.
+ *
+ * @psalm-taint-sink file $path
  */
 function deleteDirectory(string $path): void
 {
@@ -241,6 +260,8 @@ function deleteDirectory(string $path): void
  * Dot entries are not included in the resulting array (i.e. "." and "..").
  *
  * @return list<string>
+ *
+ * @psalm-taint-sink file $path
  */
 function listFiles(string $path): array
 {
@@ -249,6 +270,8 @@ function listFiles(string $path): array
 
 /**
  * Change the permissions of a file or directory.
+ *
+ * @psalm-taint-sink file $path
  */
 function changePermissions(string $path, int $mode): void
 {
@@ -260,6 +283,8 @@ function changePermissions(string $path, int $mode): void
  *
  * @param int|null $uid null to ignore
  * @param int|null $gid null to ignore
+ *
+ * @psalm-taint-sink file $path
  */
 function changeOwner(string $path, ?int $uid, ?int $gid = null): void
 {
@@ -273,6 +298,8 @@ function changeOwner(string $path, ?int $uid, ?int $gid = null): void
  *
  * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
  * @param int|null $accessTime The access time. If not supplied, the modification time is used.
+ *
+ * @psalm-taint-sink file $path
  */
 function touch(string $path, ?int $modificationTime = null, ?int $accessTime = null): void
 {
@@ -283,6 +310,8 @@ function touch(string $path, ?int $modificationTime = null, ?int $accessTime = n
  * Read the specified file's contents.
  *
  * @param string $path The file path from which to buffer contents.
+ *
+ * @psalm-taint-sink file $path
  */
 function read(string $path): string
 {
@@ -294,6 +323,8 @@ function read(string $path): string
  *
  * @param string $path The file path to which to $contents should be written.
  * @param string $contents The data to write to the specified $path.
+ *
+ * @psalm-taint-sink file $path
  */
 function write(string $path, string $contents): void
 {
