@@ -357,9 +357,6 @@ final class UvFilesystemDriver implements FilesystemDriver
         $this->poll->listen();
 
         $fileHandle = $this->doFsOpen($path, flags: \UV::O_RDONLY, mode: 0);
-        if (!$fileHandle) {
-            throw new FilesystemException("Failed opening file handle: {$path}");
-        }
 
         $deferred = new DeferredFuture;
 
@@ -401,9 +398,6 @@ final class UvFilesystemDriver implements FilesystemDriver
         $this->poll->listen();
 
         $fh = $this->doFsOpen($path, $flags, $mode);
-        if (!$fh) {
-            throw new FilesystemException("Failed opening write file handle");
-        }
 
         $deferred = new DeferredFuture;
 
@@ -469,15 +463,29 @@ final class UvFilesystemDriver implements FilesystemDriver
         $deferred->complete(new UvFile($this->driver, $this->poll, $fileHandle, $path, $mode, $size));
     }
 
+    /**
+     * @return resource
+     *
+     * @throws FilesystemException If the file can't be opened.
+     */
     private function doFsOpen(string $path, int $flags, int $mode): mixed
     {
         $deferred = new DeferredFuture;
 
         \uv_fs_open($this->eventLoopHandle, $path, $flags, $mode, static function ($fh) use ($deferred) {
-            $deferred->complete(\is_resource($fh) ? $fh : null);
+            $deferred->complete($fh);
         });
 
-        return $deferred->getFuture()->await();
+        $fh = $deferred->getFuture()->await();
+
+        // ext-uv >= 0.3 passes the (negative) error code on failure, older versions false
+        if (!\is_resource($fh)) {
+            throw new FilesystemException(
+                "Failed opening file handle to {$path}" . (\is_int($fh) ? ": " . \uv_strerror($fh) : "")
+            );
+        }
+
+        return $fh;
     }
 
     private function doFsStat(mixed $fileHandle): array

@@ -170,6 +170,22 @@ abstract class FilesystemDriverTest extends FilesystemTest
         $this->assertSame("small", $this->driver->read("{$fixtureDir}/file"));
     }
 
+    public function testReadFailsOnNonexistentPath(): void
+    {
+        $this->expectException(FilesystemException::class);
+
+        $fixtureDir = Fixture::path();
+        $this->driver->read("{$fixtureDir}/nonexistent");
+    }
+
+    public function testWriteFailsOnNonexistentDirectory(): void
+    {
+        $this->expectException(FilesystemException::class);
+
+        $fixtureDir = Fixture::path();
+        $this->driver->write("{$fixtureDir}/nonexistent/file", "contents");
+    }
+
     public function testSize(): void
     {
         $fixtureDir = Fixture::path();
