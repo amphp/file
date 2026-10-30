@@ -48,7 +48,7 @@ final class ParallelFilesystemDriver implements FilesystemDriver
             if (($workerStorage[$worker] -= 1) === 0 || !$worker->isRunning()) {
                 unset($workerStorage[$worker]);
             }
-        });
+        }, $this->pool);
 
         try {
             [$id, $size, $mode] = $worker->execute(new Internal\FileTask("fopen", [$path, $mode]));

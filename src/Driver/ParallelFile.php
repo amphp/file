@@ -13,6 +13,7 @@ use Amp\File\LockType;
 use Amp\File\PendingOperationError;
 use Amp\File\Whence;
 use Amp\Future;
+use Amp\Parallel\Context\StatusError;
 use Amp\Parallel\Worker\TaskFailureException;
 use Amp\Parallel\Worker\WorkerException;
 use Revolt\EventLoop;
@@ -66,7 +67,13 @@ final class ParallelFile implements File, \IteratorAggregate
             $id = $this->id;
             $this->id = null;
             $worker = $this->worker;
-            EventLoop::queue(static fn () => $worker->execute(new Internal\FileTask('fclose', [], $id)));
+            EventLoop::queue(static function () use ($worker, $id): void {
+                try {
+                    $worker->execute(new Internal\FileTask('fclose', [], $id));
+                } catch (StatusError|WorkerException) {
+                    // The worker exited meanwhile (its pool was shut down, or it died), closing the file.
+                }
+            });
         }
 
         if (!$this->onClose->isComplete()) {
