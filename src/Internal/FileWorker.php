@@ -5,17 +5,29 @@ namespace Amp\File\Internal;
 use Amp\Cancellation;
 use Amp\Parallel\Worker\Task;
 use Amp\Parallel\Worker\Worker;
+use Amp\Parallel\Worker\WorkerPool;
 
 /** @internal */
 final class FileWorker
 {
     /**
+     * The pool of the worker, kept alive while the file is open: a pool created by the driver would otherwise kill
+     * the worker, closing the file, once the driver is destroyed.
+     *
+     * @psalm-suppress UnusedProperty Only kept alive.
+     */
+    private readonly WorkerPool $pool;
+
+    /**
      * @param \Closure(Worker):void $push Closure to push the worker back into the queue.
+     * @param WorkerPool $pool The pool of the worker.
      */
     public function __construct(
         private readonly Worker $worker,
-        private readonly \Closure $push
+        private readonly \Closure $push,
+        WorkerPool $pool,
     ) {
+        $this->pool = $pool;
     }
 
     /**
